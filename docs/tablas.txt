@@ -40,6 +40,8 @@ Personal_interno -> "personal_interno" (
 )  
 
 Detalles_adicionales -> "cliente_detalles_adicionales" (
+    ID_DETALLE_ADICIONAL: id autogenerado,
+    ID_CLIENTE,
     dni: nullable int, 
     apellido: nullable str, 
     email: nullable str, 
@@ -86,17 +88,9 @@ Producto -> "productos" (
     id_menú: 1 a n con tabla menues, 
 )  
  
-Promocion -> "promociones" (
-    ID_PROMOCION: id autogenerado, 
-    descuento, float
-    vigencia_desde: datetime,
-    vigencia_hasta: datetime,
-
-    Relaciones:
-    id_producto: 1 a n con tabla productos, 
-)  
- 
 Tapa -> "tapas" (
+    ID_TAPA: id autogenerado,
+    ID_PRODUCTO,
     foto: str,
 
     Relaciones:
@@ -104,8 +98,10 @@ Tapa -> "tapas" (
 )  
  
 Vino -> "vinos" (
+    ID_VINO: id autogenerado,
+    ID_PRODUCTO,
     listado_nombres: str, 
-    listado_precios: str, 
+    listado_precios_sugeridos: str, 
     listado_metadatos: str, 
     ultima_sincronizacion: datetime,
     
@@ -113,15 +109,28 @@ Vino -> "vinos" (
     ID_PRODUCTO: 1 a 1 con tabla productos, 
 )  
 
+Promocion -> "promociones" (
+    ID_PROMOCION: id autogenerado, 
+    descuento, float
+    vigencia_desde: datetime,
+    vigencia_hasta: datetime,
+)
+
+Producto_Promocion -> "productos_y_promociones" (
+    ID_PRODUCTO_PROMOCION: id autogenerado,
+    ID_PRODUCTO: clave foránea de productos,
+    ID_PROMOCION: clave foránea de promociones
+) 
+
 
 ## Gestión de Pedidos
 
 Turno -> "turnos" (
     ID_TURNO: id autogenerado, 
-    cantidad_de_ordenes: nullable str, 
-    cantidad_tapas: nullable str, 
-    cantidad_usuarios_vip: nullable str, 
-    ingresos_totales: nullable int, 
+    cantidad_de_ordenes: str, 
+    cantidad_tapas: str, 
+    cantidad_usuarios_vip: str, 
+    ingresos_totales: int, 
     timestamp_apertura: datetime,
     timestamp_cierre: nullable datetime,
     
@@ -140,12 +149,14 @@ Orden_compra -> "ordenes" (
     turno: 1 a n con tabla turnos, 
     cliente: 1 a n con tabla clientes, 
     abierta_por: 1 a n con tabla personal_interno,
+    cerrada_por: 1 a n con tabla personal_interno,
 )     
  
 Pedido -> "pedidos" (
     ID_PEDIDO: id autogenerado, 
     timestamp_pedido: datetime, 
     monto_maximo_pedido: float, 
+    promocion_aplicada: bool
 
     Relaciones:
     id_orden_compra: 1 a n con tabla ordenes, 
