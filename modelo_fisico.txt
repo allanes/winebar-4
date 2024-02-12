@@ -1,0 +1,33 @@
+Rol (ID, nombre_corto, nombre_largo)  
+ 
+Tarjeta (RFID, id, activa, fecha_alta, fecha_ultimo_uso, entregada, raw_rfid, presente_en_salon, monto_precargado)  
+ 
+Menú (ID_MENÚ)  
+ 
+Producto (ID_PRODUCTO, id_menú, titulo, descripción, precio, ultimo_cambio_precio, activo, stock)  
+ 
+Turno (ID_TURNO, cantidad_de_ordenes, cantidad_tapas, cantidad_usuarios_vip, ingresos_totales, id_personal_interno)  
+ 
+Orden_compra (NUMERO_ORDEN, id_turno, monto_maximo_orden, id_cliente, id_personal_interno)  
+ 
+Pedido (ID_PEDIDO, timestamp_pedido, monto_maximo_pedido, id_orden_compra, id_cliente, id_personal_interno)  
+ 
+Renglón (ID_RENGLÓN, id_pedido, cantidad, monto, id_producto)  
+ 
+Promocion (ID_PROMOCION, id_producto, descuento)  
+ 
+Cliente (ID_CLIENTE, nombre, contraseña)  
+ 
+Detalles_adicionales (ID_CLIENTE, dni, apellido, email, teléfono, domicilio)  
+ 
+Cliente_opera_con_tarjeta (ID_CLIENTE_OPERA_CON_TARJETA, id_cliente, rfid)  
+ 
+Personal_interno (DNI, usuario, nombre, contraseña, apellido, telefono, id_turno)  
+ 
+Personal_interno_opera_con_tarjeta (ID_PERSONAL_INTERNO_OPERA_CON_TARJETA, dni, rfid)  
+ 
+Tapa (ID_PRODUCTO, foto)  
+ 
+Vino (ID_PRODUCTO, listado_nombres, listado_precios, listado_metadatos, ultima_sincronizacion)  
+ 
+Configuración (ID_CONFIGURACIÓN, monto_maximo_orden_def, monto_maximo_pedido_def, fecha_ultima_actualizacion)  
