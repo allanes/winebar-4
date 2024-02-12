@@ -1,0 +1,173 @@
+## Gestión de Tarjetas y Usuarios:
+
+Rol -> "roles" (
+    ID: id autogenerado, 
+    nombre_corto: str, 
+    nombre_largo: str
+)  
+ 
+Tarjeta -> "tarjetas" (
+    RFID: id numerico proporcionado por el usuario,  
+    raw_rfid: str (tal como lo introdujo el usuario), 
+    activa: bool, 
+    fecha_alta: datetime, 
+    fecha_ultimo_uso: nullable datetime, 
+    entregada: bool, 
+    presente_en_salon: bool, 
+    monto_precargado: float
+
+    Relaciones:
+    rol_id: 1 a n con tabla roles
+)  
+
+Cliente -> "clientes" (
+    ID_CLIENTE: id autogenerado, 
+    nombre: str, 
+    contraseña: str
+)  
+ 
+Personal_interno -> "personal_interno" (
+    DNI: id numerico proporcionado por el usuario, 
+    usuario: str, 
+    nombre: str, 
+    contraseña: str, 
+    apellido: str, 
+    telefono: nullable str, 
+    
+    Relaciones:
+    ids_turnos_abiertos: n a 1 con tabla turnos 
+    ids_turnos_cerrados: n a 1 con tabla turnos 
+)  
+
+Detalles_adicionales -> "cliente_detalles_adicionales" (
+    dni: nullable int, 
+    apellido: nullable str, 
+    email: nullable str, 
+    teléfono: nullable str, 
+    domicilio: nullable str
+    
+    Relaciones:
+    ID_CLIENTE: 1 a 1 con tabla clientes, 
+)  
+
+Cliente_opera_con_tarjeta -> "clientes_y_tarjetas" (
+    ID_CLIENTE_OPERA_CON_TARJETA: id autogenerado, 
+    
+    Relaciones:
+    id_cliente: 1 a 1 con tabla clientes, 
+    tarjeta: 1 a 1 con tarjetas
+)  
+
+Personal_interno_opera_con_tarjeta -> "personal_interno_y_tarjetas" (
+    ID_PERSONAL_INTERNO_OPERA_CON_TARJETA: id autogenerado, 
+    
+    Relaciones:
+    id_personal_interno: 1 a 1 con tabla personal_interno, 
+    tarjeta: 1 a 1 con tarjetas
+)  
+
+
+## Inventario y Promociones
+
+Menú -> "menues" (
+    ID_MENÚ: id autogenerado
+)  
+ 
+Producto -> "productos" (
+    ID_PRODUCTO: id autogenerado, 
+    titulo: str, 
+    descripción: str, 
+    precio: float, 
+    ultimo_cambio_precio: datetime, 
+    activo: bool, 
+    stock: int,
+
+    Relaciones:
+    id_menú: 1 a n con tabla menues, 
+)  
+ 
+Promocion -> "promociones" (
+    ID_PROMOCION: id autogenerado, 
+    descuento, float
+    vigencia_desde: datetime,
+    vigencia_hasta: datetime,
+
+    Relaciones:
+    id_producto: 1 a n con tabla productos, 
+)  
+ 
+Tapa -> "tapas" (
+    foto: str,
+
+    Relaciones:
+    ID_PRODUCTO: 1 a 1 con tabla productos, 
+)  
+ 
+Vino -> "vinos" (
+    listado_nombres: str, 
+    listado_precios: str, 
+    listado_metadatos: str, 
+    ultima_sincronizacion: datetime,
+    
+    Relaciones:
+    ID_PRODUCTO: 1 a 1 con tabla productos, 
+)  
+
+
+## Gestión de Pedidos
+
+Turno -> "turnos" (
+    ID_TURNO: id autogenerado, 
+    cantidad_de_ordenes: nullable str, 
+    cantidad_tapas: nullable str, 
+    cantidad_usuarios_vip: nullable str, 
+    ingresos_totales: nullable int, 
+    timestamp_apertura: datetime,
+    timestamp_cierre: nullable datetime,
+    
+    Relaciones:
+    abierto_por: 1 a n con tabla personal_interno
+    cerrado_por: 0 a n con tabla personal_interno
+)  
+ 
+Orden_compra -> "ordenes" (
+    NUMERO_ORDEN id autogenerado, 
+    monto_maximo_orden: float, 
+    timestamp_apertura_orden: datetime,
+    timestamp_cierre_orden: nullable datetime,
+
+    Relaciones:
+    turno: 1 a n con tabla turnos, 
+    cliente: 1 a n con tabla clientes, 
+    abierta_por: 1 a n con tabla personal_interno,
+)     
+ 
+Pedido -> "pedidos" (
+    ID_PEDIDO: id autogenerado, 
+    timestamp_pedido: datetime, 
+    monto_maximo_pedido: float, 
+
+    Relaciones:
+    id_orden_compra: 1 a n con tabla ordenes, 
+    realizado_por: 1 a n con tabla clientes, 
+    atendido_por: 1 a n con tabla personal_interno
+)  
+    
+Renglón -> "renglones" (
+    ID_RENGLÓN: id autogenerado, 
+    cantidad: int, 
+    monto: float, 
+
+    Relaciones:
+    id_pedido: n a 1 con tabla pedidos, 
+    id_producto: 1 a n con productos,
+)  
+ 
+## Configuración
+
+Configuración -> "configuraciones" (
+    ID_CONFIGURACIÓN: id autogenerado, 
+    monto_maximo_orden_def: float, 
+    monto_maximo_pedido_def: float, 
+    fecha_ultima_actualizacion: datetime,
+)  
