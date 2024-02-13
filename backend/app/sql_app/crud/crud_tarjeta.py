@@ -22,13 +22,13 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
     #     return db.query(Tarjeta).filter(Tarjeta.email == email).first()
 
     def create(self, db: Session, *, obj_in: TarjetaCreate) -> Tarjeta:
-        # Query the Rol table to find the id that matches rol_nombre_para_mostrar
-        rol_en_db = db.query(Rol).filter(Rol.nombre_corto == obj_in.rol_nombre).first()
-        if not rol_en_db:
-            raise HTTPException(status_code=404, detail=f"Rol '{obj_in.rol_nombre}' no encontrado")
+        raw_rfid_transformado = clean_tarjeta_id(obj_in.raw_rfid)
+
+        # Recupero el id del rol (asumiendo que ya existe)
+        rol_en_db = db.query(Rol).filter(Rol.nombre_corto == obj_in.rol_nombre).first()        
         
         # Campos adicionales y por defecto
-        campo_id = clean_tarjeta_id(obj_in.raw_rfid)
+        campo_id = raw_rfid_transformado
         campo_id_rol = rol_en_db.id
         campo_fecha_alta = datetime.utcnow()
         campo_presente_en_salon = False
