@@ -50,14 +50,14 @@ class DetallesAdicionales(Base):
     domicilio = Column(String, nullable=True)
     cliente = relationship("Cliente", back_populates="detalles_adicionales")
 
-class Cliente_opera_con_tarjeta(Base):
+class ClienteOperaConTarjeta(Base):
     __tablename__ = 'clientes_y_tarjetas'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_cliente = Column(Integer, ForeignKey('clientes.id'))
     tarjeta = Column(Integer, ForeignKey('tarjetas.id'))
     cliente = relationship("Cliente", back_populates="tarjetas")
 
-class Personal_interno_opera_con_tarjeta(Base):
+class PersonalInternoOperaConTarjeta(Base):
     __tablename__ = 'personal_interno_y_tarjetas'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_personal_interno = Column(Integer, ForeignKey('personal_interno.id'))
