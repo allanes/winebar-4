@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from .rol import Rol
 
 # Shared properties
 class TarjetaBase(BaseModel):
@@ -25,7 +26,7 @@ class TarjetaInDBBase(TarjetaBase):
     raw_rfid: str
     activa: bool
     fecha_alta: datetime
-    fecha_ultimo_uso: datetime
+    fecha_ultimo_uso: Optional[datetime]
     entregada: bool
     presente_en_salon: bool
     monto_precargado: float
@@ -36,7 +37,7 @@ class TarjetaInDBBase(TarjetaBase):
 
 # Properties to return to client
 class Tarjeta(TarjetaInDBBase):
-    pass
+    rol: Rol
 
 # Properties stored in DB
 class TarjetaInDB(TarjetaInDBBase):
