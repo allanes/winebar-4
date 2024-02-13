@@ -40,9 +40,13 @@ def create_tarjeta(
         raise HTTPException(status_code=404, detail=f"Rol '{tarjeta_in.rol_nombre}' no encontrado")
     
     try:
-        tarjeta = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
+        preexiste_tarjeta = crud.tarjeta.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
+        if preexiste_tarjeta:
+            raise HTTPException(status_code=400, detail=f"La tarjeta ya existe")
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Tarjeta no válida")
+        raise HTTPException(status_code=400, detail=f"Tarjeta inválida")
+    
+    tarjeta = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
     
     return tarjeta
 

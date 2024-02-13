@@ -14,6 +14,11 @@ from sql_app.schemas.validators import clean_tarjeta_id
 class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]):
     def get(self, db: Session, id: int) -> Optional[Tarjeta]:
         return super().get_active(db=db, id=id)
+    
+    def get_by_raw_rfid(self, db: Session, raw_rfid: str) -> Optional[Tarjeta]:
+        # Check if a Tarjeta has to be created or updated (based on 'activa')
+        raw_rfid_transformado = clean_tarjeta_id(raw_rfid)
+        return super().get_active(db=db, id=raw_rfid_transformado)        
 
     def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[Tarjeta]:
         return super().get_multi_active(db=db, skip=skip, limit=limit)
@@ -29,18 +34,18 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         
         # Campos adicionales y por defecto
         campo_id = raw_rfid_transformado
+        campo_raw_rfid = obj_in.raw_rfid
         campo_id_rol = rol_en_db.id
         campo_fecha_alta = datetime.utcnow()
         campo_presente_en_salon = False
         campo_entregada = False
         campo_activa = True
-        campo_monto_precargado = obj_in.monto_precargado if obj_in.monto_precargado else -1
+        campo_monto_precargado = -1
 
-        # Check if a Tarjeta has to be created or updated (based on 'activa')
-        
         existing_tarjeta = super().get_inactive(db=db, id=campo_id)
         if existing_tarjeta:
             existing_tarjeta.rol_id = campo_id_rol
+            existing_tarjeta.raw_rfid = campo_raw_rfid
             existing_tarjeta.fecha_alta = campo_fecha_alta
             existing_tarjeta.presente_en_salon = campo_presente_en_salon
             existing_tarjeta.entregada = campo_entregada
@@ -50,6 +55,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         else:
             db_obj = Tarjeta(
                 id = campo_id,
+                raw_rfid = campo_raw_rfid,
                 rol_id = campo_id_rol,
                 fecha_alta = campo_fecha_alta,
                 fecha_ultimo_uso = None,
