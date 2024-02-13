@@ -5,11 +5,11 @@ from sql_app.models import (
 # from sql_app.models.tarjetas_y_usuarios import (
     Rol,
     Tarjeta,
-#     Cliente,
-#     PersonalInterno,
-#     DetallesAdicionales,
-#     ClienteOperaConTarjeta,
-#     PersonalInternoOperaConTarjeta,
+    Cliente,
+    PersonalInterno,
+    DetallesAdicionales,
+    ClienteOperaConTarjeta,
+    PersonalInternoOperaConTarjeta,
 # # )
 # # from sql_app.models.inventario_y_promociones import (
 #     Menu,
