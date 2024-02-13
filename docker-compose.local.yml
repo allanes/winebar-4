@@ -1,0 +1,28 @@
+services:
+  postgres:
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    image: postgres:latest
+    env_file:
+      - .env
+    # environment:
+    #   POSTGRES_USER: ${POSTGRES_USER}
+    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    #   POSTGRES_DB: ${POSTGRES_DB}    
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${POSTGRES_VOLUME}:/var/lib/postgresql/data
+
+  pgadmin:
+    container_name: ${PGADMIN_CONTAINER_NAME}
+    image: dpage/pgadmin4:latest
+    env_file:
+      - .env
+    # environment:
+    #   PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+    #   PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    #   PGADMIN_LISTEN_PORT: ${PGADMIN_LISTEN_PORT_INTERNAL}    
+    ports:
+      - "${PGADMIN_LISTEN_PORT_EXTERNAL}:${PGADMIN_LISTEN_PORT_INTERNAL}"
+    depends_on:
+      - postgres

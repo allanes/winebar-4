@@ -1,0 +1,34 @@
+-- Gestión de Tarjetas y Usuarios:
+
+Se desea armar la base de datos para un bar. Todas las personas operan en el bar a través de tarjetas RFID. 
+
+Para esto, las tarjetas serán diferenciadas segun el rol que tiene. Los roles pueden ser: Admin, Cajero, Tapero, Cliente Estandar ó Cliente Vip. De los roles se guardará un identificador, nombre corto y nombre largo. 
+
+Los tres primeros representan el personal interno del bar y seran tratados distinto de los otros 2, que representan los clientes que realizan pedidos en el bar. Cualquiera de ellos representa el rol de una persona.
+
+Todas las personas tienen obligatoriamente nombre y contraseña . Los clientes pueden tener detalles adicionales como dni, apellido, email, teléfono y domicilio.
+
+El primer grupo, el personal interno, debe tener obligatoriamente dni, apellido, telefono y nombre de usuario (para ingresar al sistema sin tarjeta).
+
+Las tarjetas existirán en el bar con un rol definido independientemente de si tienen una persona asociada, ya que estarán previamente impresas segun estos roles. 
+
+Además se debe saber si está activa (para saber si fue borrada), su RFID, su fecha de alta, fecha de ultimo uso, si está en posesión de alguna persona (o entregada), si está presente en el salón y su RFID sin procesar (RAW_RFID, para realizar integracion con Vitte). Esto es particularmente importante para los clientes Vip, que tendrán en su posesión la tarjeta aún cuando se vayan del bar. Para implementar gift cards, las tarjetas podrán tener un monto precargado.
+
+
+-- Inventario de tapas y vinos y Promociones:
+En el bar se ofrecerá un menú que consta de 2 tipos de productos: vinos y tapas. Todos los productos tendran un Titulo, Descripción (opcional), Precio, Ultimo Cambio de Precio, Activo y Stock. Para los vinos, además de eso, se recuperará via API otra informacion que refiere a un sistema externo de vinos (para recuperar listado de nombres, precios y metadatos) junto con la ultima fecha de sincronizacion. Las tapas, ademas, tendran la url o dirección a la foto (opcional).
+
+Por otro lado, se requiere guardar promociones que se aplican sobre los productos. Las promociones son valores de porcentaje de descuento y deben tener un rango de vigencia desde y vigencia hasta en el cual estará activa.
+
+-- Gestión de Pedidos:
+El bar atenderá en turnos, que seran entre 1 y 2 por dia. Los turnos seran iniciados por un cajero (apertura de caja), y cerrados por un cajero (cierre de caja). Para cada turno, se desea guardar el timestamp de apertura de caja, timestamp de cierre de caja, cantidad de ordenes (desde ultima apertura), cantidad de tapas vendidas, cantidad de usuarios vip, e ingresos totales de ese turno.
+
+Al ingresar un cliente se le asignará una Orden de Compra (abierta por un cajero) con numero de orden en la que se cargaran todos los pedidos que el cliente realice mientras esté en el bar, y fecha de alta. Cada orden estará registrada en un único turno. A su vez será cerrada por algun cajero con una fecha de cierre. Los pedidos realizados por el cliente deben tener su respectivo timestamp. A su vez, cada pedido estará formado por al menos un renglón. Cada renglón tendrá un producto, cantidad y monto. 
+
+** El monto será el calculado despúes de aplicar las promociones correspondientes (ver más abajo) (chequear). **
+
+Los pedidos seran atendidos por usarios internos.
+
+Tanto los pedidos como las ordenes de compra deben tener un Monto máximo (ambos) admitido cuyos valores iniciales seran traídos de una configuración de montos máximos. La configuración de montos debe tener el monto máximo para la órden y para cada pedido, así como la fecha de ultima actualizacion de montos maximos.
+
+Esto resulta útil en casos donde el tapero despacha 2 tapas distintas en el mismo pedido. En ese ejemplo, se forma 1 pedido con 2 renglones. Si luego el cliente pide 3 tapas distintas, se genera un nuevo pedido con 3 renglones asociado a la misma orden de compra.
