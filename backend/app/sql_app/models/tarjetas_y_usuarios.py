@@ -12,7 +12,7 @@ class Rol(Base):
 
 class Tarjeta(Base):
     __tablename__ = 'tarjetas'
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     raw_rfid = Column(String, nullable=False)
     activa = Column(Boolean, default=True)
     fecha_alta = Column(DateTime, default=datetime.utcnow)
@@ -32,7 +32,7 @@ class Cliente(Base):
 
 class PersonalInterno(Base):
     __tablename__ = 'personal_interno'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     usuario = Column(String, nullable=False)
     nombre = Column(String, nullable=False)
     contraseña = Column(String, nullable=False)
