@@ -9,6 +9,7 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import Tarjeta, Rol
 from sql_app.schemas.tarjetas_y_usuarios.tarjeta import TarjetaCreate, TarjetaUpdate
 from sql_app.schemas.validators import clean_tarjeta_id
+from . import crud_rol
 
 
 class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]):
@@ -72,6 +73,44 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
     
     def remove(self, db: Session, *, id: int) -> Tarjeta:
         return super().deactivate(db=db, id=id)
+    
+    def check_puede_ser_borrada(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
+        puede_borrarse = True
+        msg = ''
+        
+        tarjeta_in_db = self.get(db=db, id=id_tarjeta)
+        if not tarjeta:
+            puede_borrarse = False
+            msg = "Tarjeta no encontrada"
+        else:
+            if tarjeta_in_db.entregada:
+                puede_borrarse = False
+                msg = "La tarjeta está entregada. Debe ser devuelta primero"
+            if tarjeta_in_db.presente_en_salon:
+                puede_borrarse = False
+                msg = "La tarjeta está siendo usada en el salón"
+        
+        return puede_borrarse, msg
+    
+    def check_puede_ser_creada(self, db: Session, tarjeta_in: TarjetaCreate) -> tuple[bool, str]:
+        puede_crearse = True
+        msg = ''
+        
+        rol_en_db = crud_rol.rol.get_by_name(db=db, name=tarjeta_in.rol_nombre)
+        if not rol_en_db:
+            puede_crearse = False
+            msg = f"Rol '{tarjeta_in.rol_nombre}' no encontrado"
+        else:
+            try:
+                preexiste_tarjeta = self.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
+                if preexiste_tarjeta:
+                    puede_crearse = False
+                    msg = f"La tarjeta ya existe"
+            except ValueError:
+                puede_crearse = False
+                msg = f"Tarjeta inválida"
+        
+        return puede_crearse, msg
     
 tarjeta = CRUDTarjeta(Tarjeta)
 

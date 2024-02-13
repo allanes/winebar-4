@@ -35,9 +35,9 @@ def create_personal_interno(
     db: Session = Depends(deps.get_db),
     personal_interno_in: schemas.PersonalInternoCreate
 ):
-    preexiste_personal_interno = crud.personal_interno.get(db=db, id=personal_interno_in.id)
-    if preexiste_personal_interno:
-        raise HTTPException(status_code=400, detail=f"Ya existe una persona con ese DNI")
+    puede_crearse, msg = crud.personal_interno.check_puede_ser_creada(db=db, personal_interno_in=personal_interno_in)
+    if not puede_crearse:
+        raise HTTPException(status_code=404, detail=msg)
     
     personal_interno = crud.personal_interno.create(db=db, obj_in=personal_interno_in)
     
@@ -63,9 +63,9 @@ def delete_personal_interno(
     db: Session = Depends(deps.get_db),
     id: int
 ):
-    personal_interno = crud.personal_interno.get(db=db, id=id)
-    if not personal_interno:
-        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
+    puede_borrarse, msg = crud.personal_interno.check_puede_ser_borrada(db=db, personal_interno_id=id)
+    if not puede_borrarse:
+        raise HTTPException(status_code=404, detail=msg)
     
     personal_interno = crud.personal_interno.remove(db=db, id=id)
     return personal_interno

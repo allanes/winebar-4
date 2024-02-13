@@ -66,6 +66,28 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
     def crear_nombre_usuario(self, usuario_in: PersonalInternoCreate) -> str:
         return usuario_in.id
+    
+    def check_puede_ser_creada(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
+        puede_crearse = True
+        msg = ''
+        
+        preexiste_personal_interno = self.get(db=db, id=personal_interno_in.id)
+        if preexiste_personal_interno:
+            puede_crearse = False
+            msg = f"Ya existe una persona con DNI {personal_interno_in.id}"    
+        
+        return puede_crearse, msg
+    
+    def check_puede_ser_borrada(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+        puede_borrarse = True
+        msg = ''
+        
+        personal_interno = self.get(db=db, id=personal_interno_id)
+        if not personal_interno:
+            puede_borrarse = False
+            msg=f"Persona no encontrada con DNI {personal_interno_id}"
+        
+        return puede_borrarse, msg
 
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

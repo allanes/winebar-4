@@ -35,16 +35,9 @@ def create_tarjeta(
     db: Session = Depends(deps.get_db),
     tarjeta_in: schemas.TarjetaCreate
 ):
-    rol_en_db = crud.rol.get_by_name(db=db, name=tarjeta_in.rol_nombre)
-    if not rol_en_db:
-        raise HTTPException(status_code=404, detail=f"Rol '{tarjeta_in.rol_nombre}' no encontrado")
-    
-    try:
-        preexiste_tarjeta = crud.tarjeta.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
-        if preexiste_tarjeta:
-            raise HTTPException(status_code=400, detail=f"La tarjeta ya existe")
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Tarjeta inválida")
+    puede_crearse, msg = crud.tarjeta.check_puede_ser_creada(db=db, tarjeta_in=tarjeta_in)
+    if not puede_crearse:
+        raise HTTPException(status_code=404, detail=msg)
     
     tarjeta = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
     
@@ -69,8 +62,9 @@ def delete_tarjeta(
     db: Session = Depends(deps.get_db),
     id: int
 ):
-    tarjeta = crud.tarjeta.get(db=db, id=id)
-    if not tarjeta:
-        raise HTTPException(status_code=404, detail="Tarjeta no encontrada")
+    puede_borrarse, msg = crud.tarjeta.check_puede_ser_borrada(db=db, id_tarjeta=id)
+    if not puede_borrarse:
+        raise HTTPException(status_code=404, detail=msg)
+
     tarjeta = crud.tarjeta.remove(db=db, id=id)
     return tarjeta
