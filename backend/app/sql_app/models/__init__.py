@@ -1,9 +1,25 @@
 from .tarjetas_y_usuarios import (
     Rol,
     Tarjeta,
-    # Cliente,
-    # Personal_interno,
-    # Detalles_adicionales,
-    # Cliente_opera_con_tarjeta,
-    # Personal_interno_opera_con_tarjeta
+    Cliente,
+    PersonalInterno,
+    DetallesAdicionales,
+    ClienteOperaConTarjeta,
+    PersonalInternoOperaConTarjeta
+)
+from .inventario_y_promociones import (
+    Menu,
+    Producto,
+    Tapa,
+    Trago,
+    Vino,
+    Promocion,
+    ProductoPromocion
+)
+from .gestion_de_pedidos import (
+    Turno,
+    OrdenCompra,
+    Pedido,
+    Renglon,
+    Configuracion
 )
