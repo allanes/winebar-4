@@ -28,6 +28,7 @@ class Cliente(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String, nullable=False)
     contraseña = Column(String, nullable=False)
+    activo = Column(Boolean, nullable=False)
     detalles_adicionales = relationship("Detalles_adicionales", back_populates="cliente")
 
 class PersonalInterno(Base):
@@ -38,6 +39,7 @@ class PersonalInterno(Base):
     contraseña = Column(String, nullable=False)
     apellido = Column(String, nullable=False)
     telefono = Column(String, nullable=True)
+    activo = Column(Boolean, nullable=False)
 
 class DetallesAdicionales(Base):
     __tablename__ = 'cliente_detalles_adicionales'
