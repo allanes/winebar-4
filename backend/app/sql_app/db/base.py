@@ -1,4 +1,7 @@
-from .tarjetas_y_usuarios import (
+# Import all the models, so that Base has them before being
+# imported by Alembic
+from sql_app.db.base_class import Base
+from sql_app.models import (
     Rol,
     Tarjeta,
     Cliente,
