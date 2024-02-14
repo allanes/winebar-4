@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 # from sql_app.core.security import get_password_hash, verify_password
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
-from sql_app.models import PersonalInterno, Rol
+from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
 from sql_app.models import PersonalInternoOperaConTarjeta
@@ -68,12 +68,26 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     def crear_nombre_usuario(self, usuario_in: PersonalInternoCreate) -> str:
         return usuario_in.id
     
-    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int):
-        # Create PersonalInternoOperaConTarjeta entry
-    
-        # set tarjeta.entregada to true
+    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
+        success = False
+        
 
-        pass
+        # Create a new association if it doesn't exist
+        new_association = PersonalInternoOperaConTarjeta(
+            id_personal_interno=personal_id,
+            tarjeta=tarjeta_id
+        )
+        db.add(new_association)
+
+        # Retrieve the tarjeta and set entregada to true
+        tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
+        if tarjeta:
+            tarjeta.entregada = True
+            success = True        
+            db.commit()
+            db.refresh(tarjeta)
+        
+        return success
     
     def check_puede_ser_creada(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
         puede_crearse = True
@@ -97,7 +111,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         return puede_borrarse, msg
     
-    def check_personal_puede_tener_tarjeta(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+    def check_personal_puede_tener_nueva_tarjeta(self, db: Session, personal_interno_id: int, tarjeta_id: int) -> tuple[bool, str]:
         puede_borrarse = True
         msg = ''
         
@@ -106,27 +120,19 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             puede_borrarse = False
             msg=f"Persona no encontrada con DNI {personal_interno_id}"
 
+            return puede_borrarse, msg
+
+        # Check if the association already exists
+        existing_association = db.query(PersonalInternoOperaConTarjeta).filter(
+            PersonalInternoOperaConTarjeta.id_personal_interno == personal_interno_id,
+            PersonalInternoOperaConTarjeta.tarjeta == tarjeta_id
+        )
+        if existing_association:
+            puede_borrarse = False
+            msg=f"Esta persona ya tiene esa tarjeta asociada"
+
+            return puede_borrarse, msg
+
         return puede_borrarse, msg
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)
-    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> None:
-        # Check if the association already exists
-        existing_association = db.query(PersonalInternoOperaConTarjeta).filter(
-            PersonalInternoOperaConTarjeta.id_personal_interno == personal_id,
-            PersonalInternoOperaConTarjeta.tarjeta == tarjeta_id
-        ).first()
-
-        if not existing_association:
-            # Create a new association if it doesn't exist
-            new_association = PersonalInternoOperaConTarjeta(
-                id_personal_interno=personal_id,
-                tarjeta=tarjeta_id
-            )
-            db.add(new_association)
-
-        # Retrieve the tarjeta and set entregada to true
-        tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
-        if tarjeta:
-            tarjeta.entregada = True
-            db.commit()
-            db.refresh(tarjeta)
