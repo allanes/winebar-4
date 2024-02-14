@@ -9,6 +9,7 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import PersonalInterno, Rol
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
+from sql_app.models import PersonalInternoOperaConTarjeta
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     def get(self, db: Session, id: int) -> Optional[PersonalInterno]:
@@ -18,6 +19,11 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         return super().get_multi_active(db=db, skip=skip, limit=limit)
         
     def create(self, db: Session, *, obj_in: PersonalInternoCreate) -> PersonalInterno:
+        # Check if tarjeta_id is provided and valid
+        tarjeta = crud.tarjeta.get(db=db, id=obj_in.tarjeta_id)
+        if not tarjeta:
+            raise ValueError("Invalid tarjeta_id")
+
         # Campos adicionales y por defecto
         campo_id = obj_in.id
         campo_usuario = self.crear_nombre_usuario(usuario_in=obj_in)
@@ -50,6 +56,14 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             db.add(db_obj)
         
         db.commit()
+        # Create PersonalInternoOperaConTarjeta entry
+        db_obj_tarjeta = PersonalInternoOperaConTarjeta(
+            id_personal_interno=db_obj.id,
+            tarjeta=obj_in.tarjeta_id
+        )
+        db.add(db_obj_tarjeta)
+        db.commit()
+
         db.refresh(db_obj)
         return db_obj
     
