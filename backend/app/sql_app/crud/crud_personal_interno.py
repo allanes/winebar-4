@@ -109,3 +109,24 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         return puede_borrarse, msg
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)
+    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> None:
+        # Check if the association already exists
+        existing_association = db.query(PersonalInternoOperaConTarjeta).filter(
+            PersonalInternoOperaConTarjeta.id_personal_interno == personal_id,
+            PersonalInternoOperaConTarjeta.tarjeta == tarjeta_id
+        ).first()
+
+        if not existing_association:
+            # Create a new association if it doesn't exist
+            new_association = PersonalInternoOperaConTarjeta(
+                id_personal_interno=personal_id,
+                tarjeta=tarjeta_id
+            )
+            db.add(new_association)
+
+        # Retrieve the tarjeta and set entregada to true
+        tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
+        if tarjeta:
+            tarjeta.entregada = True
+            db.commit()
+            db.refresh(tarjeta)
