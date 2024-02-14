@@ -6,6 +6,7 @@ from .tarjeta import Tarjeta
 # Shared properties
 class PersonalInternoBase(BaseModel):
     id: int
+    tarjeta_id: Optional[int]
     nombre: str
     apellido: str
     telefono: Optional[str]
@@ -26,7 +27,6 @@ class PersonalInternoInDBBase(PersonalInternoBase):
     activo: bool
     
     # tarjeta: Tarjeta
-
     class Config:
         orm_mode = True
 

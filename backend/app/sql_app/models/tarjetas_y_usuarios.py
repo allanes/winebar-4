@@ -42,7 +42,7 @@ class PersonalInterno(Base):
     telefono = Column(String, nullable=True)
     activo = Column(Boolean, nullable=False)
     tarjeta_id = Column(Integer, ForeignKey('tarjetas.id'), nullable=True)
-    tarjeta = relationship("PersonalInternoOperaConTarjeta", back_populates="personal_interno")
+    tarjeta = relationship("Tarjeta")
 
 class DetallesAdicionales(Base):
     __tablename__ = 'cliente_detalles_adicionales'

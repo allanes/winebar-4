@@ -9,7 +9,6 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
-from sql_app.models import PersonalInternoOperaConTarjeta
 from . import crud_tarjeta
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
@@ -21,34 +20,25 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
     def create(self, db: Session, *, obj_in: PersonalInternoCreate) -> PersonalInterno:
         # Campos adicionales y por defecto
-        campo_id = obj_in.id
-        campo_usuario = self.crear_nombre_usuario(usuario_in=obj_in)
-        campo_nombre = obj_in.nombre
-        campo_contraseña = self.hashear_contra(usuario_in=obj_in)
-        campo_apellido = obj_in.apellido
-        campo_telefono = obj_in.telefono
-        campo_activo = True
+        personal_interno_defecto = PersonalInterno(
+            id = obj_in.id,
+            tarjeta_id = obj_in.tarjeta_id,
+            usuario = self.crear_nombre_usuario(usuario_in=obj_in),
+            nombre = obj_in.nombre,
+            contraseña = self.hashear_contra(usuario_in=obj_in),
+            apellido = obj_in.apellido,
+            telefono = obj_in.telefono,
+            activo = True,
+        )
 
-        existing_personal = super().get_inactive(db=db, id=campo_id)
+        existing_personal = super().get_inactive(db=db, id=personal_interno_defecto.id)
         if existing_personal:
-            existing_personal.usuario = campo_usuario
-            existing_personal.nombre = campo_nombre
-            existing_personal.contraseña = campo_contraseña
-            existing_personal.apellido = campo_apellido
-            existing_personal.telefono = campo_telefono
-            existing_personal.activo = campo_activo
-            
+            for campo, valor in personal_interno_defecto.__dict__.items():
+                setattr(existing_personal, campo, valor)
+
             db_obj = existing_personal
         else:
-            db_obj = PersonalInterno(
-                id = campo_id,
-                usuario = campo_usuario,
-                nombre = campo_nombre,
-                contraseña = campo_contraseña,
-                apellido = campo_apellido,
-                telefono = campo_telefono,
-                activo = campo_activo,                
-            )
+            db_obj = personal_interno_defecto
             db.add(db_obj)
         
         db.commit()
@@ -56,7 +46,11 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         return db_obj
     
     def remove(self, db: Session, *, id: int) -> PersonalInterno:
-        return super().deactivate(db=db, id=id)
+        db_obj = super().deactivate(db=db, id=id)
+        db_obj.tarjeta_id = None
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
     
     def hashear_contra(self, usuario_in: PersonalInternoCreate) -> str:
         if not usuario_in.contra_sin_hash:
@@ -69,25 +63,44 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     def crear_nombre_usuario(self, usuario_in: PersonalInternoCreate) -> str:
         return usuario_in.id
     
-    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
-        success = False
-        
-        # Create a new association if it doesn't exist
-        new_association = PersonalInternoOperaConTarjeta(
-            id_personal_interno=personal_id,
-            tarjeta=tarjeta_id
-        )
-        db.add(new_association)
+    def entregar_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
+        # Step 1: Clear any existing association with the tarjeta_id
+        # This query retrieves all PersonalInterno records holding the tarjeta_id, excluding the current personal_id to prevent self-unlinking
+        existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id, PersonalInterno.id != personal_id).all()
+        for personal in existing_associations:
+            personal.tarjeta_id = None  # Clear the tarjeta_id for existing associations
 
-        # Retrieve the tarjeta and set entregada to true
-        tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
-        if tarjeta:
-            tarjeta.entregada = True
-            success = True        
-            db.commit()
-            db.refresh(tarjeta)
+        # Step 2: Retrieve the PersonalInterno instance to be updated
+        personal_interno = db.query(PersonalInterno).filter(PersonalInterno.id == personal_id).first()
+        if personal_interno:
+            # Devuelvo tarjeta anterior
+            tarjeta_vieja = personal_interno.tarjeta_id
+            crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_vieja)
+            # Update the tarjeta_id field with new card
+            personal_interno.tarjeta_id = tarjeta_id
+            # Retrieve the tarjeta and set entregada to true
+            tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
+            if tarjeta:
+                tarjeta.entregada = True
+                tarjeta.monto_precargado = 0
+                # Commit the transaction to save changes
+                db.commit()
+                # Refresh the instances to reflect the updated state
+                db.refresh(personal_interno)
+                db.refresh(tarjeta)
         
-        return success
+        return personal_interno
+    
+    def devolver_tarjeta(self, db: Session, tarjeta_id: int) -> Tarjeta:
+        # Step 1: Clear any existing association with the tarjeta_id
+        existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id).all()
+        for personal in existing_associations:
+            personal.tarjeta_id = None  # Clear the tarjeta_id for existing associations
+
+        # Step 2: Retrieve the tarjeta and set entregada to false
+        tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_id)
+                
+        return tarjeta_devuelta
     
     def check_puede_ser_creada(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
         puede_crearse = True
@@ -95,8 +108,12 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         preexiste_personal_interno = self.get(db=db, id=personal_interno_in.id)
         if preexiste_personal_interno:
-            puede_crearse = False
-            msg = f"Ya existe una persona con DNI {personal_interno_in.id}"    
+            return False, f"Ya existe una persona con DNI {personal_interno_in.id}"
+
+        tarjeta_nueva_id = personal_interno_in.tarjeta_id
+        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=tarjeta_nueva_id)
+        if not tarjeta_nueva_puede_usarse:
+            return False, msg_puede_usarse
         
         return puede_crearse, msg
     
@@ -111,30 +128,29 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         return puede_borrarse, msg
     
-    def check_personal_puede_tener_nueva_tarjeta(self, db: Session, personal_interno_id: int, tarjeta_id: int) -> tuple[bool, str]:
-        puede_borrarse = True
-        msg = ''
-        
-        personal_interno_in_db = self.get(db=db, id=personal_interno_id)        
-        if not personal_interno_in_db:
-            puede_borrarse = False
-            msg=f"Persona no encontrada con DNI {personal_interno_id}"
-            return puede_borrarse, msg
+    def check_tarjeta_puede_ser_entregada(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[bool, str]:
+        # Check if personal exists
+        personal_interno = db.query(PersonalInterno).filter(PersonalInterno.id == personal_id).first()
+        if not personal_interno:
+            return False, f"Persona no encontrada con DNI {personal_id}"
 
-        # Check for existing association with any tarjeta
-        existing_association = db.query(PersonalInternoOperaConTarjeta).filter(
-            PersonalInternoOperaConTarjeta.id_personal_interno == personal_interno_id
-        ).first()
-        if existing_association:
-            # Check if the old tarjeta can be removed
-            puede_quitarse, msg_quitarse = crud_tarjeta.tarjeta.check_tarjeta_puede_ser_quitada_de_personal(db=db, id_tarjeta=existing_association.tarjeta)
+        # Check if that personal has a previous tarjeta associated
+        tarjeta_previa_id = personal_interno.tarjeta_id
+        if tarjeta_previa_id:
+            # If it does, call check_tarjeta_puede_ser_quitada_de_personal(). Continue if that returns true
+            puede_quitarse, msg_quitarse = crud_tarjeta.tarjeta.check_tarjeta_puede_ser_quitada_de_personal(db=db, id_tarjeta=tarjeta_previa_id)
             if not puede_quitarse:
                 return False, msg_quitarse
-
-        # Check if the new tarjeta is already associated
-        if existing_association and existing_association.tarjeta == tarjeta_id:
-            return False, "Esta persona ya tiene esa tarjeta asociada"
-
-        return puede_borrarse, msg
+            # Continue if there wasn't a previous tarjeta or it can be disassociated
+        # Continue directly if there wasn't a previous tarjeta
+        
+        # Check if the new tarjeta_id is free to be associated through its entregada field
+        tarjeta_nueva_id = tarjeta_id
+        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=tarjeta_nueva_id)
+        if not tarjeta_nueva_puede_usarse:
+            return False, msg_puede_usarse
+        
+        # If all checks pass, the tarjeta can be associated
+        return True, "La tarjeta puede ser entregada."
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

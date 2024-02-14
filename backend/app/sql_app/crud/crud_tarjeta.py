@@ -71,8 +71,20 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         db.refresh(db_obj)
         return db_obj
     
+    def devolver_a_banca(self, db: Session, id: int) -> Tarjeta:
+        db_obj = self.get(db=db, id=id)
+        db_obj.entregada = False
+        db_obj.presente_en_salon = False
+        db_obj.monto_precargado = -1
+
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+    
     def remove(self, db: Session, *, id: int) -> Tarjeta:
-        return super().deactivate(db=db, id=id)
+        self.devolver_a_banca(db=db, id=id)
+        tarjeta_desactivada = super().deactivate(db=db, id=id)
+        return tarjeta_desactivada
     
     def check_puede_ser_borrada(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
         puede_borrarse = True
