@@ -24,7 +24,7 @@ class PersonalInternoUpdate(BaseModel):
 # Properties shared by models stored in DB
 class PersonalInternoInDBBase(PersonalInternoBase):
     usuario: str
-    activo: bool
+    activa: bool
     
     # tarjeta: Tarjeta
     class Config:

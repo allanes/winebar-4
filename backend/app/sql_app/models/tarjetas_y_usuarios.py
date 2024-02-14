@@ -28,7 +28,7 @@ class Cliente(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String, nullable=False)
     contraseña = Column(String, nullable=False)
-    activo = Column(Boolean, nullable=False)
+    activa = Column(Boolean, nullable=False)
     tarjeta = relationship("ClienteOperaConTarjeta", back_populates="cliente")
     detalles_adicionales = relationship("DetallesAdicionales", back_populates="cliente")
 
@@ -40,7 +40,7 @@ class PersonalInterno(Base):
     contraseña = Column(String, nullable=False)
     apellido = Column(String, nullable=False)
     telefono = Column(String, nullable=True)
-    activo = Column(Boolean, nullable=False)
+    activa = Column(Boolean, nullable=False)
     tarjeta_id = Column(Integer, ForeignKey('tarjetas.id'), nullable=True)
     tarjeta = relationship("Tarjeta")
 
