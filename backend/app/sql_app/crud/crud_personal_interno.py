@@ -51,14 +51,6 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             db.add(db_obj)
         
         db.commit()
-        # Create PersonalInternoOperaConTarjeta entry
-        db_obj_tarjeta = PersonalInternoOperaConTarjeta(
-            id_personal_interno=db_obj.id,
-            tarjeta=obj_in.tarjeta_id
-        )
-        db.add(db_obj_tarjeta)
-        db.commit()
-
         db.refresh(db_obj)
         return db_obj
     
@@ -75,6 +67,13 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
     def crear_nombre_usuario(self, usuario_in: PersonalInternoCreate) -> str:
         return usuario_in.id
+    
+    def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int):
+        # Create PersonalInternoOperaConTarjeta entry
+    
+        # set tarjeta.entregada to true
+
+        pass
     
     def check_puede_ser_creada(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
         puede_crearse = True
@@ -97,6 +96,16 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             msg=f"Persona no encontrada con DNI {personal_interno_id}"
         
         return puede_borrarse, msg
+    
+    def check_personal_puede_tener_tarjeta(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+        puede_borrarse = True
+        msg = ''
+        
+        personal_interno_in_db = self.get(db=db, id=personal_interno_id)        
+        if not personal_interno_in_db:
+            puede_borrarse = False
+            msg=f"Persona no encontrada con DNI {personal_interno_id}"
 
+        return puede_borrarse, msg
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

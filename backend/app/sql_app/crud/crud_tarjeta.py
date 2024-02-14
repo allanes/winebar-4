@@ -115,7 +115,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         
         return puede_crearse, msg
     
-    def check_puede_ser_asociada(self, db: Session, id_tarjeta: int) -> bool:
+    def check_tarjeta_libre_para_asociar(self, db: Session, id_tarjeta: int) -> bool:
         puede_asociarse = True
         msg = ''
 

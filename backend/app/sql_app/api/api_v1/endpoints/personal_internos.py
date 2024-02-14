@@ -9,7 +9,7 @@ from sql_app.api import deps
 router = APIRouter()
 
 @router.get("/{personal_interno_id}", response_model=schemas.PersonalInterno)
-def read_personal_interno_by_id(
+def handle_read_personal_interno_by_id(
     personal_interno_id: int,
     db: Session = Depends(deps.get_db)
 ):
@@ -20,7 +20,7 @@ def read_personal_interno_by_id(
     return personal_interno_in_db
 
 @router.get("/", response_model=List[schemas.PersonalInterno])
-def read_personal_internos(
+def handle_read_personal_internos(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
@@ -30,7 +30,7 @@ def read_personal_internos(
     return personal_internos
 
 @router.post("/", response_model=schemas.PersonalInterno)
-def create_personal_interno(
+def handle_create_personal_interno(
     *,
     db: Session = Depends(deps.get_db),
     personal_interno_in: schemas.PersonalInternoCreate
@@ -39,16 +39,30 @@ def create_personal_interno(
     if not personal_puede_crearse:
         raise HTTPException(status_code=404, detail=msg)
     
-    tarjeta_puede_asociarse, msg = crud.tarjeta.check_puede_ser_asociada(db=db, id_tarjeta=personal_interno_in.tarjeta_id)
-    if not tarjeta_puede_asociarse:
-        raise HTTPException(status_code=404, detail=msg)
-    
     personal_interno = crud.personal_interno.create(db=db, obj_in=personal_interno_in)
     
     return personal_interno
 
+@router.post("/", response_model=schemas.PersonalInterno)
+def handle_asociar_personal_con_tarjeta(
+    *,
+    db: Session = Depends(deps.get_db),
+    personal_interno_id: int,
+    tarjeta_id: int
+):
+    tarjeta_puede_asociarse, msg = crud.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=personal_interno_id)
+    if not tarjeta_puede_asociarse:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    tarjeta_puede_asociarse, msg = crud.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=personal_interno_id)
+    if not tarjeta_puede_asociarse:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    crud.personal_interno.asociar_con_tarjeta(db=db, personal_id=personal_interno_id, tarjeta_id=tarjeta_id)
+    return
+
 @router.put("/{id}", response_model=schemas.PersonalInterno)
-def update_personal_interno(
+def handle_update_personal_interno(
     *,
     db: Session = Depends(deps.get_db),
     id: int,
@@ -62,7 +76,7 @@ def update_personal_interno(
     return personal_interno
 
 @router.delete("/{id}", response_model=schemas.PersonalInterno)
-def delete_personal_interno(
+def handle_delete_personal_interno(
     *,
     db: Session = Depends(deps.get_db),
     id: int
