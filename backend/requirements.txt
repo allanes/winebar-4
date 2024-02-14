@@ -1,5 +1,6 @@
 # API tools
-pydantic==1.10
+pydantic
+pydantic-settings
 uvicorn[standard]
 fastapi
 sqlalchemy
