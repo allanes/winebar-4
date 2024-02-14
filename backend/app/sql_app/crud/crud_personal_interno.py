@@ -10,6 +10,7 @@ from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
 from sql_app.models import PersonalInternoOperaConTarjeta
+from . import crud_tarjeta
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     def get(self, db: Session, id: int) -> Optional[PersonalInterno]:
@@ -71,7 +72,6 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     def asociar_con_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
         success = False
         
-
         # Create a new association if it doesn't exist
         new_association = PersonalInternoOperaConTarjeta(
             id_personal_interno=personal_id,
@@ -119,19 +119,21 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         if not personal_interno_in_db:
             puede_borrarse = False
             msg=f"Persona no encontrada con DNI {personal_interno_id}"
-
             return puede_borrarse, msg
 
-        # Check if the association already exists
+        # Check for existing association with any tarjeta
         existing_association = db.query(PersonalInternoOperaConTarjeta).filter(
-            PersonalInternoOperaConTarjeta.id_personal_interno == personal_interno_id,
-            PersonalInternoOperaConTarjeta.tarjeta == tarjeta_id
-        )
+            PersonalInternoOperaConTarjeta.id_personal_interno == personal_interno_id
+        ).first()
         if existing_association:
-            puede_borrarse = False
-            msg=f"Esta persona ya tiene esa tarjeta asociada"
+            # Check if the old tarjeta can be removed
+            puede_quitarse, msg_quitarse = crud_tarjeta.tarjeta.check_tarjeta_puede_ser_quitada_de_personal(db=db, id_tarjeta=existing_association.tarjeta)
+            if not puede_quitarse:
+                return False, msg_quitarse
 
-            return puede_borrarse, msg
+        # Check if the new tarjeta is already associated
+        if existing_association and existing_association.tarjeta == tarjeta_id:
+            return False, "Esta persona ya tiene esa tarjeta asociada"
 
         return puede_borrarse, msg
 

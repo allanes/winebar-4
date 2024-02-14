@@ -54,7 +54,7 @@ def handle_asociar_personal_con_tarjeta(
     if not tarjeta_puede_asociarse:
         raise HTTPException(status_code=404, detail=msg)
     
-    tarjeta_puede_asociarse, msg = crud.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=personal_interno_id)
+    tarjeta_puede_asociarse, msg = crud.personal_interno.check_personal_puede_tener_nueva_tarjeta(db=db, id_tarjeta=personal_interno_id, tarjeta_id=tarjeta_id)
     if not tarjeta_puede_asociarse:
         raise HTTPException(status_code=404, detail=msg)
     
