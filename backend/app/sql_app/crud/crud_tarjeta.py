@@ -143,3 +143,10 @@ tarjeta = CRUDTarjeta(Tarjeta)
         if not tarjeta.entregada:
             return False, "La tarjeta no está marcada como entregada, por lo tanto no puede ser quitada."
         return True, ""
+    def check_tarjeta_puede_ser_quitada_de_personal(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
+        tarjeta = self.get(db=db, id=id_tarjeta)
+        if tarjeta is None:
+            return False, "La tarjeta no existe."
+        if not tarjeta.entregada:
+            return False, "La tarjeta no está marcada como entregada, por lo tanto no puede ser quitada."
+        return True, ""
