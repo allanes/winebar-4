@@ -82,13 +82,16 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         if not tarjeta:
             puede_borrarse = False
             msg = "Tarjeta no encontrada"
+            return puede_borrarse, msg
         else:
             if tarjeta_in_db.entregada:
                 puede_borrarse = False
                 msg = "La tarjeta está entregada. Debe ser devuelta primero"
+                return puede_borrarse, msg
             if tarjeta_in_db.presente_en_salon:
                 puede_borrarse = False
                 msg = "La tarjeta está siendo usada en el salón"
+                return puede_borrarse, msg
         
         return puede_borrarse, msg
     
@@ -111,5 +114,25 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
                 msg = f"Tarjeta inválida"
         
         return puede_crearse, msg
+    
+    def check_puede_ser_asociada(self, db: Session, id_tarjeta: int) -> bool:
+        puede_asociarse = True
+        msg = ''
+
+        tarjeta_in_db = self.get(db=db, id=id_tarjeta)
+        if tarjeta_in_db is None:
+            puede_asociarse = False
+            msg = "La tarjeta leída no existe. Debe darla de alta antes de asociarla con alguien."
+            return puede_asociarse, msg
+        if tarjeta_in_db.entregada:
+            puede_asociarse = False
+            msg = "La tarjeta ya estaba entregada. El usuario debe devolverla primero"
+            return puede_asociarse, msg
+        if tarjeta_in_db.presente_en_salon:
+            puede_asociarse = False
+            msg = "La tarjeta ya está siendo usada en el salón."
+            return puede_asociarse, msg
+        
+        return puede_asociarse, msg
     
 tarjeta = CRUDTarjeta(Tarjeta)

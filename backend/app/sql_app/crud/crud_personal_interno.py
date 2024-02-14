@@ -19,11 +19,6 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         return super().get_multi_active(db=db, skip=skip, limit=limit)
         
     def create(self, db: Session, *, obj_in: PersonalInternoCreate) -> PersonalInterno:
-        # Check if tarjeta_id is provided and valid
-        tarjeta = crud.tarjeta.get(db=db, id=obj_in.tarjeta_id)
-        if not tarjeta:
-            raise ValueError("Invalid tarjeta_id")
-
         # Campos adicionales y por defecto
         campo_id = obj_in.id
         campo_usuario = self.crear_nombre_usuario(usuario_in=obj_in)

@@ -13,7 +13,7 @@ class PersonalInternoBase(BaseModel):
 # Properties to receive on item creation
 class PersonalInternoCreate(PersonalInternoBase):
     contra_sin_hash: Optional[str]
-    tarjeta_id: int
+    tarjeta_id: Optional[int]
         
 # Properties to receive on item update
 class PersonalInternoUpdate(BaseModel):

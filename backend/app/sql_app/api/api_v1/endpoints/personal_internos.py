@@ -33,12 +33,14 @@ def read_personal_internos(
 def create_personal_interno(
     *,
     db: Session = Depends(deps.get_db),
-    personal_interno_in: schemas.PersonalInternoCreate,
-    tarjeta_id: int
+    personal_interno_in: schemas.PersonalInternoCreate
 ):
-    personal_interno_in.tarjeta_id = tarjeta_id
-    puede_crearse, msg = crud.personal_interno.check_puede_ser_creada(db=db, personal_interno_in=personal_interno_in)
-    if not puede_crearse:
+    personal_puede_crearse, msg = crud.personal_interno.check_puede_ser_creada(db=db, personal_interno_in=personal_interno_in)
+    if not personal_puede_crearse:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    tarjeta_puede_asociarse, msg = crud.tarjeta.check_puede_ser_asociada(db=db, id_tarjeta=personal_interno_in.tarjeta_id)
+    if not tarjeta_puede_asociarse:
         raise HTTPException(status_code=404, detail=msg)
     
     personal_interno = crud.personal_interno.create(db=db, obj_in=personal_interno_in)
