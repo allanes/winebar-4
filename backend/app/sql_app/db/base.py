@@ -8,8 +8,7 @@ from sql_app.models import (
     Cliente,
     PersonalInterno,
     DetallesAdicionales,
-    ClienteOperaConTarjeta,
-    PersonalInternoOperaConTarjeta,
+    ClienteOperaConTarjeta
 # # )
 # # from sql_app.models.inventario_y_promociones import (
 #     Menu,

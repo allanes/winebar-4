@@ -5,7 +5,6 @@ from .tarjetas_y_usuarios import (
     PersonalInterno,
     DetallesAdicionales,
     ClienteOperaConTarjeta,
-    PersonalInternoOperaConTarjeta
 )
 from .inventario_y_promociones import (
     Menu,

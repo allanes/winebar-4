@@ -41,6 +41,7 @@ class PersonalInterno(Base):
     apellido = Column(String, nullable=False)
     telefono = Column(String, nullable=True)
     activo = Column(Boolean, nullable=False)
+    tarjeta_id = Column(Integer, ForeignKey('tarjetas.id'), nullable=True)
     tarjeta = relationship("PersonalInternoOperaConTarjeta", back_populates="personal_interno")
 
 class DetallesAdicionales(Base):
@@ -61,9 +62,3 @@ class ClienteOperaConTarjeta(Base):
     tarjeta = Column(Integer, ForeignKey('tarjetas.id'))
     cliente = relationship("Cliente", back_populates="tarjeta")
 
-class PersonalInternoOperaConTarjeta(Base):
-    __tablename__ = 'personal_interno_y_tarjetas'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    id_personal_interno = Column(Integer, ForeignKey('personal_interno.id'))
-    tarjeta = Column(Integer, ForeignKey('tarjetas.id'))
-    personal_interno = relationship("PersonalInterno", back_populates="tarjeta")
