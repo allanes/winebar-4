@@ -35,12 +35,10 @@ def handle_create_personal_interno(
     db: Session = Depends(deps.get_db),
     personal_interno_in: schemas.PersonalInternoCreate
 ):
-    personal_puede_crearse, msg = crud.personal_interno.check_puede_ser_creada(db=db, personal_interno_in=personal_interno_in)
-    if not personal_puede_crearse:
-        raise HTTPException(status_code=404, detail=msg)
-    
-    personal_interno = crud.personal_interno.create(db=db, personal_in=personal_interno_in)
-    
+    personal_interno, fue_creada, error_msg = crud.personal_interno.create(db=db, personal_in=personal_interno_in)
+    if not fue_creada:
+        raise HTTPException(status_code=404, detail=error_msg)
+
     return personal_interno
 
 @router.post("/entregar-tarjeta", response_model=schemas.PersonalInterno)
@@ -50,15 +48,14 @@ def handle_entregar_tarjeta(
     personal_interno_id: int,
     tarjeta_id: int
 ):
-    tarjeta_puede_asociarse, msg = crud.personal_interno.check_tarjeta_puede_ser_entregada(
-        db=db, personal_id=personal_interno_id, tarjeta_id=tarjeta_id
+    (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
+        db=db, 
+        personal_id=personal_interno_id, 
+        tarjeta_id=tarjeta_id
     )
-    if not tarjeta_puede_asociarse:
+
+    if not pudo_entregarse:
         raise HTTPException(status_code=404, detail=msg)
-    
-    personal_interno = crud.personal_interno.entregar_tarjeta(
-        db=db, personal_id=personal_interno_id, tarjeta_id=tarjeta_id
-    )
     return personal_interno
 
 @router.post("/devolver-tarjeta", response_model=schemas.Tarjeta)
@@ -67,7 +64,9 @@ def handle_devolver_tarjeta(
     db: Session = Depends(deps.get_db),
     tarjeta_id: int
 ):
-    tarjeta_devuelta = crud.personal_interno.devolver_tarjeta(db=db, tarjeta_id=tarjeta_id)
+    tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(db=db, tarjeta_id=tarjeta_id)
+    if not fue_devuelta:
+        raise HTTPException(status_code=404, detail=msg)
     return tarjeta_devuelta
 
 @router.put("/{id}", response_model=schemas.PersonalInterno)
