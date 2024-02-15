@@ -39,7 +39,7 @@ def handle_create_personal_interno(
     if not personal_puede_crearse:
         raise HTTPException(status_code=404, detail=msg)
     
-    personal_interno = crud.personal_interno.create(db=db, obj_in=personal_interno_in)
+    personal_interno = crud.personal_interno.create(db=db, personal_in=personal_interno_in)
     
     return personal_interno
 

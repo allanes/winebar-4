@@ -75,7 +75,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         """
         return True, ""  # Default implementation always passes. Override in subclasses.
 
-    def pre_update_checks(self, db_obj: ModelType, obj_in: CreateSchemaType) -> tuple[bool, str]:
+    def pre_update_checks(self, db_obj: ModelType, obj_in: CreateSchemaType | UpdateSchemaType) -> tuple[bool, str]:
         """
         Perform specific logic checks before updating an existing record.
         This method should be overridden in subclasses with specific validation logic.
@@ -85,7 +85,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         """
         return True, ""  # Default implementation always passes. Override in subclasses.
 
-    def pre_deactivate_checks(self, db_obj: ModelType) -> tuple[bool, str]:
+    def pre_deactivate_checks(self, db_obj_id: int) -> tuple[bool, str]:
         """
         Perform specific logic checks before deactivating an existing record.
         This method should be overridden in subclasses with specific validation logic.

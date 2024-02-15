@@ -10,6 +10,7 @@ from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
 from . import crud_tarjeta
+from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     def get(self, db: Session, id: int) -> Optional[PersonalInterno]:
@@ -18,51 +19,26 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[PersonalInterno]:
         return super().get_multi_active(db=db, skip=skip, limit=limit)
         
-    def create(self, db: Session, *, obj_in: PersonalInternoCreate) -> PersonalInterno:
-        # Campos adicionales y por defecto
-        personal_interno_defecto = PersonalInterno(
-            id = obj_in.id,
-            tarjeta_id = obj_in.tarjeta_id,
-            usuario = self.crear_nombre_usuario(usuario_in=obj_in),
-            nombre = obj_in.nombre,
-            contraseña = self.hashear_contra(usuario_in=obj_in),
-            apellido = obj_in.apellido,
-            telefono = obj_in.telefono,
-            activo = True,
-        )
-
-        existing_personal = super().get_inactive(db=db, id=personal_interno_defecto.id)
-        if existing_personal:
-            for campo, valor in personal_interno_defecto.__dict__.items():
-                setattr(existing_personal, campo, valor)
-
-            db_obj = existing_personal
-        else:
-            db_obj = personal_interno_defecto
-            db.add(db_obj)
-        
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
+    def create(
+            self, db: Session, *, personal_in: PersonalInternoCreate
+        ) -> tuple[PersonalInterno | None, bool, str]:
+        return super().create_or_reactivate(db=db, obj_in=personal_in)
     
-    def remove(self, db: Session, *, id: int) -> PersonalInterno:
-        db_obj = super().deactivate(db=db, id=id)
-        db_obj.tarjeta_id = None
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
+    def remove(self, db: Session, *, id: int) -> Optional[PersonalInterno]:
+        return super().deactivate(db=db, id=id)
     
-    def hashear_contra(self, usuario_in: PersonalInternoCreate) -> str:
-        if not usuario_in.contra_sin_hash:
-            contra_in = ''
-        else:
-            contra_in = usuario_in.contra_sin_hash
+    def apply_deactivation_defaults(self, personal_obj: PersonalInterno) -> None:
+        # personal_obj.activa = False
+        super().apply_deactivation_defaults(personal_obj) # mismo que la linea de arriba
+        personal_obj.tarjeta_id = None
+        personal_obj.contraseña = obtener_pass_de_deactivacion()
 
-        return contra_in + str(usuario_in.id)
-        
-    def crear_nombre_usuario(self, usuario_in: PersonalInternoCreate) -> str:
-        return usuario_in.id
-    
+    def apply_activation_defaults(self, personal_in: PersonalInterno) -> None:
+        # super().apply_activation_defaults(obj)
+        personal_in.activa = True # mismo que la linea de arriba
+        personal_in.usuario = crear_nombre_usuario(usuario_in=personal_in)
+        personal_in.contraseña = hashear_contra(usuario_in=personal_in)
+            
     def entregar_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
         # Step 1: Clear any existing association with the tarjeta_id
         # This query retrieves all PersonalInterno records holding the tarjeta_id, excluding the current personal_id to prevent self-unlinking
@@ -102,7 +78,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
                 
         return tarjeta_devuelta
     
-    def check_puede_ser_creada(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
+    def pre_create_checks(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
         puede_crearse = True
         msg = ''
         
@@ -117,7 +93,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         return puede_crearse, msg
     
-    def check_puede_ser_borrada(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+    def pre_deactivate_checks(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
         puede_borrarse = True
         msg = ''
         
@@ -152,5 +128,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         # If all checks pass, the tarjeta can be associated
         return True, "La tarjeta puede ser entregada."
+    
+    
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)
