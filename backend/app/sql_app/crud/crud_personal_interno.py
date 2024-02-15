@@ -39,7 +39,42 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         personal_in.usuario = crear_nombre_usuario(usuario_in=personal_in)
         personal_in.contraseña = hashear_contra(usuario_in=personal_in)
             
-    def entregar_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> bool:
+    def pre_create_checks(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
+        puede_crearse = True
+        msg = ''
+        
+        preexiste_personal_interno = self.get(db=db, id=personal_interno_in.id)
+        if preexiste_personal_interno:
+            return False, f"Ya existe una persona con DNI {personal_interno_in.id}"
+
+        tarjeta_nueva_id = personal_interno_in.tarjeta_id
+        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=tarjeta_nueva_id)
+        if not tarjeta_nueva_puede_usarse:
+            return False, msg_puede_usarse
+        
+        return puede_crearse, msg
+    
+    def pre_update_checks(self, db_obj: PersonalInterno, obj_in: PersonalInternoCreate | PersonalInternoUpdate) -> tuple[bool, str]:
+        return super().pre_update_checks(db_obj, obj_in)
+    
+    def pre_deactivate_checks(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+        puede_borrarse = True
+        msg = ''
+        
+        personal_interno = self.get(db=db, id=personal_interno_id)
+        if not personal_interno:
+            puede_borrarse = False
+            msg=f"Persona no encontrada con DNI {personal_interno_id}"
+        
+        return puede_borrarse, msg
+    
+    def entregar_tarjeta(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[bool, str]:
+        # Step 0: check
+        tarjeta_puede_asociarse, msg = self.pre_entrega_checks(
+            db=db, personal_id=personal_id, tarjeta_id=tarjeta_id
+        )
+        if not tarjeta_puede_asociarse:
+            return False, msg
         # Step 1: Clear any existing association with the tarjeta_id
         # This query retrieves all PersonalInterno records holding the tarjeta_id, excluding the current personal_id to prevent self-unlinking
         existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id, PersonalInterno.id != personal_id).all()
@@ -67,44 +102,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         return personal_interno
     
-    def devolver_tarjeta(self, db: Session, tarjeta_id: int) -> Tarjeta:
-        # Step 1: Clear any existing association with the tarjeta_id
-        existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id).all()
-        for personal in existing_associations:
-            personal.tarjeta_id = None  # Clear the tarjeta_id for existing associations
-
-        # Step 2: Retrieve the tarjeta and set entregada to false
-        tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_id)
-                
-        return tarjeta_devuelta
-    
-    def pre_create_checks(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
-        puede_crearse = True
-        msg = ''
-        
-        preexiste_personal_interno = self.get(db=db, id=personal_interno_in.id)
-        if preexiste_personal_interno:
-            return False, f"Ya existe una persona con DNI {personal_interno_in.id}"
-
-        tarjeta_nueva_id = personal_interno_in.tarjeta_id
-        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=tarjeta_nueva_id)
-        if not tarjeta_nueva_puede_usarse:
-            return False, msg_puede_usarse
-        
-        return puede_crearse, msg
-    
-    def pre_deactivate_checks(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
-        puede_borrarse = True
-        msg = ''
-        
-        personal_interno = self.get(db=db, id=personal_interno_id)
-        if not personal_interno:
-            puede_borrarse = False
-            msg=f"Persona no encontrada con DNI {personal_interno_id}"
-        
-        return puede_borrarse, msg
-    
-    def check_tarjeta_puede_ser_entregada(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[bool, str]:
+    def pre_entrega_checks(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[bool, str]:
         # Check if personal exists
         personal_interno = db.query(PersonalInterno).filter(PersonalInterno.id == personal_id).first()
         if not personal_interno:
@@ -129,6 +127,15 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         # If all checks pass, the tarjeta can be associated
         return True, "La tarjeta puede ser entregada."
     
-    
+    def devolver_tarjeta(self, db: Session, tarjeta_id: int) -> Tarjeta:
+        # Step 1: Clear any existing association with the tarjeta_id
+        existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id).all()
+        for personal in existing_associations:
+            personal.tarjeta_id = None  # Clear the tarjeta_id for existing associations
+
+        # Step 2: Retrieve the tarjeta and set entregada to false
+        tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_id)
+                
+        return tarjeta_devuelta
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

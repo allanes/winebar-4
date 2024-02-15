@@ -26,7 +26,9 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
             if not check_passed:
                 return None, False, message
             
+            self.pre_deactivate_actions(db=db, db_obj=obj)
             self.apply_deactivation_defaults(obj)
+            self.post_deactivate_actions(db=db, db_obj=obj)
             db.commit()
             db.refresh(obj)
             return obj, True, ""
@@ -37,21 +39,29 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         existing_inactive = self.get_inactive(db=db, id=obj_in.id)
         
         if existing_inactive:
-            check_passed, message = self.pre_update_checks(existing_inactive, obj_in)
+            # Have to reactivate
+            check_passed, message = self.pre_update_checks(db_obj=existing_inactive, obj_in=obj_in)
             if not check_passed:
                 return None, False, message  # Check failed, return with failure message
             
+            obj_in_prepared = self.pre_update_actions(db=db, db_obj=existing_inactive, obj_in=obj_in)
             self.apply_activation_defaults(existing_inactive)
-            updated_obj = self.update(db=db, db_obj=existing_inactive, obj_in=obj_in)
+            updated_obj = self.update(db=db, db_obj=existing_inactive, obj_in=obj_in_prepared)
+            updated_obj = self.post_update_actions(db=db, db_obj=updated_obj)
             db.commit()
             return updated_obj, True, ""  # Successful update
         else:
-            if not self.get_inactive(db=db, id=obj_in.id):
-                check_passed, message = self.pre_create_checks(obj_in)
-                if not check_passed:
-                    return None, False, message
+            # Have to create
+            check_passed, message = self.pre_create_checks(obj_in)
+            if not check_passed:
+                return None, False, message
                 
-            created_obj = super().create(db=db, obj_in=obj_in)
+            obj_in_prepared = self.pre_create_actions(db=db, obj_in=obj_in)
+            created_obj = super().create(db=db, obj_in=obj_in_prepared)
+            self.apply_activation_defaults(obj=created_obj)
+            created_obj = self.post_create_actions(db=db, db_obj=created_obj)
+            db.commit()
+            db.refresh(created_obj)
             return created_obj, True, ""  # Successful creation
 
     def apply_deactivation_defaults(self, obj: ModelType) -> None:
@@ -94,3 +104,83 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         - A tuple of (bool, str), where bool indicates if the check passed, and str provides a failure message if any.
         """
         return True, ""  # Default implementation always passes. Override in subclasses.
+
+    def pre_create_actions(self, db: Session, obj_in: CreateSchemaType) -> CreateSchemaType:
+        """
+        Prepare the system or data before creating a new record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - obj_in (CreateSchemaType): Data for the new record.
+        
+        Returns:
+        - obj_in (CreateSchemaType): Possibly modified data for the new record.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        return obj_in
+
+    def pre_update_actions(self, db: Session, db_obj: ModelType, obj_in: UpdateSchemaType) -> UpdateSchemaType:
+        """
+        Prepare the system or modify data before updating an existing record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - db_obj (ModelType): The existing database object to be updated.
+        - obj_in (UpdateSchemaType): Data for updating the record.
+        
+        Returns:
+        - obj_in (UpdateSchemaType): Possibly modified data for the update.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        return obj_in
+
+    def pre_deactivate_actions(self, db: Session, db_obj: ModelType) -> None:
+        """
+        Prepare the system before deactivating a record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - db_obj (ModelType): The database object to be deactivated.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        pass
+
+    def post_create_actions(self, db: Session, db_obj: ModelType) -> ModelType:
+        """
+        Prepare the system or data before creating a new record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - obj_in (CreateSchemaType): Data for the new record.
+        
+        Returns:
+        - obj_in (CreateSchemaType): Possibly modified data for the new record.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        return obj_in
+
+    def post_update_actions(self, db: Session, db_obj: ModelType) -> ModelType:
+        """
+        Prepare the system or modify data before updating an existing record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - db_obj (ModelType): The existing database object to be updated.
+        - obj_in (UpdateSchemaType): Data for updating the record.
+        
+        Returns:
+        - obj_in (UpdateSchemaType): Possibly modified data for the update.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        return obj_in
+
+    def post_deactivate_actions(self, db: Session, db_obj: ModelType) -> ModelType:
+        """
+        Prepare the system before deactivating a record.
+        
+        Parameters:
+        - db (Session): Database session.
+        - db_obj (ModelType): The database object to be deactivated.
+        """
+        # Default implementation does nothing. Override in subclasses if needed.
+        pass
