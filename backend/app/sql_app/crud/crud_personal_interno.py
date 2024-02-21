@@ -14,36 +14,36 @@ from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
-    def apply_deactivation_defaults(self, personal_obj: PersonalInterno) -> None:
-        personal_obj.activa = False
+    def apply_deactivation_defaults(self, obj: PersonalInterno) -> None:
+        obj.activa = False
         # super().apply_deactivation_defaults(personal_obj) # mismo que la linea de arriba
-        personal_obj.tarjeta_id = None
-        personal_obj.contraseña = obtener_pass_de_deactivacion()
+        obj.tarjeta_id = None
+        obj.contraseña = obtener_pass_de_deactivacion()
 
-    def apply_activation_defaults(self, personal_in: PersonalInterno) -> None:
+    def apply_activation_defaults(self, obj: PersonalInterno) -> None:
         # super().apply_activation_defaults(obj)
-        personal_in.activa = True # mismo que la linea de arriba
-        personal_in.usuario = crear_nombre_usuario(usuario_in=personal_in)
-        personal_in.contraseña = hashear_contra(usuario_in=personal_in)
+        obj.activa = True # mismo que la linea de arriba
+        obj.usuario = crear_nombre_usuario(usuario_in=obj)
+        obj.contraseña = hashear_contra(usuario_in=obj)
             
-    def pre_create_checks(self, db: Session, personal_interno_in: PersonalInternoCreate) -> tuple[bool, str]:
+    def pre_create_checks(self, db: Session, obj_in: PersonalInternoCreate) -> tuple[bool, str]:
         puede_crearse = True
         msg = ''
         
-        preexiste_personal_interno_activo = self.get_active(db=db, id=personal_interno_in.id)
+        preexiste_personal_interno_activo = self.get_active(db=db, id=obj_in.id)
         if preexiste_personal_interno_activo is not None:
-            return False, f"Ya existe una persona con DNI {personal_interno_in.id}"
+            return False, f"Ya existe una persona con DNI {obj_in.id}"
 
         return puede_crearse, msg
         
-    def pre_deactivate_checks(self, db: Session, personal_interno_id: int) -> tuple[bool, str]:
+    def pre_deactivate_checks(self, db: Session, db_obj_id: int) -> tuple[bool, str]:
         puede_borrarse = True
         msg = ''
         
-        personal_interno = self.get_active(db=db, id=personal_interno_id)
+        personal_interno = self.get_active(db=db, id=db_obj_id)
         if not personal_interno:
             puede_borrarse = False
-            msg=f"Persona no encontrada con DNI {personal_interno_id}"
+            msg=f"Persona no encontrada con DNI {db_obj_id}"
         
         return puede_borrarse, msg
     ### End of Functions override section
