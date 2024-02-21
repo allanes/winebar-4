@@ -35,7 +35,9 @@ def handle_create_personal_interno(
     db: Session = Depends(deps.get_db),
     personal_interno_in: schemas.PersonalInternoCreate
 ):
-    personal_interno, fue_creada, error_msg = crud.personal_interno.create(db=db, personal_in=personal_interno_in)
+    personal_interno, fue_creada, error_msg = crud.personal_interno.create_or_reactivate(
+        db=db, obj_in=personal_interno_in
+    )
     if not fue_creada:
         raise HTTPException(status_code=404, detail=error_msg)
 
@@ -45,13 +47,12 @@ def handle_create_personal_interno(
 def handle_entregar_tarjeta(
     *,
     db: Session = Depends(deps.get_db),
-    personal_interno_id: int,
-    tarjeta_id: int
+    asosiacion: schemas.PersonalInternoYTarjeta
 ):
     (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
         db=db, 
-        personal_id=personal_interno_id, 
-        tarjeta_id=tarjeta_id
+        personal_id=asosiacion.personal_id, 
+        tarjeta_id=asosiacion.tarjeta_id
     )
 
     if not pudo_entregarse:

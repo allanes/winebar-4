@@ -3,3 +3,4 @@
 postgres_data
 __pycache__
 .aider*
+*.ipynb
