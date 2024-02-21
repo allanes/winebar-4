@@ -35,11 +35,9 @@ def create_tarjeta(
     db: Session = Depends(deps.get_db),
     tarjeta_in: schemas.TarjetaCreate
 ):
-    puede_crearse, msg = crud.tarjeta.check_puede_ser_creada(db=db, tarjeta_in=tarjeta_in)
-    if not puede_crearse:
+    tarjeta, fue_creada, msg = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
+    if not fue_creada:
         raise HTTPException(status_code=404, detail=msg)
-    
-    tarjeta = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
     
     return tarjeta
 
@@ -62,9 +60,7 @@ def delete_tarjeta(
     db: Session = Depends(deps.get_db),
     id: int
 ):
-    puede_borrarse, msg = crud.tarjeta.check_puede_ser_borrada(db=db, id_tarjeta=id)
-    if not puede_borrarse:
+    tarjeta, fue_borrada, msg = crud.tarjeta.deactivate(db=db, id=id)
+    if not fue_borrada:
         raise HTTPException(status_code=404, detail=msg)
-
-    tarjeta = crud.tarjeta.remove(db=db, id=id)
     return tarjeta
