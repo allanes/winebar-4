@@ -13,16 +13,10 @@ from . import crud_rol
 
 
 class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]):
-    def get(self, db: Session, id: int) -> Optional[Tarjeta]:
-        return super().get_active(db=db, id=id)
-    
     def get_by_raw_rfid(self, db: Session, raw_rfid: str) -> Optional[Tarjeta]:
         # Check if a Tarjeta has to be created or updated (based on 'activa')
         raw_rfid_transformado = clean_tarjeta_id(raw_rfid)
         return super().get_active(db=db, id=raw_rfid_transformado)        
-
-    def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[Tarjeta]:
-        return super().get_multi_active(db=db, skip=skip, limit=limit)
         
     # def get_by_email(self, db: Session, *, email: str) -> Optional[Tarjeta]:
     #     return db.query(Tarjeta).filter(Tarjeta.email == email).first()

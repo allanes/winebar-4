@@ -65,7 +65,9 @@ def handle_devolver_tarjeta(
     db: Session = Depends(deps.get_db),
     tarjeta_id: int
 ):
-    tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(db=db, tarjeta_id=tarjeta_id)
+    tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(
+        db=db, tarjeta_id=tarjeta_id
+    )
     if not fue_devuelta:
         raise HTTPException(status_code=404, detail=msg)
     return tarjeta_devuelta
@@ -81,7 +83,9 @@ def handle_update_personal_interno(
     if not personal_interno:
         raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
     
-    personal_interno = crud.personal_interno.update(db=db, db_obj=personal_interno, obj_in=personal_interno_in)
+    personal_interno = crud.personal_interno.update(
+        db=db, db_obj=personal_interno, obj_in=personal_interno_in
+    )
     return personal_interno
 
 @router.delete("/{id}", response_model=schemas.PersonalInterno)
@@ -90,9 +94,11 @@ def handle_delete_personal_interno(
     db: Session = Depends(deps.get_db),
     id: int
 ):
-    puede_borrarse, msg = crud.personal_interno.check_puede_ser_borrada(db=db, personal_interno_id=id)
+    puede_borrarse, msg = crud.personal_interno.check_puede_ser_borrada(
+        db=db, personal_interno_id=id
+    )
     if not puede_borrarse:
         raise HTTPException(status_code=404, detail=msg)
     
-    personal_interno = crud.personal_interno.remove(db=db, id=id)
+    personal_interno = crud.personal_interno.deactivate(db=db, id=id)
     return personal_interno

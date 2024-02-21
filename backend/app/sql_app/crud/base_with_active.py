@@ -17,6 +17,14 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
     
     def get_multi_active(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
         return db.query(self.model).filter(self.model.activa == True).offset(skip).limit(limit).all()
+    
+    def get_multi(
+            self, db: Session, *, only_active:int = True, skip: int = 0, limit: int = 100
+        ) -> List[ModelType]:
+        if only_active:
+            return self.get_multi_active(db=db, skip=skip, limit=limit)
+        
+        return db.query(self.model).offset(skip).limit(limit).all()
 
     def deactivate(self, db: Session, id: int) -> tuple[Optional[ModelType], bool, str]:
         """Deactivate a record and apply deactivation defaults."""
