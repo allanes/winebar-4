@@ -1,4 +1,4 @@
-from typing import Optional, Type, List, Any
+from typing import Dict, Optional, Type, List, Any
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.inspection import inspect
@@ -25,12 +25,41 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
             return self.get_multi_active(db=db, skip=skip, limit=limit)
         
         return db.query(self.model).offset(skip).limit(limit).all()
+    
+    def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
+        # obj_in_data = jsonable_encoder(obj_in)
+        # db_obj = self.model(**obj_in_data)  # type: ignore
+        db_obj = self.model()
+        db_obj = self.apply_activation_defaults(
+            obj_in=obj_in, db_obj=db_obj, db=db
+        )
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+    
+    def update(self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType | Dict[str, Any]) -> ModelType:
+        obj_data = jsonable_encoder(db_obj)
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.dict(exclude_unset=True)
+        for field in obj_data:
+            if field in update_data:
+                setattr(db_obj, field, update_data[field])
+        db_obj = self.apply_activation_defaults(
+            obj_in=obj_in, db_obj=db_obj, db=db
+        )
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
 
     def deactivate(self, db: Session, id: int) -> tuple[Optional[ModelType], bool, str]:
         """Deactivate a record and apply deactivation defaults."""
         obj = self.get(db=db, id=id)
         if obj:
-            check_passed, message = self.pre_deactivate_checks(obj)
+            check_passed, message = self.pre_deactivate_checks(db_obj_id=obj.id, db=db)
             if not check_passed:
                 return None, False, message
             
@@ -53,34 +82,33 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
             if not check_passed:
                 return None, False, message  # Check failed, return with failure message
             
-            self.apply_activation_defaults(existing_inactive)
             updated_obj = self.update(db=db, db_obj=existing_inactive, obj_in=obj_in)
-            db.commit()
             return updated_obj, True, ""  # Successful update
         else:
             # Have to create
-            check_passed, message = self.pre_create_checks(obj_in)
+            check_passed, message = self.pre_create_checks(
+                db=db,
+                obj_in=obj_in
+            )
             if not check_passed:
                 return None, False, message
                 
             created_obj = self.create(db=db, obj_in=obj_in)
-            self.apply_activation_defaults(obj=created_obj)
-            db.commit()
-            db.refresh(created_obj)
             return created_obj, True, ""  # Successful creation
 
-    def apply_deactivation_defaults(self, obj: ModelType) -> None:
+    def apply_deactivation_defaults(self, obj: ModelType, db: Session = None) -> None:
         """Apply default values upon deactivation of a record."""
         # Generic implementation; specific models can override this
         obj.activa = False  # Reactivate the record
         
 
-    def apply_activation_defaults(self, obj: ModelType) -> None:
+    def apply_activation_defaults(self, obj_in: CreateSchemaType | UpdateSchemaType, db_obj: ModelType, db: Session = None) -> ModelType:
         """Set default values upon reactivation of a record."""
         # Generic implementation; specific models can override this
-        obj.activa = True  # Reactivate the record
-
-    def pre_create_checks(self, obj_in: CreateSchemaType) -> tuple[bool, str]:
+        db_obj.activa = True  # Reactivate the record
+        return db_obj
+    
+    def pre_create_checks(self, obj_in: CreateSchemaType, db: Session = None) -> tuple[bool, str]:
         """
         Perform specific logic checks before creating a new record.
         This method should be overridden in subclasses with specific validation logic.
@@ -90,7 +118,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         """
         return True, ""  # Default implementation always passes. Override in subclasses.
 
-    def pre_reactivate_checks(self, db_obj: ModelType, obj_in: CreateSchemaType | UpdateSchemaType) -> tuple[bool, str]:
+    def pre_reactivate_checks(self, db_obj: ModelType, obj_in: CreateSchemaType | UpdateSchemaType, db: Session = None) -> tuple[bool, str]:
         """
         Perform specific logic checks before updating an existing record.
         This method should be overridden in subclasses with specific validation logic.
@@ -100,7 +128,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         """
         return True, ""  # Default implementation always passes. Override in subclasses.
 
-    def pre_deactivate_checks(self, db_obj_id: int) -> tuple[bool, str]:
+    def pre_deactivate_checks(self, db_obj_id: int, db: Session = None) -> tuple[bool, str]:
         """
         Perform specific logic checks before deactivating an existing record.
         This method should be overridden in subclasses with specific validation logic.

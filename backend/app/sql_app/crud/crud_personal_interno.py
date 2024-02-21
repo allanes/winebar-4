@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional, List
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 
 from sqlalchemy.orm import Session
 
@@ -14,19 +15,30 @@ from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
-    def apply_deactivation_defaults(self, obj: PersonalInterno) -> None:
+    def apply_deactivation_defaults(self, obj: PersonalInterno, db: Session = None) -> None:
         obj.activa = False
         # super().apply_deactivation_defaults(personal_obj) # mismo que la linea de arriba
         obj.tarjeta_id = None
         obj.contraseña = obtener_pass_de_deactivacion()
 
-    def apply_activation_defaults(self, obj: PersonalInterno) -> None:
+    def apply_activation_defaults(
+            self, 
+            obj_in: PersonalInternoCreate | PersonalInternoUpdate, 
+            db_obj: PersonalInterno, 
+            db: Session = None
+        ) -> PersonalInterno:
         # super().apply_activation_defaults(obj)
-        obj.activa = True # mismo que la linea de arriba
-        obj.usuario = crear_nombre_usuario(usuario_in=obj)
-        obj.contraseña = hashear_contra(usuario_in=obj)
+        db_obj.id = obj_in.id
+        db_obj.usuario = crear_nombre_usuario(usuario_in=obj_in)
+        db_obj.nombre = obj_in.nombre
+        db_obj.contraseña = hashear_contra(usuario_in=obj_in)
+        db_obj.apellido = obj_in.apellido
+        db_obj.telefono = obj_in.telefono
+        db_obj.activa = True # mismo que la linea de arriba
+        db_obj.tarjeta_id = None
+        return db_obj
             
-    def pre_create_checks(self, db: Session, obj_in: PersonalInternoCreate) -> tuple[bool, str]:
+    def pre_create_checks(self, obj_in: PersonalInternoCreate, db: Session = None) -> tuple[bool, str]:
         puede_crearse = True
         msg = ''
         
@@ -36,7 +48,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
 
         return puede_crearse, msg
         
-    def pre_deactivate_checks(self, db: Session, db_obj_id: int) -> tuple[bool, str]:
+    def pre_deactivate_checks(self, db_obj_id: int, db: Session = None) -> tuple[bool, str]:
         puede_borrarse = True
         msg = ''
         

@@ -43,35 +43,6 @@ def handle_create_personal_interno(
 
     return personal_interno
 
-@router.post("/entregar-tarjeta", response_model=schemas.PersonalInterno)
-def handle_entregar_tarjeta(
-    *,
-    db: Session = Depends(deps.get_db),
-    asosiacion: schemas.PersonalInternoYTarjeta
-):
-    (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
-        db=db, 
-        personal_id=asosiacion.personal_id, 
-        tarjeta_id=asosiacion.tarjeta_id
-    )
-
-    if not pudo_entregarse:
-        raise HTTPException(status_code=404, detail=msg)
-    return personal_interno
-
-@router.post("/devolver-tarjeta", response_model=schemas.Tarjeta)
-def handle_devolver_tarjeta(
-    *,
-    db: Session = Depends(deps.get_db),
-    tarjeta_id: int
-):
-    tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(
-        db=db, tarjeta_id=tarjeta_id
-    )
-    if not fue_devuelta:
-        raise HTTPException(status_code=404, detail=msg)
-    return tarjeta_devuelta
-
 @router.put("/{id}", response_model=schemas.PersonalInterno)
 def handle_update_personal_interno(
     *,
@@ -94,11 +65,38 @@ def handle_delete_personal_interno(
     db: Session = Depends(deps.get_db),
     id: int
 ):
-    puede_borrarse, msg = crud.personal_interno.check_puede_ser_borrada(
-        db=db, personal_interno_id=id
-    )
-    if not puede_borrarse:
-        raise HTTPException(status_code=404, detail=msg)
+    personal_interno, fue_creado, msj = crud.personal_interno.deactivate(db=db, id=id)
+    if not fue_creado:
+        raise HTTPException(status_code=404, detail=msj)
     
-    personal_interno = crud.personal_interno.deactivate(db=db, id=id)
     return personal_interno
+
+# @router.post("/entregar-tarjeta", response_model=schemas.PersonalInterno)
+# def handle_entregar_tarjeta(
+#     *,
+#     db: Session = Depends(deps.get_db),
+#     asosiacion: schemas.PersonalInternoYTarjeta
+# ):
+#     (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
+#         db=db, 
+#         personal_id=asosiacion.personal_id, 
+#         tarjeta_id=asosiacion.tarjeta_id
+#     )
+
+#     if not pudo_entregarse:
+#         raise HTTPException(status_code=404, detail=msg)
+#     return personal_interno
+
+# @router.post("/devolver-tarjeta", response_model=schemas.Tarjeta)
+# def handle_devolver_tarjeta(
+#     *,
+#     db: Session = Depends(deps.get_db),
+#     tarjeta_id: int
+# ):
+#     tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(
+#         db=db, tarjeta_id=tarjeta_id
+#     )
+#     if not fue_devuelta:
+#         raise HTTPException(status_code=404, detail=msg)
+#     return tarjeta_devuelta
+
