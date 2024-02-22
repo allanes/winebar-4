@@ -51,19 +51,25 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         msg = ''
         tarjeta_in = obj_in
         
+        ## Reviso si existe el rol
         rol_en_db = crud_rol.rol.get_by_name(db=db, name=tarjeta_in.rol_nombre)
         if not rol_en_db:
-            puede_crearse = False
             msg = f"Rol '{tarjeta_in.rol_nombre}' no encontrado"
-        else:
-            try:
-                preexiste_tarjeta = self.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
-                if preexiste_tarjeta:
-                    puede_crearse = False
-                    msg = f"La tarjeta ya existe"
-            except ValueError:
-                puede_crearse = False
-                msg = f"Tarjeta inválida"
+            return False, msg
+        
+        ## La busco entre las tarjetas activas. Si existe, retorna
+        preexiste_tarjeta = None
+        try:
+            preexiste_tarjeta = self.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
+        except ValueError:
+            msg = f"Tarjeta inválida"
+            return False, msg
+        
+        if preexiste_tarjeta:
+            msg = f"La tarjeta ya existe"
+            return False, msg
+
+        ## Reviso si tiene orden abierta
         
         return puede_crearse, msg
     
@@ -77,15 +83,16 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
             puede_borrarse = False
             msg = "Tarjeta no encontrada"
             return puede_borrarse, msg
-        else:
-            if tarjeta_in_db.entregada:
-                puede_borrarse = False
-                msg = "La tarjeta está entregada. Debe ser devuelta primero"
-                return puede_borrarse, msg
-            if tarjeta_in_db.presente_en_salon:
-                puede_borrarse = False
-                msg = "La tarjeta está siendo usada en el salón"
-                return puede_borrarse, msg
+        
+        if tarjeta_in_db.entregada:
+            puede_borrarse = False
+            msg = "La tarjeta está entregada. Debe ser devuelta primero"
+            return puede_borrarse, msg
+        
+        if tarjeta_in_db.presente_en_salon:
+            puede_borrarse = False
+            msg = "La tarjeta está siendo usada en el salón"
+            return puede_borrarse, msg
         
         return puede_borrarse, msg
     

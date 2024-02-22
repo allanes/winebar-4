@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 from .tarjeta import Tarjeta
+import schemas
 
 # Shared properties
 class PersonalInternoBase(BaseModel):
@@ -31,7 +32,7 @@ class PersonalInternoInDBBase(PersonalInternoBase):
 
 # Properties to return to client
 class PersonalInterno(PersonalInternoInDBBase):
-    pass
+    tarjeta: Optional[schemas.Tarjeta] = None
 
 # Properties stored in DB
 class PersonalInternoInDB(PersonalInternoInDBBase):

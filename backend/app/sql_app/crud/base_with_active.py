@@ -113,6 +113,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
     def pre_create_checks(self, obj_in: CreateSchemaType, db: Session = None) -> tuple[bool, str]:
         """
         Perform specific logic checks before creating a new record.
+        Logic should assume the new object is not retrieved by self.get_inactive
         This method should be overridden in subclasses with specific validation logic.
         
         Returns:

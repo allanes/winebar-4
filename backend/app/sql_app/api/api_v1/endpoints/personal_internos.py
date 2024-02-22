@@ -71,32 +71,32 @@ def handle_delete_personal_interno(
     
     return personal_interno
 
-# @router.post("/entregar-tarjeta", response_model=schemas.PersonalInterno)
-# def handle_entregar_tarjeta(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     asosiacion: schemas.PersonalInternoYTarjeta
-# ):
-#     (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
-#         db=db, 
-#         personal_id=asosiacion.personal_id, 
-#         tarjeta_id=asosiacion.tarjeta_id
-#     )
+@router.post("/entregar-tarjeta", response_model=schemas.PersonalInterno)
+def handle_entregar_tarjeta(
+    *,
+    db: Session = Depends(deps.get_db),
+    asosiacion: schemas.PersonalInternoYTarjeta
+):
+    (personal_interno, pudo_entregarse, msg) = crud.personal_interno.entregar_tarjeta_a_personal(
+        db=db, 
+        personal_id=asosiacion.personal_id, 
+        tarjeta_id=asosiacion.tarjeta_id
+    )
 
-#     if not pudo_entregarse:
-#         raise HTTPException(status_code=404, detail=msg)
-#     return personal_interno
+    if not pudo_entregarse:
+        raise HTTPException(status_code=404, detail=msg)
+    return personal_interno
 
-# @router.post("/devolver-tarjeta", response_model=schemas.Tarjeta)
-# def handle_devolver_tarjeta(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     tarjeta_id: int
-# ):
-#     tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.devolver_tarjeta_de_personal(
-#         db=db, tarjeta_id=tarjeta_id
-#     )
-#     if not fue_devuelta:
-#         raise HTTPException(status_code=404, detail=msg)
-#     return tarjeta_devuelta
+@router.post("/devolver-tarjeta", response_model=schemas.Tarjeta)
+def handle_devolver_tarjeta(
+    *,
+    db: Session = Depends(deps.get_db),
+    tarjeta_id: int
+):
+    tarjeta_devuelta, fue_devuelta, msg = crud.personal_interno.personal_devuelve_tarjeta_a_banca(
+        db=db, tarjeta_id=tarjeta_id
+    )
+    if not fue_devuelta:
+        raise HTTPException(status_code=404, detail=msg)
+    return tarjeta_devuelta
 

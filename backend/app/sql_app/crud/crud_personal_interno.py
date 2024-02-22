@@ -79,7 +79,8 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         if personal_interno:
             # Devuelvo tarjeta anterior
             tarjeta_vieja = personal_interno.tarjeta_id
-            crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_vieja)
+            if tarjeta_vieja:
+                crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_vieja)
             # Update the tarjeta_id field with new card
             personal_interno.tarjeta_id = tarjeta_id
             # Retrieve the tarjeta and set entregada to true
@@ -118,9 +119,9 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             return False, msg_puede_usarse
         
         # If all checks pass, the tarjeta can be associated
-        return True, "La tarjeta puede ser entregada."
+        return True, ''
     
-    def devolver_tarjeta_de_personal(self, db: Session, tarjeta_id: int) -> tuple[Tarjeta, bool, str]:
+    def personal_devuelve_tarjeta_a_banca(self, db: Session, tarjeta_id: int) -> tuple[Tarjeta, bool, str]:
         # Step 1: Clear any existing association with the tarjeta_id
         existing_associations = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id).all()
         for personal in existing_associations:
