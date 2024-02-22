@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 from .tarjeta import Tarjeta
-import schemas
+from sql_app import schemas
 
 # Shared properties
 class PersonalInternoBase(BaseModel):
