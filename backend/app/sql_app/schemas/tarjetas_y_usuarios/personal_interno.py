@@ -9,7 +9,7 @@ class PersonalInternoBase(BaseModel):
     id: int
     nombre: str
     apellido: str
-    telefono: Optional[str]
+    telefono: Optional[str] = None
 
 # Properties to receive on item creation
 class PersonalInternoCreate(PersonalInternoBase):
@@ -17,9 +17,9 @@ class PersonalInternoCreate(PersonalInternoBase):
         
 # Properties to receive on item update
 class PersonalInternoUpdate(BaseModel):
-    nombre: Optional[str]
-    apellido: Optional[str]
-    contra_sin_hash: Optional[str]
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    contra_sin_hash: Optional[str] = None
 
 # Properties shared by models stored in DB
 class PersonalInternoInDBBase(PersonalInternoBase):
