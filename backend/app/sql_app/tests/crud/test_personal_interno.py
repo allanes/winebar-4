@@ -36,6 +36,7 @@ def setup_and_teardown_db():
     try:
         # Delete the PersonalInterno record after all tests
         db_session.query(PersonalInterno).filter(PersonalInterno.id == 123).delete()
+        db_session.query(Tarjeta).filter(Tarjeta.id == 1).delete()
         db_session.commit()
     finally:
         next(db_generator, None)
@@ -49,6 +50,14 @@ def personal_interno_data():
         "apellido": "Doe",
         "telefono": "1234567890",
         "contra_sin_hash": "contra"
+    }
+
+@pytest.fixture(scope="class")
+def tarjeta_data():
+    """Fixture to provide personal interno data for test methods."""
+    return {
+        "raw_rfid": "1", 
+        "rol_nombre": "ADMIN"
     }
 
 @pytest.fixture(scope="class")
@@ -121,151 +130,40 @@ class TestCRUDPersonalInterno:
         assert personal_interno is None
         assert success is False
 
-    # Deactivate a personal interno with associated tarjeta
-    # def test_deactivate_personal_interno_with_associated_tarjeta(self, db_session: Session):
-    #     # Step 1: Create a personal interno with an associated tarjeta
-    #     personal_interno_data = {
-    #         "id": 123,
-    #         "nombre": "John",
-    #         "apellido": "Doe",
-    #         "telefono": "1234567890"
-    #     }
-    #     personal_interno = CRUDPersonalInterno(PersonalInterno).create(db=db_session, obj_in=personal_interno_data)
-    
-    #     tarjeta_data = {
-    #         "id": 456,
-    #         "entregada": True,
-    #         "monto_precargado": 100
-    #     }
-    #     tarjeta = crud_tarjeta.tarjeta.create(db=db_session, obj_in=tarjeta_data)
-    
-    #     personal_interno = CRUDPersonalInterno(PersonalInterno).entregar_tarjeta_a_personal(db=db_session, personal_id=personal_interno.id, tarjeta_id=tarjeta.id)[0]
-    
-    #     assert personal_interno.tarjeta_id == tarjeta.id
-    
-    #     # Step 2: Deactivate the personal interno
-    #     deactivated_personal_interno, success, error_msg = CRUDPersonalInterno(PersonalInterno).deactivate(db=db_session, id=personal_interno.id)
-    
-    #     assert success is True
-    #     assert error_msg == ""
-    
-    #     # Step 3: Check if the personal interno is deactivated and the associated tarjeta is returned to the bank
-    #     assert deactivated_personal_interno.activa is False
-    #     assert deactivated_personal_interno.tarjeta_id is None
-    
-    #     tarjeta = crud_tarjeta.tarjeta.get(db=db_session, id=tarjeta.id)
-    #     assert tarjeta.entregada is False
-    #     assert tarjeta.monto_precargado == 0
+    # can entregar_tarjeta_a_personal with valid data
+    def test_entregar_tarjeta_a_personal_with_valid_data(
+        self, db_session: Session, personal_interno_data: dict, tarjeta_data: dict
+    ):
+        # Create a new tarjeta
+        crud_tarjeta = CRUDTarjeta(Tarjeta)
+        tarjeta_in = TarjetaCreate(**tarjeta_data)
+        tarjeta, pudo_crearse, msg = crud_tarjeta.create_or_reactivate(db=db_session, obj_in=tarjeta_in)
+        assert pudo_crearse == True
 
-    # # cannot deactivate a non-existing personal interno
-    # def test_cannot_deactivate_non_existing_personal_interno(self, db_session: Session, non_existing_id: int):
-    #     # Arrange
-    #     crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
+        # Entregar the tarjeta to the personal interno
+        crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
+        personal_interno_entregado, pudo_entregarse, msg = crud_personal_interno.entregar_tarjeta_a_personal(
+            db=db_session, personal_id=personal_interno_data['id'], tarjeta_id=tarjeta.id
+        )
+        assert pudo_entregarse == True
+        assert personal_interno_entregado.tarjeta_id == tarjeta.id
+
+    def test_devolver_tarjeta_de_personal(
+        self, db_session: Session, tarjeta_data: dict, personal_interno_data: dict
+    ):
+        # Retrieve the tarjeta under test
+        crud_tarjeta = CRUDTarjeta(Tarjeta)
+        tarjeta_in_db = crud_tarjeta.get_active(
+            db=db_session, id=tarjeta_data['raw_rfid'])
+        assert tarjeta_in_db is not None
         
-    #     # Act
-    #     result, success, message = crud_personal_interno.deactivate(db=db_session, id=non_existing_id)
-
-    #     # Assert
-    #     assert result is None
-    #     assert success is False
-    #     assert message == "Objeto no encontrado para deshabilitar"
-
-    # # cannot entregar_tarjeta_a_personal with invalid personal_id
-    # def test_cannot_entregar_tarjeta_a_personal_with_invalid_personal_id(self, db_session: Session):
-    #     # Arrange
-    #     crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
-    
-    #     # Act
-    #     personal_interno, success, message = crud_personal_interno.entregar_tarjeta_a_personal(db=db_session, personal_id=999, tarjeta_id=123)
-    
-    #     # Assert
-    #     assert personal_interno is None
-    #     assert success is False
-    #     assert message == "Persona no encontrada con DNI 999"
-
-    # # cannot entregar_tarjeta_a_personal with invalid tarjeta_id
-    # def test_cannot_entregar_tarjeta_a_personal_with_invalid_tarjeta_id(self, db_session: Session):
-    #     # Arrange
-    #     crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
-    #     personal_id = 123
-    #     tarjeta_id = 456
-    
-    #     # Act
-    #     result = crud_personal_interno.entregar_tarjeta_a_personal(db=db_session, personal_id=personal_id, tarjeta_id=tarjeta_id)
-    
-    #     # Assert
-    #     assert result[0] is None
-    #     assert result[1] is False
-    #     assert result[2] == "Persona no encontrada con DNI 123"
-
-    # # cannot personal_devuelve_tarjeta_a_banca with invalid tarjeta_id
-    # def test_personal_devuelve_tarjeta_a_banca_with_invalid_tarjeta_id(self, db_session: Session):
-    #     # Arrange
-    #     crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
-    #     invalid_tarjeta_id = 9999
-
-    #     # Act
-    #     tarjeta, success, error_msg = crud_personal_interno.personal_devuelve_tarjeta_a_banca(db=db_session, tarjeta_id=invalid_tarjeta_id)
-
-    #     # Assert
-    #     assert tarjeta is None
-    #     assert success is False
-    #     assert error_msg == "Tarjeta no encontrada con ID 9999"
-
-    # # can entregar_tarjeta_a_personal with valid data
-    # def test_entregar_tarjeta_a_personal_with_valid_data(self, db_session: Session):
-    #     # Step 1: Create a new PersonalInterno
-    #     personal_interno_create = PersonalInternoCreate(
-    #         id=123,
-    #         nombre="John",
-    #         apellido="Doe",
-    #         telefono="123456789"
-    #     )
-    #     personal_interno = CRUDPersonalInterno(PersonalInterno).create(db=db_session, obj_in=personal_interno_create)
-
-    #     # Step 2: Create a new Tarjeta
-    #     tarjeta_create = TarjetaCreate(
-    #         id=456,
-    #         monto_precargado=100,
-    #         entregada=False
-    #     )
-    #     tarjeta = CRUDTarjeta(Tarjeta).create(db=db_session, obj_in=tarjeta_create)
-
-    #     # Step 3: Associate the Tarjeta with the PersonalInterno
-    #     result, success, message = CRUDPersonalInterno(PersonalInterno).entregar_tarjeta_a_personal(
-    #         db=db_session,
-    #         personal_id=personal_interno.id,
-    #         tarjeta_id=tarjeta.id
-    #     )
-
-    #     # Step 4: Check the results
-    #     assert success is True
-    #     assert message == ""
-    #     assert result is not None
-    #     assert result.tarjeta_id == tarjeta.id
-    #     assert tarjeta.entregada is True
-
-    # # can personal_devuelve_tarjeta_a_banca with valid data
-    # def test_personal_devuelve_tarjeta_a_banca_with_valid_data(self, db_session: Session):
-    #     # Step 1: Create a personal_interno with an associated tarjeta
-    #     personal_interno_create = PersonalInternoCreate(
-    #         id=123,
-    #         nombre="John",
-    #         apellido="Doe",
-    #         telefono="123456789",
-    #         tarjeta_id=1
-    #     )
-    #     personal_interno = CRUDPersonalInterno(PersonalInterno).create(db=db_session, obj_in=personal_interno_create)
-
-    #     # Step 2: Call personal_devuelve_tarjeta_a_banca with the tarjeta_id
-    #     tarjeta_devuelta, success, error = CRUDPersonalInterno(PersonalInterno).personal_devuelve_tarjeta_a_banca(db=db_session, tarjeta_id=1)
-
-    #     # Step 3: Assert that the tarjeta is returned and its entregada field is False
-    #     assert success is True
-    #     assert error == ""
-    #     assert tarjeta_devuelta is not None
-    #     assert tarjeta_devuelta.entregada is False
-
-    #     # Step 4: Assert that the personal_interno's tarjeta_id is None
-    #     updated_personal_interno = CRUDPersonalInterno(PersonalInterno).get(db=db_session, id=123)
-    #     assert updated_personal_interno.tarjeta_id is None
+        # Entregar the tarjeta to the personal interno
+        crud_personal_interno = CRUDPersonalInterno(PersonalInterno)
+        tarjeta, pudo_devolverse, msg = crud_personal_interno.personal_devuelve_tarjeta_a_banca(
+            db=db_session, tarjeta_id=tarjeta_data['raw_rfid']
+        )
+        assert pudo_devolverse == True
+        assert tarjeta.id == int(tarjeta_data['raw_rfid'])
+        
+        personal_in_db = crud_personal_interno.get(db=db_session, id=personal_interno_data['id'])
+        assert personal_in_db.tarjeta_id is None
