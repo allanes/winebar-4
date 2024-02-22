@@ -58,20 +58,22 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
     def deactivate(self, db: Session, id: int) -> tuple[Optional[ModelType], bool, str]:
         """Deactivate a record and apply deactivation defaults."""
         obj = self.get(db=db, id=id)
-        if obj:
-            check_passed, message = self.pre_deactivate_checks(db_obj_id=obj.id, db=db)
-            if not check_passed:
-                return None, False, message
-            
-            self.apply_deactivation_defaults(obj)
-            db.commit()
-            db.refresh(obj)
-            return obj, True, ""
+        if obj is None:
+            return None, False, "Objeto no encontrado para deshabilitar"
+        
+        check_passed, message = self.pre_deactivate_checks(db_obj_id=obj.id, db=db)
+        if not check_passed:
+            return None, False, message
+        
+        self.apply_deactivation_defaults(obj=obj, db=db)
+        db.commit()
+        db.refresh(obj)
+        return obj, True, ""
     
     def create_or_reactivate(
-            self, db: Session, *, obj_in: CreateSchemaType
+            self, db: Session, *, obj_in: CreateSchemaType, custom_id_field: str = 'id'
         ) -> tuple[Optional[ModelType], bool, str]:
-        existing_inactive = self.get_inactive(db=db, id=obj_in.id)
+        existing_inactive = self.get_inactive(db=db, id=getattr(obj_in, custom_id_field))
         
         if existing_inactive:
             # Have to reactivate

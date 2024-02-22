@@ -35,7 +35,7 @@ def create_tarjeta(
     db: Session = Depends(deps.get_db),
     tarjeta_in: schemas.TarjetaCreate
 ):
-    tarjeta, fue_creada, msg = crud.tarjeta.create(db=db, obj_in=tarjeta_in)
+    tarjeta, fue_creada, msg = crud.tarjeta.create_or_reactivate(db=db, obj_in=tarjeta_in)
     if not fue_creada:
         raise HTTPException(status_code=404, detail=msg)
     

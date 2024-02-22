@@ -88,6 +88,9 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
                 return puede_borrarse, msg
         
         return puede_borrarse, msg
+    
+    def create_or_reactivate(self, db: Session, *, obj_in: TarjetaCreate) -> tuple[Tarjeta | None, bool, str]:
+        return super().create_or_reactivate(db=db, obj_in=obj_in, custom_id_field='raw_rfid')
     ### End of Functions override section
         
     def get_by_raw_rfid(self, db: Session, raw_rfid: str) -> Optional[Tarjeta]:

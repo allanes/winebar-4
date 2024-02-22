@@ -25,7 +25,7 @@ class TarjetaInDBBase(TarjetaBase):
     id: int
     raw_rfid: str
     activa: bool
-    fecha_alta: datetime
+    fecha_alta: Optional[datetime]
     fecha_ultimo_uso: Optional[datetime]
     entregada: bool
     presente_en_salon: bool
