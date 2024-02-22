@@ -24,7 +24,7 @@ class ClienteInDBBase(ClienteBase):
 
 # Properties to return to client
 class Cliente(ClienteInDBBase):
-    tarjetas: List[Tarjeta] = []
+    tarjeta: Optional[Tarjeta] = None
 
 # Properties stored in DB
 class ClienteInDB(ClienteInDBBase):
