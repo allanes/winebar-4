@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import List, Optional
 
 # Shared properties
@@ -18,9 +18,7 @@ class RolUpdate(BaseModel):
 # Properties shared by models stored in DB
 class RolInDBBase(RolBase):
     id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class Rol(RolInDBBase):

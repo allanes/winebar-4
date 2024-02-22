@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import List, Optional
 from datetime import datetime
 from .rol import Rol
@@ -25,15 +25,13 @@ class TarjetaInDBBase(TarjetaBase):
     id: int
     raw_rfid: str
     activa: bool
-    fecha_alta: Optional[datetime]
-    fecha_ultimo_uso: Optional[datetime]
+    fecha_alta: Optional[datetime] = None
+    fecha_ultimo_uso: Optional[datetime] = None
     entregada: bool
     presente_en_salon: bool
     monto_precargado: float
     rol_id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class Tarjeta(TarjetaInDBBase):

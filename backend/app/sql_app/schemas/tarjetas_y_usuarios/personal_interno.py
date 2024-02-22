@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import List, Optional
 from datetime import datetime
 from .tarjeta import Tarjeta
@@ -13,7 +13,7 @@ class PersonalInternoBase(BaseModel):
 
 # Properties to receive on item creation
 class PersonalInternoCreate(PersonalInternoBase):
-    contra_sin_hash: Optional[str]
+    contra_sin_hash: Optional[str] = None
         
 # Properties to receive on item update
 class PersonalInternoUpdate(BaseModel):
@@ -25,10 +25,7 @@ class PersonalInternoUpdate(BaseModel):
 class PersonalInternoInDBBase(PersonalInternoBase):
     usuario: str
     activa: bool
-    
-    # tarjeta: Tarjeta
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class PersonalInterno(PersonalInternoInDBBase):
@@ -37,7 +34,7 @@ class PersonalInterno(PersonalInternoInDBBase):
 # Properties stored in DB
 class PersonalInternoInDB(PersonalInternoInDBBase):
     contraseña: str
-    tarjeta_id: Optional[int]
+    tarjeta_id: Optional[int] = None
 
 class PersonalInternoYTarjeta(BaseModel):
     personal_id: int

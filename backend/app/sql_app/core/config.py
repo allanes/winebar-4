@@ -1,5 +1,5 @@
 from pydantic import AnyHttpUrl, EmailStr, HttpUrl, validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict, BaseSettings
 from typing import List, Optional, Union, Dict, Any
 import os
 import secrets
@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator('API_V1_STR', pre=True)
     def set_api_v1_str(cls, v, values):
         use_backend_prefix = values.get('USE_BACKEND_PREFIX', True)
@@ -24,6 +26,8 @@ class Settings(BaseSettings):
             return "/backend" + v
         return v
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]], values: Dict[str, Any]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith('['):
@@ -40,6 +44,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         if isinstance(v, str):
@@ -49,8 +55,6 @@ class Settings(BaseSettings):
         server = values.get("POSTGRES_SERVER", "localhost")
         db = values.get("POSTGRES_DB")
         return f"postgresql://{username}:{password}@localhost/{db}"
-
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
