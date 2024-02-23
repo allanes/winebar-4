@@ -19,12 +19,13 @@ class ClienteUpdate(BaseModel):
 # Properties shared by models stored in DB
 class ClienteInDBBase(ClienteBase):
     id: int
-    activa: bool
+    activa: bool    
     model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class Cliente(ClienteInDBBase):
-    tarjeta: Optional[Tarjeta] = None
+    # tarjeta: Optional[Tarjeta] = None
+    pass
 
 # Properties stored in DB
 class ClienteInDB(ClienteInDBBase):

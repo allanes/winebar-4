@@ -5,7 +5,7 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta
 from sql_app.models.tarjetas_y_usuarios import Cliente
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
-from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
+from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
@@ -26,31 +26,41 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         cliente_in: ClienteCreate, 
         tarjeta_id: int, 
         detalles_adicionales_in: DetallesAdicionalesForUI = None
-    ) -> Cliente:
+    ) -> tuple[Cliente | None, bool, str]:
         # Create client
-        cliente_in_db = super().create_or_reactivate(db=db, obj_in=cliente_in)
-
+        # cliente_in_db, fue_creado, msg = super().create_or_reactivate(db=db, obj_in=cliente_in)
+        check_passed, message = self.pre_create_checks(
+            db=db,
+            obj_in=cliente_in
+        )
+        if not check_passed:
+            return None, False, message
+        
+        cliente_in_db = self.create(db=db, obj_in=cliente_in)
+        
         # Create detalles_adicionales
         if detalles_adicionales_in:
             detalles_adicionales_con_id_cliente = DetallesAdicionalesCreate(
                 cliente_id=cliente_in_db.id,
                 **detalles_adicionales_in.model_dump())
             
-            crud_detalles_adicionales.detalles_adicionales.create(
+            detalles_in_db = crud_detalles_adicionales.detalles_adicionales.create(
                 db=db, obj_in=detalles_adicionales_con_id_cliente)
-
+            
         # Create cliente_y_tarjetas asociation
         cliente_con_tarjeta = ClienteOperaConTarjetaCreate(
-            cliente_id=cliente_in_db.id,
+            id_cliente=cliente_in_db.id,
             tarjeta_id=tarjeta_id)
 
         crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.create(
             db=db, obj_in=cliente_con_tarjeta)
         
+        db.refresh(cliente_in_db)
+        
         # Open an order
         # Setup Vitte init
-
-        return cliente_in_db
+        
+        return cliente_in_db, True, ''
 
     def update_with_tarjeta(self, db: Session, *, db_obj: Cliente, obj_in: Union[ClienteUpdate, Dict[str, Any]], tarjeta_id: Optional[int] = None) -> Cliente:
         obj_data = jsonable_encoder(db_obj)

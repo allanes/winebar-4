@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from .tarjeta import Tarjeta
 
 class ClienteOperaConTarjetaBase(BaseModel):
-    cliente_id: int
+    id_cliente: int
     tarjeta_id: int
 
 # Properties to receive on item creation
@@ -15,6 +16,10 @@ class ClienteOperaConTarjetaUpdate(ClienteOperaConTarjetaBase):
 # Properties shared by models stored in DB
 class ClienteOperaConTarjetaInDBBase(ClienteOperaConTarjetaBase):
     id: int
+    id_cliente: int | None
+    tarjeta_id: int | None
+
+    tarjeta: Tarjeta | None
 
 # Properties to return to client
 class ClienteOperaConTarjeta(ClienteOperaConTarjetaInDBBase):

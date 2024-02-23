@@ -59,6 +59,6 @@ class ClienteOperaConTarjeta(Base):
     __tablename__ = 'clientes_y_tarjetas'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_cliente = Column(Integer, ForeignKey('clientes.id'))
-    tarjeta = Column(Integer, ForeignKey('tarjetas.id'))
+    tarjeta_id = Column(Integer, ForeignKey('tarjetas.id'))
     cliente = relationship("Cliente", back_populates="tarjeta")
 
