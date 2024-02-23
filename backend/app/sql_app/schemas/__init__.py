@@ -1,3 +1,6 @@
 from .tarjetas_y_usuarios.rol import Rol, RolCreate, RolInDB, RolUpdate
 from .tarjetas_y_usuarios.tarjeta import Tarjeta, TarjetaCreate, TarjetaInDB, TarjetaUpdate
 from .tarjetas_y_usuarios.personal_interno import PersonalInterno, PersonalInternoCreate, PersonalInternoInDB, PersonalInternoUpdate, PersonalInternoYTarjeta
+from .tarjetas_y_usuarios.cliente import Cliente, ClienteCreate, ClienteInDB, ClienteUpdate
+from .tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesCreate, DetallesAdicionalesInDB, DetallesAdicionalesUpdate, DetallesAdicionalesForUI
+from .tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjeta, ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaInDB, ClienteOperaConTarjetaUpdate

@@ -1,12 +1,15 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class DetallesAdicionalesBase(BaseModel):
+class DetallesAdicionalesForUI(BaseModel):
     dni: Optional[int] = None
     apellido: Optional[str] = None
     email: Optional[str] = None
     teléfono: Optional[str] = None
     domicilio: Optional[str] = None
+
+class DetallesAdicionalesBase(DetallesAdicionalesForUI):
+    cliente_id: int
 
 # Properties to receive on item creation
 class DetallesAdicionalesCreate(DetallesAdicionalesBase):
@@ -18,8 +21,7 @@ class DetallesAdicionalesUpdate(DetallesAdicionalesBase):
 
 # Properties shared by models stored in DB
 class DetallesAdicionalesInDBBase(DetallesAdicionalesBase):
-    id: int
-    cliente_id: int
+    id: int    
 
 # Properties to return to client
 class DetallesAdicionales(DetallesAdicionalesInDBBase):
