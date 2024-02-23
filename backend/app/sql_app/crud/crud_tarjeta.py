@@ -9,111 +9,138 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import Tarjeta, Rol
 from sql_app.schemas.tarjetas_y_usuarios.tarjeta import TarjetaCreate, TarjetaUpdate
 from sql_app.schemas.validators import clean_tarjeta_id
+from . import crud_rol
 
 
 class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]):
-    def get(self, db: Session, id: int) -> Optional[Tarjeta]:
-        return super().get_active(db=db, id=id)
+    ### Functions override section
+    def apply_activation_defaults(
+        self, 
+        obj_in: TarjetaCreate | TarjetaUpdate, 
+        db_obj: Tarjeta, 
+        db: Session = None
+    ) -> Tarjeta:
+        # Recupero el id del rol (asumiendo que ya existe)
+        rol_en_db = db.query(Rol).filter(Rol.nombre_corto == obj_in.rol_nombre).first()
+
+        tarjeta_in = db_obj
+        tarjeta_in.id = clean_tarjeta_id(obj_in.raw_rfid),
+        tarjeta_in.raw_rfid = obj_in.raw_rfid,
+        tarjeta_in.rol_id = rol_en_db.id,
+        tarjeta_in.fecha_alta = datetime.utcnow()
+        tarjeta_in.fecha_ultimo_uso = None
+        tarjeta_in.presente_en_salon = False
+        tarjeta_in.entregada = False
+        tarjeta_in.activa = True
+        tarjeta_in.monto_precargado = -1
+        return tarjeta_in
     
+    def apply_deactivation_defaults(self, obj: Tarjeta, db: Session = None) -> None:
+        self.devolver_a_banca(db=db, id=obj.id)
+        
+        tarjeta_in = obj
+        tarjeta_in.fecha_alta = None
+        tarjeta_in.fecha_ultimo_uso = None
+        tarjeta_in.presente_en_salon = False
+        tarjeta_in.entregada = False
+        tarjeta_in.activa = False
+        tarjeta_in.monto_precargado = -1
+    
+    def pre_create_checks(self, obj_in: TarjetaCreate, db: Session = None) -> tuple[bool, str]:
+        puede_crearse = True
+        msg = ''
+        tarjeta_in = obj_in
+        
+        ## Reviso si existe el rol
+        rol_en_db = crud_rol.rol.get_by_name(db=db, name=tarjeta_in.rol_nombre)
+        if not rol_en_db:
+            msg = f"Rol '{tarjeta_in.rol_nombre}' no encontrado"
+            return False, msg
+        
+        ## La busco entre las tarjetas activas. Si existe, retorna
+        preexiste_tarjeta = None
+        try:
+            preexiste_tarjeta = self.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
+        except ValueError:
+            msg = f"Tarjeta inválida"
+            return False, msg
+        
+        if preexiste_tarjeta:
+            msg = f"La tarjeta ya existe"
+            return False, msg
+
+        ## Reviso si tiene orden abierta
+        
+        return puede_crearse, msg
+    
+    def pre_deactivate_checks(self, db_obj_id: int, db: Session = None) -> tuple[bool, str]:
+        puede_borrarse = True
+        msg = ''
+        id_tarjeta = db_obj_id
+        
+        tarjeta_in_db = self.get(db=db, id=id_tarjeta)
+        if not tarjeta:
+            puede_borrarse = False
+            msg = "Tarjeta no encontrada"
+            return puede_borrarse, msg
+        
+        if tarjeta_in_db.entregada:
+            puede_borrarse = False
+            msg = "La tarjeta está entregada. Debe ser devuelta primero"
+            return puede_borrarse, msg
+        
+        if tarjeta_in_db.presente_en_salon:
+            puede_borrarse = False
+            msg = "La tarjeta está siendo usada en el salón"
+            return puede_borrarse, msg
+        
+        return puede_borrarse, msg
+    
+    def create_or_reactivate(self, db: Session, *, obj_in: TarjetaCreate) -> tuple[Tarjeta | None, bool, str]:
+        return super().create_or_reactivate(db=db, obj_in=obj_in, custom_id_field='raw_rfid')
+    ### End of Functions override section
+        
     def get_by_raw_rfid(self, db: Session, raw_rfid: str) -> Optional[Tarjeta]:
         # Check if a Tarjeta has to be created or updated (based on 'activa')
         raw_rfid_transformado = clean_tarjeta_id(raw_rfid)
         return super().get_active(db=db, id=raw_rfid_transformado)        
-
-    def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[Tarjeta]:
-        return super().get_multi_active(db=db, skip=skip, limit=limit)
         
-    # def get_by_email(self, db: Session, *, email: str) -> Optional[Tarjeta]:
-    #     return db.query(Tarjeta).filter(Tarjeta.email == email).first()
+    def devolver_a_banca(self, db: Session, id: int) -> Tarjeta:
+        db_obj = self.get(db=db, id=id)
+        db_obj.entregada = False
+        db_obj.presente_en_salon = False
+        db_obj.monto_precargado = -1
 
-    def create(self, db: Session, *, obj_in: TarjetaCreate) -> Tarjeta:
-        raw_rfid_transformado = clean_tarjeta_id(obj_in.raw_rfid)
-
-        # Recupero el id del rol (asumiendo que ya existe)
-        rol_en_db = db.query(Rol).filter(Rol.nombre_corto == obj_in.rol_nombre).first()        
-        
-        # Campos adicionales y por defecto
-        campo_id = raw_rfid_transformado
-        campo_raw_rfid = obj_in.raw_rfid
-        campo_id_rol = rol_en_db.id
-        campo_fecha_alta = datetime.utcnow()
-        campo_presente_en_salon = False
-        campo_entregada = False
-        campo_activa = True
-        campo_monto_precargado = -1
-
-        existing_tarjeta = super().get_inactive(db=db, id=campo_id)
-        if existing_tarjeta:
-            existing_tarjeta.rol_id = campo_id_rol
-            existing_tarjeta.raw_rfid = campo_raw_rfid
-            existing_tarjeta.fecha_alta = campo_fecha_alta
-            existing_tarjeta.presente_en_salon = campo_presente_en_salon
-            existing_tarjeta.entregada = campo_entregada
-            existing_tarjeta.activa = campo_activa
-            existing_tarjeta.monto_precargado = campo_monto_precargado
-            db_obj = existing_tarjeta
-        else:
-            db_obj = Tarjeta(
-                id = campo_id,
-                raw_rfid = campo_raw_rfid,
-                rol_id = campo_id_rol,
-                fecha_alta = campo_fecha_alta,
-                fecha_ultimo_uso = None,
-                presente_en_salon = campo_presente_en_salon,
-                entregada = campo_entregada,
-                activa = campo_activa,
-                monto_precargado = campo_monto_precargado,
-            )
-            db.add(db_obj)
-        
         db.commit()
         db.refresh(db_obj)
-        return db_obj
+        return db_obj    
     
-    def remove(self, db: Session, *, id: int) -> Tarjeta:
-        return super().deactivate(db=db, id=id)
+    def check_tarjeta_libre_para_asociar(self, db: Session, id_tarjeta: int) -> bool:
+        puede_asociarse = True
+        msg = ''
+
+        tarjeta_in_db = self.get(db=db, id=id_tarjeta)
+        if tarjeta_in_db is None:
+            puede_asociarse = False
+            msg = "La tarjeta leída no existe. Debe darla de alta antes de asociarla con alguien."
+            return puede_asociarse, msg
+        if tarjeta_in_db.entregada:
+            puede_asociarse = False
+            msg = "La tarjeta ya estaba entregada. El usuario debe devolverla primero"
+            return puede_asociarse, msg
+        if tarjeta_in_db.presente_en_salon:
+            puede_asociarse = False
+            msg = "La tarjeta ya está siendo usada en el salón."
+            return puede_asociarse, msg
+        
+        return puede_asociarse, msg
     
+    def check_tarjeta_puede_ser_quitada_de_personal(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
+        tarjeta = self.get(db=db, id=id_tarjeta)
+        if tarjeta is None:
+            return False, "La tarjeta no existe."
+        if not tarjeta.entregada:
+            return False, "La tarjeta no está marcada como entregada, por lo tanto no puede ser quitada."
+        return True, ""
+
 tarjeta = CRUDTarjeta(Tarjeta)
-
-    # def update(self, db: Session, *, db_obj: Tarjeta, obj_in: TarjetaUpdate | Dict[str, Any]) -> Tarjeta:
-    #     if isinstance(obj_in, dict):
-    #         update_data = obj_in
-    #     else:
-    #         update_data = obj_in.dict(exclude_unset=True)
-        
-    #     quiere_cambiar_presencia = update_data.get("presente_en_salon", None)
-    #     no_esta_entregada = db_obj.entregada==False
-    #     no_esta_para_entregar = update_data.get("entregada", None)
-        
-    #     if quiere_cambiar_presencia and (no_esta_entregada or no_esta_para_entregar): 
-    #         raise HTTPException(status_code=404, detail=f"Para marcar la tarjeta como 'Presente en salón', primero debe entregarla.")
-
-    #     # Set the current timestamp to fecha_ultimo_uso before updating
-    #     update_data["fecha_ultimo_uso"] = datetime.utcnow()
-
-    #     return super().update(db, db_obj=db_obj, obj_in=update_data)
-    
-    # def check_puede_ser_asociada(self, db: Session, id_tarjeta: int) -> bool:
-    #     tarjeta_in_db = self.get(db=db, id=id_tarjeta)
-    #     if tarjeta_in_db is None:
-    #         raise HTTPException(status_code=404, detail="La tarjeta leída no existe. Debe darla de alta antes de asociarla con alguien.")
-    #     if tarjeta_in_db.entregada:
-    #         raise HTTPException(status_code=404, detail="La tarjeta ya estaba entregada. El usuario debe devolverla primero")
-    #     if tarjeta_in_db.presente_en_salon:
-    #         raise HTTPException(status_code=404, detail="La tarjeta ya está siendo usada en el salón.")
-        
-    #     return True
-    
-    # def habilitar_cliente(self, db: Session, tarjeta_id: int) -> None:
-    #     tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
-    #     if tarjeta:
-    #         tarjeta.entregada = True
-    #         tarjeta.presente_en_salon = True
-    #         db.commit()
-
-    # def devolver_al_bar(self, db: Session, tarjeta_id: int) -> None:
-    #     tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
-    #     if tarjeta:
-    #         tarjeta.entregada = False
-    #         tarjeta.presente_en_salon = False
-    #         db.commit()

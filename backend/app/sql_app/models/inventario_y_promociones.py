@@ -15,7 +15,7 @@ class Producto(Base):
     descripcion = Column(String, nullable=True)
     precio = Column(Float, nullable=False)
     ultimo_cambio_precio = Column(DateTime, nullable=False)
-    activo = Column(Boolean, default=True)
+    activa = Column(Boolean, default=True)
     stock = Column(Integer, nullable=False)
     id_menu = Column(Integer, ForeignKey('menues.id'))
     menu = relationship("Menu", back_populates="productos")
