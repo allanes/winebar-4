@@ -7,6 +7,7 @@ from sql_app.models.tarjetas_y_usuarios import Cliente
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
+from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -15,7 +16,20 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         # Check if cliente_in.tarjeta_id can be lended to a client
         # Check if cliente_in.tarjeta_id is available for use in vitte
         return super().pre_create_checks(obj_in, db)
+    
+    def apply_activation_defaults(self, obj_in: ClienteCreate | ClienteUpdate, db_obj: Cliente, db: Session = None) -> Cliente:
+        print('aplicando activation defaults')
+        cliente_in_db = db_obj
+        cliente_in = obj_in
+
+        cliente_in_db.activa = True
+        cliente_in_db.nombre = cliente_in.nombre
+        cliente_in_db.contraseña = hashear_contra(contra_in=cliente_in.contraseña)        
+
+        return cliente_in_db
+    
     ### End of Functions override section
+    
     def get_by_name(self, db: Session, *, name: str) -> Optional[Cliente]:
         return db.query(Cliente).filter(Cliente.nombre == name).first()
 

@@ -31,7 +31,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         db_obj.id = obj_in.id
         db_obj.usuario = crear_nombre_usuario(usuario_in=obj_in)
         db_obj.nombre = obj_in.nombre
-        db_obj.contraseña = hashear_contra(usuario_in=obj_in)
+        db_obj.contraseña = hashear_contra(contra_in=obj_in.contra_sin_hash)
         db_obj.apellido = obj_in.apellido
         db_obj.telefono = obj_in.telefono
         db_obj.activa = True # mismo que la linea de arriba
