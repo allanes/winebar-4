@@ -28,14 +28,14 @@ class Tapa(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
     foto = Column(String, nullable=True)
-    producto = relationship("Producto", back_populates="tapas")
+    producto = relationship("Producto", back_populates="tapa")
 
 class Trago(Base):
     __tablename__ = 'tragos'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
     foto = Column(String, nullable=True)
-    producto = relationship("Producto", back_populates="tragos")
+    producto = relationship("Producto", back_populates="trago")
 
 class Vino(Base):
     __tablename__ = 'vinos'
@@ -46,7 +46,7 @@ class Vino(Base):
     # listado_precios_sugeridos = Column(String, nullable=False)
     # listado_metadatos = Column(String, nullable=False)
     # ultima_sincronizacion = Column(DateTime, nullable=False)
-    producto = relationship("Producto", back_populates="vinos")
+    producto = relationship("Producto", back_populates="vino")
 
 class Promocion(Base):
     __tablename__ = 'promociones'
