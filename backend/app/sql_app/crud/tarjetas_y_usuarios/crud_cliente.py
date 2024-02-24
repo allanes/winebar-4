@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, List, Union
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
-from sql_app.crud import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta
+from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta
 from sql_app.models.tarjetas_y_usuarios import Cliente
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate

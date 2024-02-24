@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from sql_app.api.api_v1.endpoints import roles, tarjetas, personal_internos, clientes
+from sql_app.api.api_v1.endpoints.tarjetas_y_usuarios import roles, tarjetas, personal_internos, clientes
 
 api_router = APIRouter()
 # api_router.include_router(login.router, tags=["login"])
