@@ -19,9 +19,9 @@ class Producto(Base):
     stock = Column(Integer, nullable=False)
     id_menu = Column(Integer, ForeignKey('menues.id'))
     menu = relationship("Menu", back_populates="productos")
-    tapas = relationship("Tapa", back_populates="producto", uselist=False)
-    tragos = relationship("Trago", back_populates="producto", uselist=False)
-    vinos = relationship("Vino", back_populates="producto", uselist=False)
+    tapa = relationship("Tapa", back_populates="producto", uselist=False)
+    trago = relationship("Trago", back_populates="producto", uselist=False)
+    vino = relationship("Vino", back_populates="producto", uselist=False)
 
 class Tapa(Base):
     __tablename__ = 'tapas'
@@ -41,10 +41,11 @@ class Vino(Base):
     __tablename__ = 'vinos'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
-    listado_nombres = Column(String, nullable=False)
-    listado_precios_sugeridos = Column(String, nullable=False)
-    listado_metadatos = Column(String, nullable=False)
-    ultima_sincronizacion = Column(DateTime, nullable=False)
+    id_vitte = Column(String, nullable=True)
+    # listado_nombres = Column(String, nullable=False)
+    # listado_precios_sugeridos = Column(String, nullable=False)
+    # listado_metadatos = Column(String, nullable=False)
+    # ultima_sincronizacion = Column(DateTime, nullable=False)
     producto = relationship("Producto", back_populates="vinos")
 
 class Promocion(Base):
