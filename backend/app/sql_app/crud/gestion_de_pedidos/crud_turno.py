@@ -8,15 +8,6 @@ from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):    
-    def remove(self, db: Session, *, id: int) -> Turno:
-        tapa_in_db = self.get(db=db, id=id)
-        if tapa_in_db is None: return None
-        producto_id = tapa_in_db.id_producto
-        producto_removido, pudo_removerse, msg = crud.producto.deactivate(db=db, id=producto_id)
-        tapa_removida = super().remove(db, id=id)
-        
-        return tapa_removida
-    
     def abrir_turno(self, db: Session, *, turno_in: TurnoCreate) -> Turno:
         turno_in_db = Turno()
         

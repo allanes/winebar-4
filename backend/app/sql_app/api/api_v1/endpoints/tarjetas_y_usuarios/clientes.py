@@ -8,6 +8,17 @@ from sql_app.api import deps
 
 router = APIRouter()
 
+@router.get("7con-tarjeta/{tarjeta_id}", response_model=schemas.ClienteOperaConTarjeta)
+def handle_read_cliente_by_tarjeta_id(
+    tarjeta_id: int,
+    db: Session = Depends(deps.get_db)
+):
+    cliente_con_tarjeta_in_db = crud.cliente_opera_con_tarjeta.get_by_tarjeta_id(db=db, tarjeta_id=tarjeta_id)
+    if cliente_con_tarjeta_in_db is None:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    return cliente_con_tarjeta_in_db
+
 @router.get("/{cliente_id}", response_model=schemas.Cliente)
 def handle_read_cliente_by_id(
     cliente_id: int,
