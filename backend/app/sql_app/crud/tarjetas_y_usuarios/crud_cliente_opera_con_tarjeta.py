@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional, List
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
-from .base import CRUDBase
-from ..models.tarjetas_y_usuarios import ClienteOperaConTarjeta
-from ..schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate
+from ..base import CRUDBase
+from sql_app.models.tarjetas_y_usuarios import ClienteOperaConTarjeta
+from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate
 
 class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate]):
     def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> Optional[ClienteOperaConTarjeta]:

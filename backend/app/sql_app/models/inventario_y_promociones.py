@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from sql_app.db.base import Base  # Ensure this import matches your project structure
+from sql_app.db.base_class import Base  # Ensure this import matches your project structure
 
 class Menu(Base):
     __tablename__ = 'menues'
@@ -19,33 +19,34 @@ class Producto(Base):
     stock = Column(Integer, nullable=False)
     id_menu = Column(Integer, ForeignKey('menues.id'))
     menu = relationship("Menu", back_populates="productos")
-    tapas = relationship("Tapa", back_populates="producto", uselist=False)
-    tragos = relationship("Trago", back_populates="producto", uselist=False)
-    vinos = relationship("Vino", back_populates="producto", uselist=False)
+    tapa = relationship("Tapa", back_populates="producto", uselist=False)
+    trago = relationship("Trago", back_populates="producto", uselist=False)
+    vino = relationship("Vino", back_populates="producto", uselist=False)
 
 class Tapa(Base):
     __tablename__ = 'tapas'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
     foto = Column(String, nullable=True)
-    producto = relationship("Producto", back_populates="tapas")
+    producto = relationship("Producto", back_populates="tapa")
 
 class Trago(Base):
     __tablename__ = 'tragos'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
     foto = Column(String, nullable=True)
-    producto = relationship("Producto", back_populates="tragos")
+    producto = relationship("Producto", back_populates="trago")
 
 class Vino(Base):
     __tablename__ = 'vinos'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
-    listado_nombres = Column(String, nullable=False)
-    listado_precios_sugeridos = Column(String, nullable=False)
-    listado_metadatos = Column(String, nullable=False)
-    ultima_sincronizacion = Column(DateTime, nullable=False)
-    producto = relationship("Producto", back_populates="vinos")
+    id_vitte = Column(String, nullable=True)
+    # listado_nombres = Column(String, nullable=False)
+    # listado_precios_sugeridos = Column(String, nullable=False)
+    # listado_metadatos = Column(String, nullable=False)
+    # ultima_sincronizacion = Column(DateTime, nullable=False)
+    producto = relationship("Producto", back_populates="vino")
 
 class Promocion(Base):
     __tablename__ = 'promociones'
