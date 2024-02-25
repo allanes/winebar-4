@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta
-from sql_app.models.tarjetas_y_usuarios import Cliente
+from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
@@ -91,5 +91,15 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         db.commit()
         db.refresh(db_obj)
         return db_obj
+    
+    def get_by_rfid_card(self, db: Session, *, tarjeta_id: int) -> Cliente:
+        cliente_con_tarjeta_in_db = crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.get_by_tarjeta_id(db=db, tarjeta_id=tarjeta_id)
+        if cliente_con_tarjeta_in_db is None: return None
+
+        cliente_in_db = db.query(Cliente).filter(
+            Cliente.id == cliente_con_tarjeta_in_db.id_cliente
+        ).first()
+
+        return cliente_in_db
 
 cliente = CRUDCliente(Cliente)

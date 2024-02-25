@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from .tarjeta import Tarjeta
+from .cliente import Cliente
 
 class ClienteOperaConTarjetaBase(BaseModel):
     id_cliente: int
@@ -20,6 +21,7 @@ class ClienteOperaConTarjetaInDBBase(ClienteOperaConTarjetaBase):
     tarjeta_id: int | None
 
     tarjeta: Tarjeta | None
+    cliente: Cliente | None
 
 # Properties to return to client
 class ClienteOperaConTarjeta(ClienteOperaConTarjetaInDBBase):

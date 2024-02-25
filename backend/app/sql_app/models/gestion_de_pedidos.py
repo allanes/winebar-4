@@ -53,3 +53,7 @@ class Configuracion(Base):
     monto_maximo_orden_def = Column(Float, nullable=False)
     monto_maximo_pedido_def = Column(Float, nullable=False)
     fecha_ultima_actualizacion = Column(DateTime, nullable=False)
+    vitte_listado_nombres = Column(String, nullable=False)
+    vitte_listado_precios_sugeridos = Column(String, nullable=False)
+    vitte_listado_metadatos = Column(String, nullable=False)
+    vitte_ultima_sincronizacion = Column(DateTime, nullable=False)

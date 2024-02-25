@@ -18,10 +18,10 @@ from sql_app.models.inventario_y_promociones import (
     Vino,
     Promocion,
     ProductoPromocion,
-# # )
-# # from sql_app.models.gestion_de_pedidos import (
-#     Turno,
-#     OrdenCompra,
+)
+from sql_app.models.gestion_de_pedidos import (
+    Turno,
+    OrdenCompra,
 #     Pedido,
 #     Renglon,
 #     Configuracion,

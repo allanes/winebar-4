@@ -12,3 +12,6 @@ from .inventario_y_promociones.vino import Vino, VinoCreate, VinoInDB, VinoUpdat
 from .inventario_y_promociones.trago import Trago, TragoCreate, TragoInDB, TragoUpdate
 from .inventario_y_promociones.promocion import Promocion, PromocionCreate, PromocionInDB, PromocionUpdate
 from .inventario_y_promociones.producto_promocion import ProductoPromocion, ProductoPromocionCreate, ProductoPromocionInDB, ProductoPromocionUpdate
+
+from .gestion_de_pedidos.turno import Turno, TurnoCreate, TurnoInDB, TurnoUpdate
+from .gestion_de_pedidos.orden import OrdenCompra, OrdenCompraAbrir, OrdenCompraCerrar, OrdenCompraInDB, OrdenCompraUpdate, OrdenCompraAbrir
