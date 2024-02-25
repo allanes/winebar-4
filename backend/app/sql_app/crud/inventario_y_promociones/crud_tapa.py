@@ -37,8 +37,7 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
         producto_id = tapa_in_db.id_producto
         producto_removido, pudo_removerse, msg = crud.producto.deactivate(db=db, id=producto_id)
         tapa_removida = super().remove(db, id=id)
-        print(f'tapa_removida: {tapa_removida}')
-        print(f'id_producto: {producto_id}')
+        
         return tapa_removida
 
 
