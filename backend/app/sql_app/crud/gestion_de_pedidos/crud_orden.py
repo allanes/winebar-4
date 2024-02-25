@@ -12,8 +12,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         cliente_in_db = crud.cliente.get_by_rfid_card(db=db, tarjeta_id=tarjeta_id)
         if cliente_in_db is None:
             return None
-        print('cliente in db:')
-        print(cliente_in_db.__dict__)
+        
         orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.cliente_id == cliente_in_db.id).first()
         return orden_in_db
 

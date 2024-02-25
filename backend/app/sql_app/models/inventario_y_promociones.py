@@ -42,10 +42,6 @@ class Vino(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
     id_vitte = Column(String, nullable=True)
-    # listado_nombres = Column(String, nullable=False)
-    # listado_precios_sugeridos = Column(String, nullable=False)
-    # listado_metadatos = Column(String, nullable=False)
-    # ultima_sincronizacion = Column(DateTime, nullable=False)
     producto = relationship("Producto", back_populates="vino")
 
 class Promocion(Base):
