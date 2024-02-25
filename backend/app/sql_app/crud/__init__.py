@@ -5,3 +5,5 @@ from .tarjetas_y_usuarios.crud_cliente import cliente
 
 from .inventario_y_promociones.crud_producto import producto
 from .inventario_y_promociones.crud_tapa import tapa
+
+from .gestion_de_pedidos.crud_turno import turno
