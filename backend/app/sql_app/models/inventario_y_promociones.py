@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from sql_app.db.base import Base  # Ensure this import matches your project structure
+from sql_app.db.base_class import Base  # Ensure this import matches your project structure
 
 class Menu(Base):
     __tablename__ = 'menues'

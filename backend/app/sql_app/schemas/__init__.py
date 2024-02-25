@@ -7,7 +7,7 @@ from .tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjet
 
 from .inventario_y_promociones.menu import Menu, MenuCreate, MenuInDB, MenuUpdate
 from .inventario_y_promociones.producto import Producto, ProductoCreate, ProductoInDB, ProductoUpdate
-from .inventario_y_promociones.tapa import Tapa, TapaCreate, TapaInDB, TapaUpdate
+from .inventario_y_promociones.tapa import Tapa, TapaCreate, TapaInDB, TapaUpdate, TapaConProductoCreate
 from .inventario_y_promociones.vino import Vino, VinoCreate, VinoInDB, VinoUpdate
 from .inventario_y_promociones.trago import Trago, TragoCreate, TragoInDB, TragoUpdate
 from .inventario_y_promociones.promocion import Promocion, PromocionCreate, PromocionInDB, PromocionUpdate

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from sql_app.db.base import Base  # Adjust import based on your setup
+from sql_app.db.base_class import Base  # Adjust import based on your setup
 
 class Turno(Base):
     __tablename__ = 'turnos'

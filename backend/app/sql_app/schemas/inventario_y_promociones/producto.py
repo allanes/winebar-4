@@ -1,5 +1,5 @@
-from typing import Optional, ForwardRef, List, TYPE_CHECKING
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, List, TYPE_CHECKING
+from pydantic import BaseModel, ConfigDict, PydanticUndefinedAnnotation
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -13,6 +13,9 @@ class ProductoBase(BaseModel):
     descripcion: Optional[str] = None
     precio: Optional[float] = None
     stock: Optional[int] = None
+
+    class Config:
+        extra = "allow"
 
 # Properties to receive on item creation
 class ProductoCreate(ProductoBase):
@@ -30,10 +33,10 @@ class ProductoInDBBase(ProductoBase):
     ultimo_cambio_precio: datetime
     id_menu: Optional[int] = None
 
-    tapa: Optional['Tapa'] = None
-    trago: Optional['Trago'] = None
-    vino: Optional['Vino'] = None
-
+    # tapa: Optional['Tapa'] = None
+    # trago: Optional['Trago'] = None
+    # vino: Optional['Vino'] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client

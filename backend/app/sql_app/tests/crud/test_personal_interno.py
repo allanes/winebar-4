@@ -3,12 +3,12 @@ import pytest
 from fastapi import HTTPException
 from pytest import Session
 from sql_app.api import deps
-from sql_app.crud.crud_personal_interno import CRUDPersonalInterno
+from sql_app.crud.tarjetas_y_usuarios.crud_personal_interno import CRUDPersonalInterno
 from sql_app.models.tarjetas_y_usuarios import PersonalInterno
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate
-from sql_app.crud import crud_tarjeta
+# from sql_app.crud import crud_tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.tarjeta import TarjetaCreate
-from sql_app.crud.crud_tarjeta import CRUDTarjeta
+from sql_app.crud.tarjetas_y_usuarios.crud_tarjeta import CRUDTarjeta
 from sql_app.models.tarjetas_y_usuarios import Tarjeta
 
 @pytest.fixture(scope="class")
