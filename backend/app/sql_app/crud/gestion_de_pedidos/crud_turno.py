@@ -7,24 +7,7 @@ from sql_app.schemas.gestion_de_pedidos.turno import TurnoCreate, TurnoUpdate
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
-class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
-    def create(self, db: Session, *, obj_in: TurnoCreate) -> Turno:
-        # obj_in_data = jsonable_encoder(obj_in)
-        # db_obj = self.model(**obj_in_data)  # type: ignore
-        
-        turno_in_db = Turno()
-        turno_in_db.timestamp_apertura = datetime.now()
-        turno_in_db.cantidad_de_ordenes = -1
-        turno_in_db.cantidad_tapas = -1
-        turno_in_db.cantidad_usuarios_vip = -1
-        turno_in_db.ingresos_totales = -1
-        turno_in_db.abierto_por = obj_in.abierto_por
-        
-        db.add(turno_in_db)
-        db.commit()
-        db.refresh(turno_in_db)
-        return turno_in_db
-    
+class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):    
     def remove(self, db: Session, *, id: int) -> Turno:
         tapa_in_db = self.get(db=db, id=id)
         if tapa_in_db is None: return None
@@ -33,6 +16,38 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         tapa_removida = super().remove(db, id=id)
         
         return tapa_removida
+    
+    def abrir_turno(self, db: Session, *, turno_in: TurnoCreate) -> Turno:
+        turno_in_db = Turno()
+        
+        turno_in_db.timestamp_apertura = datetime.now()
+        turno_in_db.cantidad_de_ordenes = -1
+        turno_in_db.cantidad_tapas = -1
+        turno_in_db.cantidad_usuarios_vip = -1
+        turno_in_db.ingresos_totales = -1
+        turno_in_db.abierto_por = turno_in.abierto_por
+
+        turno_in_db = super().create(db=db, obj_in=turno_in_db)
+        
+        return turno_in_db
+    
+    def cerrar_turno(self, db: Session, *, cerrado_por: int) -> Turno:
+        turno_in_db = self.get_open_turno(db=db)
+
+        turno_in_db.cerrado_por = cerrado_por
+        turno_in_db.timestamp_cierre = datetime.now()
+        turno_in_db.cantidad_de_ordenes = 0
+        turno_in_db.cantidad_tapas = 0
+        turno_in_db.cantidad_usuarios_vip = 0
+        turno_in_db.ingresos_totales = 0
+
+        db.commit()
+        db.refresh(turno_in_db)
+        
+        return turno_in_db
+    
+    def get_open_turno(self, db: Session) -> Turno:
+        return db.query(Turno).order_by(Turno.id.desc()).first()
 
 
 turno = CRUDTurno(Turno)

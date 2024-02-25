@@ -29,17 +29,38 @@ def handle_read_turnos(
     # turnos = [turno for turno in turnos if turno.activa==True]
     return turnos
 
-@router.post("/", response_model=schemas.Turno)
-def handle_create_turno_with_tarjeta(
+@router.post("/abrir", response_model=schemas.Turno)
+def handle_abrir_turno(
     *,
     db: Session = Depends(deps.get_db),    
 ):
     ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
     usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
+    ## 
+    turno_in = schemas.TurnoCreate(abierto_por=usuario_id)
     
-    turno = crud.turno.create(
+    turno = crud.turno.abrir_turno(
         db = db, 
-        obj_in = schemas.TurnoCreate(abierto_por=usuario_id)
+        turno_in = turno_in
+    )
+
+    if not turno:
+        raise HTTPException(status_code=404, detail='No se pudo abrir el turno')
+    
+    return turno
+
+@router.post("/cerrar", response_model=schemas.Turno)
+def handle_cerrar_turno(
+    *,
+    db: Session = Depends(deps.get_db),    
+):
+    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
+    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
+    ##
+    
+    turno = crud.turno.cerrar_turno(
+        db = db,
+        cerrado_por = usuario_id
     )
 
     if not turno:
@@ -63,14 +84,4 @@ def handle_update_turno(
     )
     return turno
 
-@router.delete("/{id}", response_model=schemas.Turno)
-def handle_delete_turno(
-    *,
-    db: Session = Depends(deps.get_db),
-    id: int
-):
-    turno = crud.turno.remove(db=db, id=id)
-    if turno is None:
-        raise HTTPException(status_code=404, detail='')
-    
-    return turno
+
