@@ -144,6 +144,27 @@ erDiagram
         pedido_id int
         producto_id int
     }
+    OrdenCompra }--|| Cliente : "belongs to"
+    Cliente ||--o{ ClienteOperaConTarjeta : "operates with"
+    Tarjeta ||--o{ ClienteOperaConTarjeta : "linked to"
+    Producto ||--o{ Renglon : "included in"
+    Pedido ||--o{ Renglon : "contains"
+    OrdenCompra ||--o{ Pedido : "includes"
+    Turno ||--o{ OrdenCompra : "manages"
+    Menu ||--o{ Producto : "contains"
+    Producto ||--|{ Tapa : "is a"
+    Producto ||--|{ Trago : "is a"
+    Producto ||--|{ Vino : "is a"
+    Producto ||--o{ ProductoPromocion : "participates in"
+    Promocion ||--o{ ProductoPromocion : "includes"
+    Rol ||--o{ Tarjeta : "assigns"
+    Cliente ||--o{ DetallesAdicionales : "has"
+    PersonalInterno ||--o{ Tarjeta : "may have"
+    Turno ||--|| PersonalInterno : "opened by"
+    Turno ||--|| PersonalInterno : "closed by"
+    OrdenCompra ||--|| PersonalInterno : "opened by"
+    OrdenCompra ||--|| PersonalInterno : "closed by"
+    Pedido ||--|| PersonalInterno : "attended by"
     Configuracion {
         id int
         monto_maximo_orden_def float
