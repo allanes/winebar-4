@@ -105,4 +105,53 @@ erDiagram
         id_producto int
         id_promocion int
     }
+    Turno {
+        id int
+        timestamp_apertura datetime
+        timestamp_cierre datetime
+        cantidad_de_ordenes int
+        cantidad_tapas int
+        cantidad_usuarios_vip int
+        ingresos_totales float
+        abierto_por int
+        cerrado_por int
+    }
+    OrdenCompra {
+        id int
+        precarga_usada float
+        monto_cobrado float
+        monto_maximo_orden float
+        timestamp_apertura_orden datetime
+        timestamp_cierre_orden datetime
+        turno_id int
+        cliente_id int
+        abierta_por int
+        cerrada_por int
+    }
+    Pedido {
+        id int
+        timestamp_pedido datetime
+        monto_maximo_pedido float
+        orden_id int
+        atendido_por int
+        renglones Renglon[]
+    }
+    Renglon {
+        id int
+        cantidad int
+        monto float
+        promocion_aplicada boolean
+        pedido_id int
+        producto_id int
+    }
+    Configuracion {
+        id int
+        monto_maximo_orden_def float
+        monto_maximo_pedido_def float
+        fecha_ultima_actualizacion datetime
+        vitte_listado_nombres string
+        vitte_listado_precios_sugeridos string
+        vitte_listado_metadatos string
+        vitte_ultima_sincronizacion datetime
+    }
 ```
