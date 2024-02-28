@@ -61,4 +61,48 @@ erDiagram
         id_cliente int
         tarjeta_id int
     }
+    Menu {
+        id int
+        productos Producto[]
+    }
+    Producto {
+        id int
+        titulo string
+        descripcion string
+        precio float
+        ultimo_cambio_precio datetime
+        activa boolean
+        stock int
+        id_menu int
+        tapa Tapa
+        trago Trago
+        vino Vino
+    }
+    Tapa {
+        id int
+        id_producto int
+        foto string
+    }
+    Trago {
+        id int
+        id_producto int
+        foto string
+    }
+    Vino {
+        id int
+        id_producto int
+        id_vitte string
+    }
+    Promocion {
+        id int
+        descuento float
+        vigencia_desde datetime
+        vigencia_hasta datetime
+        productos ProductoPromocion[]
+    }
+    ProductoPromocion {
+        id int
+        id_producto int
+        id_promocion int
+    }
 ```
