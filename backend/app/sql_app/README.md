@@ -34,14 +34,14 @@ erDiagram
     Cliente {
         id int
         nombre string
-        contraseña string
+        contrasena string
         activa boolean
     }
     PersonalInterno {
         id int
         usuario string
         nombre string
-        contraseña string
+        contrasena string
         apellido string
         telefono string
         activa boolean
@@ -53,7 +53,7 @@ erDiagram
         dni int
         apellido string
         email string
-        teléfono string
+        telefono string
         domicilio string
     }
     ClienteOperaConTarjeta {
