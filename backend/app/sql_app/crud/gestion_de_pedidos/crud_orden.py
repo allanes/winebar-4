@@ -8,12 +8,20 @@ from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
-    def get_by_rfid(self, db: Session, *, tarjeta_id: int) -> OrdenCompra | None:
+    def get_by_rfid(self, db: Session, *, tarjeta_id: int, solo_abiertas: bool = True) -> OrdenCompra | None:
         cliente_in_db = crud.cliente.get_by_rfid_card(db=db, tarjeta_id=tarjeta_id)
         if cliente_in_db is None:
             return None
         
         orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.cliente_id == cliente_in_db.id).first()
+
+        if solo_abiertas and orden_in_db is not None:
+            if orden_in_db.cerrada_por is None:
+                # La orden está abierta
+                pass
+            else:
+                orden_in_db = None
+
         return orden_in_db
 
     def abrir_orden(self, db: Session, *, abrir_orden_in: OrdenCompraAbrir) -> OrdenCompra:
@@ -33,7 +41,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             return None
         
         # print(f'tarjeta del cliente: {cliente_in_db.tarjeta}')
-        
+        ## Reemplazar
         configuracion = Configuracion()
         configuracion.monto_maximo_orden_def = 200
         configuracion.monto_maximo_pedido_def = 100
@@ -41,7 +49,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in = OrdenCompraCreateInternal(
             precarga_usada=0,
             monto_maximo_orden=configuracion.monto_maximo_orden_def,
-            turno_id=turno_abierto,
+            turno_id=turno_abierto.id,
             abierta_por=abrir_orden_in.abierta_por,
             cliente_id=cliente_in_db.id
         )

@@ -9,6 +9,9 @@ class RenglonBase(BaseModel):
 class RenglonCreate(RenglonBase):
     pass
 
+class RenglonCreateInternal(RenglonCreate):
+    pedido_id: int
+
 class RenglonUpdate(BaseModel):
     pass
 
