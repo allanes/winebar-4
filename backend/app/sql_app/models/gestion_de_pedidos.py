@@ -27,13 +27,14 @@ class OrdenCompra(Base):
     cliente_id = Column(Integer, ForeignKey('clientes.id'))
     abierta_por = Column(Integer, ForeignKey('personal_interno.id'))
     cerrada_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=True)
-    turnos = relationship("Turno")
+    turno = relationship("Turno")
     cliente = relationship("Cliente")
 
 class Pedido(Base):
     __tablename__ = 'pedidos'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp_pedido = Column(DateTime, nullable=False)
+    timestamp_pedido = Column(DateTime, nullable=True)
+    cerrado = Column(Boolean, nullable=False)
     monto_maximo_pedido = Column(Float, nullable=False)
     orden_id = Column(Integer, ForeignKey('ordenes.id'))
     atendido_por = Column(Integer, ForeignKey('personal_interno.id'))
