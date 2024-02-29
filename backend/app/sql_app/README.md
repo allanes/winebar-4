@@ -1,19 +1,26 @@
 ```mermaid
 erDiagram
-    Menu ||--o{ Producto : has
-    Producto ||--|{ Tapa : has
-    Producto ||--|{ Trago : has
-    Producto ||--|{ Vino : has
-    Producto ||--o{ ProductoPromocion : "participates in"
-    Promocion ||--o{ ProductoPromocion : includes
-    Turno ||--o{ OrdenCompra : manages
-    OrdenCompra ||--o{ Pedido : includes
-    Pedido ||--o{ Renglon : contains
-    Renglon ||--|| Producto : "refers to"
-    Rol ||--o{ Tarjeta : assigns
-    Cliente ||--o{ DetallesAdicionales : "has"
-    Cliente ||--o{ ClienteOperaConTarjeta : uses
-    Tarjeta ||--o{ ClienteOperaConTarjeta : "linked to"
+    Menu }o--o| Producto : "contiene"
+    Producto |o--|| Tapa : "es un"
+    Producto |o--|| Vino : "es un"
+    Producto |o--|| Trago : "es un"
+    ProductoPromocion ||--o{ Producto : "aplica sobre"
+    Promocion ||--o{ ProductoPromocion : "aplica sobre"
+    Turno ||--o{ PersonalInterno : "iniciado por"
+    Turno |o--o{ PersonalInterno : "cerrado por"
+    OrdenCompra ||--o{ Turno : "registrada en"
+    OrdenCompra ||--o{ Cliente : "asignada a"
+    Pedido ||--o{ OrdenCompra : "se carga en"
+    OrdenCompra ||--o{ PersonalInterno : "abierta por"
+    OrdenCompra |o--o{ PersonalInterno : "cerrada por"
+    Cliente ||--o{ ClienteOperaConTarjeta : "operates with"
+    Cliente |o--|| DetallesAdicionales : "tiene"
+    
+    Tarjeta |o--|| ClienteOperaConTarjeta : "linked to"
+    Renglon ||--o{ Producto : "incluye un"
+    Pedido }|--|| Renglon : "formado por"
+    Pedido ||--o{ PersonalInterno : "atendido por"
+    Tarjeta ||--o{ Rol : "tiene un"
     PersonalInterno ||--o{ Tarjeta : "may have"
     Rol {
         id int
@@ -143,28 +150,7 @@ erDiagram
         promocion_aplicada boolean
         pedido_id int
         producto_id int
-    }
-    OrdenCompra }--|| Cliente : "belongs to"
-    Cliente ||--o{ ClienteOperaConTarjeta : "operates with"
-    Tarjeta ||--o{ ClienteOperaConTarjeta : "linked to"
-    Producto ||--o{ Renglon : "included in"
-    Pedido ||--o{ Renglon : "contains"
-    OrdenCompra ||--o{ Pedido : "includes"
-    Turno ||--o{ OrdenCompra : "manages"
-    Menu ||--o{ Producto : "contains"
-    Producto ||--|{ Tapa : "is a"
-    Producto ||--|{ Trago : "is a"
-    Producto ||--|{ Vino : "is a"
-    Producto ||--o{ ProductoPromocion : "participates in"
-    Promocion ||--o{ ProductoPromocion : "includes"
-    Rol ||--o{ Tarjeta : "assigns"
-    Cliente ||--o{ DetallesAdicionales : "has"
-    PersonalInterno ||--o{ Tarjeta : "may have"
-    Turno ||--|| PersonalInterno : "opened by"
-    Turno ||--|| PersonalInterno : "closed by"
-    OrdenCompra ||--|| PersonalInterno : "opened by"
-    OrdenCompra ||--|| PersonalInterno : "closed by"
-    Pedido ||--|| PersonalInterno : "attended by"
+    }    
     Configuracion {
         id int
         monto_maximo_orden_def float
