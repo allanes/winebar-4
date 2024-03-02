@@ -27,25 +27,28 @@ class OrdenCompra(Base):
     cliente_id = Column(Integer, ForeignKey('clientes.id'))
     abierta_por = Column(Integer, ForeignKey('personal_interno.id'))
     cerrada_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=True)
-    turnos = relationship("Turno")
+    turno = relationship("Turno")
     cliente = relationship("Cliente")
 
 class Pedido(Base):
     __tablename__ = 'pedidos'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp_pedido = Column(DateTime, nullable=False)
+    timestamp_pedido = Column(DateTime, nullable=True)
+    cerrado = Column(Boolean, nullable=False)
     monto_maximo_pedido = Column(Float, nullable=False)
-    promocion_aplicada = Column(Boolean, default=False)
     orden_id = Column(Integer, ForeignKey('ordenes.id'))
     atendido_por = Column(Integer, ForeignKey('personal_interno.id'))
+    renglones = relationship("Renglon", back_populates="pedido", uselist=True)
 
 class Renglon(Base):
     __tablename__ = 'renglones'
     id = Column(Integer, primary_key=True, autoincrement=True)
     cantidad = Column(Integer, nullable=False)
     monto = Column(Float, nullable=False)
+    promocion_aplicada = Column(Boolean, default=False)
     pedido_id = Column(Integer, ForeignKey('pedidos.id'))
     producto_id = Column(Integer, ForeignKey('productos.id'))
+    pedido = relationship("Pedido", back_populates="renglones", uselist=False)
 
 class Configuracion(Base):
     __tablename__ = 'configuraciones'

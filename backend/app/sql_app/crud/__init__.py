@@ -9,3 +9,5 @@ from .inventario_y_promociones.crud_tapa import tapa
 
 from .gestion_de_pedidos.crud_turno import turno
 from .gestion_de_pedidos.crud_orden import orden
+from .gestion_de_pedidos.crud_pedido import pedido
+from .gestion_de_pedidos.crud_renglon import renglon

@@ -12,7 +12,7 @@ class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaCo
     def get_by_tarjeta_id(self, db: Session, *, tarjeta_id: int) -> Optional[ClienteOperaConTarjeta]:
         print(f'buscando tarjeta {tarjeta_id}')
         db_obj = db.query(ClienteOperaConTarjeta).filter(ClienteOperaConTarjeta.tarjeta_id == tarjeta_id).order_by(ClienteOperaConTarjeta.tarjeta_id.desc()).first()
-        print(db_obj.__dict__)
+        # print(db_obj.__dict__)
         return db_obj
 
 cliente_opera_con_tarjeta = CRUDClienteOperaConTarjeta(ClienteOperaConTarjeta)
