@@ -2,12 +2,12 @@ from typing import Any, Dict, Optional, List, Union
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
-from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta
+from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta
 from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
-from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion
+from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -21,10 +21,11 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         print('aplicando activation defaults')
         cliente_in_db = db_obj
         cliente_in = obj_in
+        default_pass = generar_pass_por_defecto(cliente_in=cliente_in)
 
         cliente_in_db.activa = True
         cliente_in_db.nombre = cliente_in.nombre
-        cliente_in_db.contraseña = hashear_contra(contra_in=cliente_in.contraseña)        
+        cliente_in_db.contraseña = hashear_contra(contra_in=default_pass)        
 
         return cliente_in_db
     
@@ -41,8 +42,12 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         tarjeta_id: int, 
         detalles_adicionales_in: DetallesAdicionalesForUI = None
     ) -> tuple[Cliente | None, bool, str]:
-        # Create client
-        # cliente_in_db, fue_creado, msg = super().create_or_reactivate(db=db, obj_in=cliente_in)
+        # Tarjeta prechecks
+        puede_asociarse, msg = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar_cliente(db=db, id_tarjeta=tarjeta_id)
+        if not puede_asociarse:
+            return None, False, msg
+        
+        # Client prechecks
         check_passed, message = self.pre_create_checks(
             db=db,
             obj_in=cliente_in

@@ -114,7 +114,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         # Check if the new tarjeta_id is free to be associated through its entregada field
         tarjeta_nueva_id = tarjeta_id
-        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar(db=db, id_tarjeta=tarjeta_nueva_id)
+        tarjeta_nueva_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar_personal(db=db, id_tarjeta=tarjeta_nueva_id)
         if not tarjeta_nueva_puede_usarse:
             return False, msg_puede_usarse
         

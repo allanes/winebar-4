@@ -8,7 +8,7 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("7con-tarjeta/{tarjeta_id}", response_model=schemas.ClienteOperaConTarjeta)
+@router.get("/con-tarjeta/{tarjeta_id}", response_model=schemas.ClienteOperaConTarjeta)
 def handle_read_cliente_by_tarjeta_id(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)

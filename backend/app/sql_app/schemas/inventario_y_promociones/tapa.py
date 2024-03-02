@@ -8,8 +8,8 @@ class TapaBase(BaseModel):
 class TapaCreate(TapaBase):
     id_producto: int
 
-class TapaConProductoCreate(TapaBase, ProductoCreate):
-    pass
+class TapaConProductoCreate(ProductoCreate):
+    foto: Optional[str] = None
 
 class TapaUpdate(TapaBase):
     pass

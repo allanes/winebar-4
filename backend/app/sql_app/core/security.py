@@ -6,6 +6,9 @@ def hashear_contra(contra_in: str | None) -> str:
     
     return contra_in * 3
 
+def generar_pass_por_defecto(cliente_in: ClienteCreate) -> str:
+    return cliente_in.nombre * 3
+
 def obtener_pass_de_deactivacion() -> str:
     return 'generic_deactivation_password'
     

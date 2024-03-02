@@ -9,7 +9,7 @@ class ClienteBase(BaseModel):
 
 # Properties to receive on item creation
 class ClienteCreate(ClienteBase):
-    contraseña: str
+    pass
 
 # Properties to receive on item update
 class ClienteUpdate(BaseModel):
@@ -19,7 +19,7 @@ class ClienteUpdate(BaseModel):
 # Properties shared by models stored in DB
 class ClienteInDBBase(ClienteBase):
     id: int
-    activa: bool    
+    activa: bool
     model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client

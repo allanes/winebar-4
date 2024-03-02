@@ -3,10 +3,10 @@ from datetime import datetime
 from typing import Optional
 
 class TurnoBase(BaseModel):
-    pass
+    abierto_por: int
 
 class TurnoCreate(TurnoBase):
-    abierto_por: int
+    pass
 
 class TurnoUpdate(BaseModel):
     timestamp_cierre: Optional[datetime] = None

@@ -115,7 +115,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         db.refresh(db_obj)
         return db_obj    
     
-    def check_tarjeta_libre_para_asociar(self, db: Session, id_tarjeta: int) -> bool:
+    def __check_tarjeta_libre_para_asociar(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
         puede_asociarse = True
         msg = ''
 
@@ -134,6 +134,26 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
             return puede_asociarse, msg
         
         return puede_asociarse, msg
+    
+    def check_tarjeta_libre_para_asociar_cliente(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
+        esta_libre, msg = self.__check_tarjeta_libre_para_asociar(db=db, id_tarjeta=id_tarjeta)
+        if not esta_libre: return False, msg
+
+        tarjeta_in_db = self.get_active(db=db, id=id_tarjeta)
+        if tarjeta_in_db.rol.nombre_corto != 'CLIENTE_ESTANDAR':
+            return False, 'La tarjeta debe ser de Cliente'
+        
+        return True, ''
+    
+    def check_tarjeta_libre_para_asociar_personal(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
+        esta_libre, msg = self.__check_tarjeta_libre_para_asociar(db=db, id_tarjeta=id_tarjeta)
+        if not esta_libre: return False, msg
+
+        tarjeta_in_db = self.get_active(db=db, id=id_tarjeta)
+        if tarjeta_in_db.rol.nombre_corto not in ['ADIMN', 'CAJERO', 'TAPERO']:
+            return False, 'La tarjeta debe ser de un personal interno'
+        
+        return True, ''
     
     def check_tarjeta_puede_ser_quitada_de_personal(self, db: Session, id_tarjeta: int) -> tuple[bool, str]:
         tarjeta = self.get(db=db, id=id_tarjeta)
