@@ -106,5 +106,16 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         ).first()
 
         return cliente_in_db
+    
+    def get_multi_with_tarjeta(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Cliente]:
+        cliente_opera_con_tarjeta_records = db.query(ClienteOperaConTarjeta).offset(skip).limit(limit).all()
+
+        # Extract all cliente IDs from the ClienteOperaConTarjeta records
+        cliente_ids = [record.id_cliente for record in cliente_opera_con_tarjeta_records]
+
+        # Query to get all clients that are present in the ClienteOperaConTarjeta table
+        clientes_con_tarjeta = db.query(Cliente).filter(Cliente.id.in_(cliente_ids)).all()
+
+        return clientes_con_tarjeta
 
 cliente = CRUDCliente(Cliente)

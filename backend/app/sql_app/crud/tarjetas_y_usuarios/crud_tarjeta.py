@@ -119,7 +119,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         puede_asociarse = True
         msg = ''
 
-        tarjeta_in_db = self.get(db=db, id=id_tarjeta)
+        tarjeta_in_db = self.get_active(db=db, id=id_tarjeta)
         if tarjeta_in_db is None:
             puede_asociarse = False
             msg = "La tarjeta leída no existe. Debe darla de alta antes de asociarla con alguien."

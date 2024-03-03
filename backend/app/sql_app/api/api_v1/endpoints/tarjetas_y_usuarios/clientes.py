@@ -36,7 +36,7 @@ def handle_read_clientes(
     skip: int = 0,
     limit: int = 100,
 ):
-    clientes = crud.cliente.get_multi(db, skip=skip, limit=limit)
+    clientes = crud.cliente.get_multi_with_tarjeta(db, skip=skip, limit=limit)
     # clientes = [cliente for cliente in clientes if cliente.activa==True]
     return clientes
 
