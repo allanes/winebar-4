@@ -6,7 +6,6 @@ import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
-print(f'DOTENV CARGADO. POSTGRES_PORT: {os.getenv("POSTGRES_PORT")}')
 
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
