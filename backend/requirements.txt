@@ -5,6 +5,11 @@ uvicorn[standard]
 fastapi
 sqlalchemy
 
+# Security
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+
 # db and migration tools
 psycopg2
 alembic

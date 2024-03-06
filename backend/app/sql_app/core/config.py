@@ -6,6 +6,7 @@ import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
+print(f'DOTENV CARGADO. POSTGRES_PORT: {os.getenv("POSTGRES_PORT")}')
 
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
@@ -53,8 +54,10 @@ class Settings(BaseSettings):
         username = values.get("POSTGRES_USER")
         password = values.get("POSTGRES_PASSWORD")
         server = values.get("POSTGRES_SERVER", "localhost")
+        port = values.get('POSTGRES_PORT', '5432')
         db = values.get("POSTGRES_DB")
-        return f"postgresql://{username}:{password}@localhost/{db}"
+        return f"postgresql://{username}:{password}@{server}:{port}/{db}"
+    
     model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
