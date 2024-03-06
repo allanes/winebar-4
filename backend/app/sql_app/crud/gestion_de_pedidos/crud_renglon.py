@@ -46,6 +46,9 @@ class CRUDRenglon(CRUDBase[Renglon, RenglonCreate, RenglonUpdate]):
     def agregar_a_renglon(self, db: Session, id_renglon: int, renglon_in: RenglonCreate) -> Renglon:
         renglon_in_db = db.query(Renglon).filter(Renglon.id==id_renglon).first()
         renglon_in_db.cantidad += renglon_in.cantidad
+        nuevo_monto, promocion_aplicada = self.calcular_monto(db=db, renglon_in=renglon_in_db)
+        renglon_in_db.monto = nuevo_monto
+        renglon_in_db.promocion_aplicada = promocion_aplicada
         db.commit()
         db.refresh(renglon_in_db)
         return renglon_in_db
@@ -53,6 +56,11 @@ class CRUDRenglon(CRUDBase[Renglon, RenglonCreate, RenglonUpdate]):
     def calcular_monto(self, db: Session, renglon_in: RenglonCreateInternal) -> tuple[float, bool]:
         monto = 100
         promocion_aplicada = True
+
+        producto_in_db = crud.producto.get(db=db, id=renglon_in.producto_id)
+        if not producto_in_db: return 0, False
+
+        monto = renglon_in.cantidad * producto_in_db.precio
 
         return monto, promocion_aplicada
 

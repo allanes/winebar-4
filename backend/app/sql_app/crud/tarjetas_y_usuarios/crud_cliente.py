@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta
+from sql_app.crud.gestion_de_pedidos import crud_orden
 from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
+from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
@@ -40,6 +42,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         *, 
         cliente_in: ClienteCreate, 
         tarjeta_id: int, 
+        usuario_apertura_orden: int,
         detalles_adicionales_in: DetallesAdicionalesForUI = None
     ) -> tuple[Cliente | None, bool, str]:
         # Tarjeta prechecks
@@ -77,6 +80,11 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         db.refresh(cliente_in_db)
         
         # Open an order
+        orden_in = OrdenCompraAbrir(
+            abierta_por=usuario_apertura_orden,
+            tarjeta_cliente=tarjeta_id
+        )
+        crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in)
         # Setup Vitte init
         
         return cliente_in_db, True, ''

@@ -16,15 +16,14 @@ class PedidoUpdate(BaseModel):
 
 class PedidoInDBBase(PedidoBase):
     id: int
-    timestamp_pedido: datetime
+    timestamp_pedido: Optional[datetime]
     cerrado: bool
-    promocion_aplicada: bool
     orden_id: int    
 
     model_config = ConfigDict(from_attributes=True)
 
 class Pedido(PedidoInDBBase):
-    renglon: List['Renglon']
+    renglones: List['Renglon']
 
 class PedidoInDB(PedidoInDBBase):
     pass

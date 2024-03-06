@@ -8,8 +8,6 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-
-
 @router.get("/{pedido_id}", response_model=schemas.Pedido)
 def handle_read_pedidos_by_id(
     pedido_id: int,
@@ -39,27 +37,27 @@ def handle_read_pedidos(
     # pedidos = [pedido for pedido in pedidos if pedido.activa==True]
     return pedidos
 
-# @router.post("/abrir", response_model=schemas.Pedido)
-# def handle_abrir_pedido(
-#     *,
-#     tarjeta_cliente: int, 
-#     db: Session = Depends(deps.get_db),   
-# ):
-#     ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-#     usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-#     ## 
-#     pedido_in = schemas.PedidoCreate(atendido_por=usuario_id)
+@router.post("/abrir", response_model=schemas.Pedido)
+def handle_abrir_pedido(
+    *,
+    tarjeta_cliente: int, 
+    db: Session = Depends(deps.get_db),   
+):
+    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
+    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
+    ## 
+    pedido_in = schemas.PedidoCreate(atendido_por=usuario_id)
     
-#     pedido, pudo_abrirse, msg = crud.pedido.abrir_pedido(
-#         db = db, 
-#         pedido_in = pedido_in,
-#         tarjeta_cliente=tarjeta_cliente
-#     )
+    pedido, pudo_abrirse, msg = crud.pedido.abrir_pedido(
+        db = db, 
+        pedido_in = pedido_in,
+        tarjeta_cliente=tarjeta_cliente
+    )
 
-#     if not pudo_abrirse:
-#         raise HTTPException(status_code=404, detail=msg)
+    if not pudo_abrirse:
+        raise HTTPException(status_code=404, detail=msg)
     
-#     return pedido
+    return pedido
 
 @router.post("/agregar-producto", response_model=schemas.Renglon)
 def handle_agregar_producto(

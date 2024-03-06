@@ -48,11 +48,17 @@ def handle_create_cliente_with_tarjeta(
     cliente_in: schemas.ClienteCreate,
     detalle_adicional_in: schemas.DetallesAdicionalesForUI = None
 ):
+    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
+    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
+    ##
+
     cliente, fue_creado, error_msg = crud.cliente.create_with_tarjeta(
         db = db, 
         tarjeta_id = tarjeta_id,
         cliente_in = cliente_in,
-        detalles_adicionales_in = detalle_adicional_in
+        usuario_apertura_orden = usuario_id,
+        detalles_adicionales_in = detalle_adicional_in,
+
     )
 
     if not fue_creado:
