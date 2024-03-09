@@ -13,13 +13,12 @@ class PersonalInternoBase(BaseModel):
 
 # Properties to receive on item creation
 class PersonalInternoCreate(PersonalInternoBase):
-    contra_sin_hash: Optional[str] = None
+    pass
         
 # Properties to receive on item update
 class PersonalInternoUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
-    contra_sin_hash: Optional[str] = None
 
 # Properties shared by models stored in DB
 class PersonalInternoInDBBase(PersonalInternoBase):

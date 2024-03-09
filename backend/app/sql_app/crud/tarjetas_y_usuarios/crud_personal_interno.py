@@ -11,7 +11,8 @@ from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
 from . import crud_tarjeta
-from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion
+from sql_app.core.security import crear_nombre_usuario, obtener_pass_de_deactivacion
+from sql_app.api.api_v1.endpoints.login import get_password_hash
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
@@ -31,10 +32,10 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         db_obj.id = obj_in.id
         db_obj.usuario = crear_nombre_usuario(usuario_in=obj_in)
         db_obj.nombre = obj_in.nombre
-        db_obj.contraseña = hashear_contra(contra_in=obj_in.contra_sin_hash)
+        db_obj.contraseña = get_password_hash(str(obj_in.id))
         db_obj.apellido = obj_in.apellido
         db_obj.telefono = obj_in.telefono
-        db_obj.activa = True # mismo que la linea de arriba
+        db_obj.activa = True 
         db_obj.tarjeta_id = None
         return db_obj
             
@@ -59,6 +60,10 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         
         return puede_borrarse, msg
     ### End of Functions override section
+
+    def get_by_rfid(self, db: Session, tarjeta_id: int) -> PersonalInterno | None:
+        personal_in_db = db.query(PersonalInterno).filter(PersonalInterno.tarjeta_id == tarjeta_id).first()
+        return personal_in_db
     
     def entregar_tarjeta_a_personal(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[PersonalInterno | None, bool, str]:
         # Step 0: check
