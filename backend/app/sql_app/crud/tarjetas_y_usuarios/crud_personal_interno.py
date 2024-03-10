@@ -12,7 +12,7 @@ from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInterno
 
 from . import crud_tarjeta
 from sql_app.core.security import crear_nombre_usuario, obtener_pass_de_deactivacion
-from sql_app.api.api_v1.endpoints.login import get_password_hash
+from sql_app.core.security import verify_password, get_password_hash
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
@@ -136,5 +136,13 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta_id)
                 
         return tarjeta_devuelta, True, ''
+    
+    def authenticate(self, db: Session, username: str, password: str):
+        user = self.get_by_rfid(db=db, tarjeta_id=username)
+        if not user:
+            return False
+        if not verify_password(password, user.contraseña):
+            return False
+        return user
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)
