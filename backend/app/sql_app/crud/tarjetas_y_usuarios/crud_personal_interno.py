@@ -11,8 +11,16 @@ from sql_app.models import PersonalInterno, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.personal_interno import PersonalInternoCreate, PersonalInternoUpdate
 
 from . import crud_tarjeta
-from sql_app.core.security import crear_nombre_usuario, obtener_pass_de_deactivacion
-from sql_app.core.security import verify_password, get_password_hash
+from ..gestion_de_pedidos import crud_turno
+from sql_app.core.security import (
+    crear_nombre_usuario, 
+    obtener_pass_de_deactivacion,
+    verify_password, 
+    get_password_hash, 
+    verify_api_key,
+    get_terminal_by_key
+)
+from sql_app.core.config import settings
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
@@ -137,12 +145,31 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
                 
         return tarjeta_devuelta, True, ''
     
-    def authenticate(self, db: Session, username: str, password: str):
+    def authenticate(self, db: Session, username: str, password: str, usar_api_key: bool) -> PersonalInterno | None:
         user = self.get_by_rfid(db=db, tarjeta_id=username)
         if not user:
-            return False
-        if not verify_password(password, user.contraseña):
-            return False
+            return None
+        
+        if usar_api_key:
+            if not verify_api_key(password):
+                return None
+        else:
+            if not verify_password(password, user.contraseña):
+                return None
         return user
+    
+    def post_authenticate_checks(self, db: Session, username: str, password: str, user_in_db: PersonalInterno) -> None:
+        # Abrir turno si no hay turno abierto
+        if user_in_db.tarjeta and user_in_db.tarjeta.rol.nombre_corto == 'CAJERO':
+            print(f'Buscando turno abierto...')
+            turno_abierto = crud_turno.turno.get_open_turno(db=db)
+            if not turno_abierto:
+                print("   Abrir Turno")
+            else:
+                print("   Encontrado")
+
+        # Abrir tapero o registrar ingreso
+        terminal = get_terminal_by_key(plain_password=password)
+        print(f'Terminal logueada: {terminal}')
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

@@ -41,6 +41,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
     return verificada
 
+def verify_api_key(plain_password: str) -> bool:
+    if plain_password != settings.API_KEY_TERMINAL_CAJA_1:
+        return False
+    
+    return True
+
+def get_terminal_by_key(plain_password: str) -> str:
+    if plain_password == settings.API_KEY_TERMINAL_CAJA_1:
+        return 'TERMINAL_CAJA_1'
+    return ''
+    
 def hashear_contra(contra_in: str | None) -> str:
     if contra_in is None:
         contra_in = ''

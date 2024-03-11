@@ -11,9 +11,11 @@ load_dotenv()
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
     API_V1_STR: str = "/api/v1"
+    API_KEY_TERMINAL_CAJA_1: str
     SECRET_KEY: str = secrets.token_urlsafe(32)
     SALT: str = bcrypt.gensalt()
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 60 minutes * 24 hours * 8 days = 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ACCESS_TOKEN_EXPIRE_MINUTES_LONG: int
     ALGORITHM: str = "HS256"
     SERVER_NAME: str = "altacava-winebar-server"
     # SERVER_NAME: str = "localhost"
