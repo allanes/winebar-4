@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
     API_V1_STR: str = "/api/v1"
     API_KEY_TERMINAL_CAJA_1: str
+    API_KEY_TERMINAL_TAPA_1: str
     SECRET_KEY: str = secrets.token_urlsafe(32)
     SALT: str = bcrypt.gensalt()
     ACCESS_TOKEN_EXPIRE_MINUTES: int
