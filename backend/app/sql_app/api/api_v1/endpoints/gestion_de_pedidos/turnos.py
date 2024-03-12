@@ -8,27 +8,6 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/{turno_id}", response_model=schemas.Turno)
-def handle_read_turno_by_id(
-    turno_id: int,
-    db: Session = Depends(deps.get_db)
-):
-    turno_in_db = crud.turno.get(db=db, id=turno_id)
-    if turno_in_db is None:
-        raise HTTPException(status_code=404, detail="Turno no encontrado")
-    
-    return turno_in_db
-
-@router.get("/", response_model=List[schemas.Turno])
-def handle_read_turnos(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-):
-    turnos = crud.turno.get_multi(db, skip=skip, limit=limit)
-    # turnos = [turno for turno in turnos if turno.activa==True]
-    return turnos
-
 @router.post("/abrir", response_model=schemas.Turno)
 def handle_abrir_turno(
     *,
@@ -84,4 +63,24 @@ def handle_update_turno(
     )
     return turno
 
+@router.get("/{id}", response_model=schemas.Turno)
+def handle_read_turno_by_id(
+    id: int,
+    db: Session = Depends(deps.get_db)
+):
+    turno_in_db = crud.turno.get(db=db, id=id)
+    if turno_in_db is None:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+    
+    return turno_in_db
+
+@router.get("/", response_model=List[schemas.Turno])
+def handle_read_turnos(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+):
+    turnos = crud.turno.get_multi(db, skip=skip, limit=limit)
+    # turnos = [turno for turno in turnos if turno.activa==True]
+    return turnos
 

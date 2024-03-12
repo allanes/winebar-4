@@ -8,17 +8,6 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/{orden_id}", response_model=schemas.OrdenCompra)
-def handle_read_orden_by_id(
-    orden_id: int,
-    db: Session = Depends(deps.get_db)
-):
-    orden_in_db = crud.orden.get(db=db, id=orden_id)
-    if orden_in_db is None:
-        raise HTTPException(status_code=404, detail="Orden no encontrada")
-    
-    return orden_in_db
-
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompra)
 def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
@@ -29,16 +18,6 @@ def handle_read_orden_by_client_rfid(
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
     return orden_in_db
-
-@router.get("/", response_model=List[schemas.OrdenCompra])
-def handle_read_ordens(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-):
-    ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
-    # ordens = [orden for orden in ordens if orden.activa==True]
-    return ordens
 
 @router.post("/abrir", response_model=schemas.OrdenCompra)
 def handle_abrir_orden(
@@ -102,4 +81,23 @@ def handle_update_orden(
     )
     return orden
 
+@router.get("/{id}", response_model=schemas.OrdenCompra)
+def handle_read_orden_by_id(
+    id: int,
+    db: Session = Depends(deps.get_db)
+):
+    orden_in_db = crud.orden.get(db=db, id=id)
+    if orden_in_db is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    return orden_in_db
 
+@router.get("/", response_model=List[schemas.OrdenCompra])
+def handle_read_ordens(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+):
+    ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
+    # ordens = [orden for orden in ordens if orden.activa==True]
+    return ordens

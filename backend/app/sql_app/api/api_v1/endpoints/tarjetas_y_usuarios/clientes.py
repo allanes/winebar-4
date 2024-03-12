@@ -19,16 +19,44 @@ def handle_read_cliente_by_tarjeta_id(
     
     return cliente_con_tarjeta_in_db
 
-@router.get("/{cliente_id}", response_model=schemas.Cliente)
+@router.get("/{id}", response_model=schemas.Cliente)
 def handle_read_cliente_by_id(
-    cliente_id: int,
+    id: int,
     db: Session = Depends(deps.get_db)
 ):
-    cliente_in_db = crud.cliente.get(db=db, id=cliente_id)
+    cliente_in_db = crud.cliente.get(db=db, id=id)
     if cliente_in_db is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     
     return cliente_in_db
+
+@router.put("/{id}", response_model=schemas.Cliente)
+def handle_update_cliente(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: int,
+    cliente_in: schemas.ClienteUpdate
+):
+    cliente = crud.cliente.get(db=db, id=id)
+    if not cliente:
+        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
+    
+    cliente = crud.cliente.update(
+        db=db, db_obj=cliente, obj_in=cliente_in
+    )
+    return cliente
+
+@router.delete("/{id}", response_model=schemas.Cliente)
+def handle_delete_cliente(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: int
+):
+    cliente, fue_creado, msj = crud.cliente.deactivate(db=db, id=id)
+    if not fue_creado:
+        raise HTTPException(status_code=404, detail=msj)
+    
+    return cliente
 
 @router.get("/", response_model=List[schemas.Cliente])
 def handle_read_clientes(
@@ -63,34 +91,6 @@ def handle_create_cliente_with_tarjeta(
 
     if not fue_creado:
         raise HTTPException(status_code=404, detail=error_msg)
-    
-    return cliente
-
-@router.put("/{id}", response_model=schemas.Cliente)
-def handle_update_cliente(
-    *,
-    db: Session = Depends(deps.get_db),
-    id: int,
-    cliente_in: schemas.ClienteUpdate
-):
-    cliente = crud.cliente.get(db=db, id=id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
-    
-    cliente = crud.cliente.update(
-        db=db, db_obj=cliente, obj_in=cliente_in
-    )
-    return cliente
-
-@router.delete("/{id}", response_model=schemas.Cliente)
-def handle_delete_cliente(
-    *,
-    db: Session = Depends(deps.get_db),
-    id: int
-):
-    cliente, fue_creado, msj = crud.cliente.deactivate(db=db, id=id)
-    if not fue_creado:
-        raise HTTPException(status_code=404, detail=msj)
     
     return cliente
 

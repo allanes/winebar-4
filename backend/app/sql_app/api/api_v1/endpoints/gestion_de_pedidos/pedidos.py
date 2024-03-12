@@ -8,17 +8,6 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/{pedido_id}", response_model=schemas.Pedido)
-def handle_read_pedidos_by_id(
-    pedido_id: int,
-    db: Session = Depends(deps.get_db)
-):
-    pedido_in_db = crud.pedido.get(db=db, id=pedido_id)
-    if pedido_in_db is None:
-        raise HTTPException(status_code=404, detail="Pedido no encontrado")
-    
-    return pedido_in_db
-
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.Pedido)
 def handle_read_pedido_by_rfid(
     tarjeta_id: int,
@@ -26,16 +15,6 @@ def handle_read_pedido_by_rfid(
 ):
     pedidos_in_db = crud.pedido.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
     return pedidos_in_db
-
-@router.get("/", response_model=List[schemas.Pedido])
-def handle_read_pedidos(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-):
-    pedidos = crud.pedido.get_multi(db, skip=skip, limit=limit)
-    # pedidos = [pedido for pedido in pedidos if pedido.activa==True]
-    return pedidos
 
 @router.post("/abrir", response_model=schemas.Pedido)
 def handle_abrir_pedido(
@@ -119,4 +98,23 @@ def handle_update_pedido(
     )
     return pedido
 
+@router.get("/{id}", response_model=schemas.Pedido)
+def handle_read_pedidos_by_id(
+    id: int,
+    db: Session = Depends(deps.get_db)
+):
+    pedido_in_db = crud.pedido.get(db=db, id=id)
+    if pedido_in_db is None:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    
+    return pedido_in_db
 
+@router.get("/", response_model=List[schemas.Pedido])
+def handle_read_pedidos(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+):
+    pedidos = crud.pedido.get_multi(db, skip=skip, limit=limit)
+    # pedidos = [pedido for pedido in pedidos if pedido.activa==True]
+    return pedidos

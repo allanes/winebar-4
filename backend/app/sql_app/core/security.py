@@ -8,7 +8,7 @@ from sql_app.core.config import settings
 # Create the context for password hashing
 # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta

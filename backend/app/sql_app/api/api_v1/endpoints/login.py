@@ -59,7 +59,7 @@ async def read_users_me(
     return current_user
 
 @router.post("/test-token", response_model=schemas.PersonalInterno)
-def test_token(current_user: models.PersonalInterno = Depends(deps.get_current_user)) -> Any:
+def test_token(current_user: schemas.PersonalInterno = Depends(deps.get_current_user)):
     """
     Test access token
     """
