@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -20,12 +20,11 @@ def handle_read_pedido_by_rfid(
 def handle_abrir_pedido(
     *,
     tarjeta_cliente: int, 
-    db: Session = Depends(deps.get_db),   
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ## 
-    pedido_in = schemas.PedidoCreate(atendido_por=usuario_id)
+    print(f'usuario logueado id: {current_user.id}')
+    pedido_in = schemas.PedidoCreate(atendido_por=current_user.id)
     
     pedido, pudo_abrirse, msg = crud.pedido.abrir_pedido(
         db = db, 
@@ -43,16 +42,14 @@ def handle_agregar_producto(
     *,
     tarjeta_cliente: int, 
     renglon_in: schemas.RenglonCreate,
-    db: Session = Depends(deps.get_db),    
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
-
+    print(f'usuario logueado id: {current_user.id}')
     renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_renglon(
         db=db,
         renglon_in=renglon_in,
-        atendido_por=usuario_id,
+        atendido_por=current_user.id,
         tarjeta_cliente=tarjeta_cliente
     )
 
@@ -65,15 +62,13 @@ def handle_agregar_producto(
 def handle_cerrar_pedido(
     *,
     tarjeta_cliente: int, 
-    db: Session = Depends(deps.get_db),    
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
-    
+    print(f'usuario logueado id: {current_user.id}')
     pedido, pudo_cerrarse, msg = crud.pedido.cerrar_pedido(
         db = db,
-        cerrado_por = usuario_id,
+        cerrado_por = current_user.id,
         tarjeta_cliente=tarjeta_cliente
     )
 

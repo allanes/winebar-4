@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -23,14 +23,14 @@ def handle_read_orden_by_client_rfid(
 def handle_abrir_orden(
     *,
     db: Session = Depends(deps.get_db),
-    tarjeta_cliente: int
+    tarjeta_cliente: int,
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ## 
+    print(f'usuario logueado id: {current_user.id}')
     orden_in = schemas.OrdenCompraAbrir(
-        abierta_por=usuario_id, 
-        tarjeta_cliente=tarjeta_cliente)
+        abierta_por=current_user.id, 
+        tarjeta_cliente=tarjeta_cliente
+    )
     
     orden = crud.orden.abrir_orden(
         db = db, 
@@ -47,13 +47,13 @@ def handle_cerrar_orden(
     *,
     tarjeta_cliente: int,
     db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
+    print(f'usuario logueado id: {current_user.id}')
     orden_in = schemas.OrdenCompraCerrar(
-        cerrada_por=usuario_id, 
-        tarjeta_cliente=tarjeta_cliente)
+        cerrada_por=current_user.id, 
+        tarjeta_cliente=tarjeta_cliente
+    )
     
     orden = crud.orden.cerrar_orden(
         db = db,

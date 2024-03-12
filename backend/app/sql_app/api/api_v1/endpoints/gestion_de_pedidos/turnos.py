@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -11,12 +11,11 @@ router = APIRouter()
 @router.post("/abrir", response_model=schemas.Turno)
 def handle_abrir_turno(
     *,
-    db: Session = Depends(deps.get_db),    
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ## 
-    turno_in = schemas.TurnoCreate(abierto_por=usuario_id)
+    print(f'usuario logueado id: {current_user.id}')
+    turno_in = schemas.TurnoCreate(abierto_por=current_user.id)
     
     turno = crud.turno.abrir_turno(
         db = db, 
@@ -31,15 +30,13 @@ def handle_abrir_turno(
 @router.post("/cerrar", response_model=schemas.Turno)
 def handle_cerrar_turno(
     *,
-    db: Session = Depends(deps.get_db),    
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
-    
+    print(f'usuario logueado id: {current_user.id}')
     turno = crud.turno.cerrar_turno(
         db = db,
-        cerrado_por = usuario_id
+        cerrado_por = current_user.id
     )
 
     if not turno:
