@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -19,52 +19,16 @@ def handle_read_cliente_by_tarjeta_id(
     
     return cliente_con_tarjeta_in_db
 
-@router.get("/{cliente_id}", response_model=schemas.Cliente)
+@router.get("/{id}", response_model=schemas.Cliente)
 def handle_read_cliente_by_id(
-    cliente_id: int,
+    id: int,
     db: Session = Depends(deps.get_db)
 ):
-    cliente_in_db = crud.cliente.get(db=db, id=cliente_id)
+    cliente_in_db = crud.cliente.get(db=db, id=id)
     if cliente_in_db is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     
     return cliente_in_db
-
-@router.get("/", response_model=List[schemas.Cliente])
-def handle_read_clientes(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-):
-    clientes = crud.cliente.get_multi_with_tarjeta(db, skip=skip, limit=limit)
-    # clientes = [cliente for cliente in clientes if cliente.activa==True]
-    return clientes
-
-@router.post("/", response_model=schemas.Cliente)
-def handle_create_cliente_with_tarjeta(
-    *,
-    db: Session = Depends(deps.get_db),
-    tarjeta_id: int,
-    cliente_in: schemas.ClienteCreate,
-    detalle_adicional_in: schemas.DetallesAdicionalesForUI = None
-):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
-
-    cliente, fue_creado, error_msg = crud.cliente.create_with_tarjeta(
-        db = db, 
-        tarjeta_id = tarjeta_id,
-        cliente_in = cliente_in,
-        usuario_apertura_orden = usuario_id,
-        detalles_adicionales_in = detalle_adicional_in,
-
-    )
-
-    if not fue_creado:
-        raise HTTPException(status_code=404, detail=error_msg)
-    
-    return cliente
 
 @router.put("/{id}", response_model=schemas.Cliente)
 def handle_update_cliente(
@@ -91,6 +55,39 @@ def handle_delete_cliente(
     cliente, fue_creado, msj = crud.cliente.deactivate(db=db, id=id)
     if not fue_creado:
         raise HTTPException(status_code=404, detail=msj)
+    
+    return cliente
+
+@router.get("/", response_model=List[schemas.Cliente])
+def handle_read_clientes(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+):
+    clientes = crud.cliente.get_multi_with_tarjeta(db, skip=skip, limit=limit)
+    # clientes = [cliente for cliente in clientes if cliente.activa==True]
+    return clientes
+
+@router.post("/", response_model=schemas.Cliente)
+def handle_create_cliente_with_tarjeta(
+    *,
+    db: Session = Depends(deps.get_db),
+    tarjeta_id: int,
+    cliente_in: schemas.ClienteCreate,
+    detalle_adicional_in: schemas.DetallesAdicionalesForUI = None,
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+):
+    print(f'usuario logueado id: {current_user.id}')
+    cliente, fue_creado, error_msg = crud.cliente.create_with_tarjeta(
+        db = db, 
+        tarjeta_id = tarjeta_id,
+        cliente_in = cliente_in,
+        usuario_apertura_orden = current_user.id,
+        detalles_adicionales_in = detalle_adicional_in,
+    )
+
+    if not fue_creado:
+        raise HTTPException(status_code=404, detail=error_msg)
     
     return cliente
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -7,17 +7,6 @@ from sql_app import crud, schemas
 from sql_app.api import deps
 
 router = APIRouter()
-
-@router.get("/{orden_id}", response_model=schemas.OrdenCompra)
-def handle_read_orden_by_id(
-    orden_id: int,
-    db: Session = Depends(deps.get_db)
-):
-    orden_in_db = crud.orden.get(db=db, id=orden_id)
-    if orden_in_db is None:
-        raise HTTPException(status_code=404, detail="Orden no encontrada")
-    
-    return orden_in_db
 
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompra)
 def handle_read_orden_by_client_rfid(
@@ -30,28 +19,18 @@ def handle_read_orden_by_client_rfid(
     
     return orden_in_db
 
-@router.get("/", response_model=List[schemas.OrdenCompra])
-def handle_read_ordens(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-):
-    ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
-    # ordens = [orden for orden in ordens if orden.activa==True]
-    return ordens
-
 @router.post("/abrir", response_model=schemas.OrdenCompra)
 def handle_abrir_orden(
     *,
     db: Session = Depends(deps.get_db),
-    tarjeta_cliente: int
+    tarjeta_cliente: int,
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ## 
+    print(f'usuario logueado id: {current_user.id}')
     orden_in = schemas.OrdenCompraAbrir(
-        abierta_por=usuario_id, 
-        tarjeta_cliente=tarjeta_cliente)
+        abierta_por=current_user.id, 
+        tarjeta_cliente=tarjeta_cliente
+    )
     
     orden = crud.orden.abrir_orden(
         db = db, 
@@ -68,13 +47,13 @@ def handle_cerrar_orden(
     *,
     tarjeta_cliente: int,
     db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
-    ## REEMPLAZAR LA SIGUIENTE LINEA POR DEPS
-    usuario_id = crud.personal_interno.get_multi(db=db, limit=1)[0].id
-    ##
+    print(f'usuario logueado id: {current_user.id}')
     orden_in = schemas.OrdenCompraCerrar(
-        cerrada_por=usuario_id, 
-        tarjeta_cliente=tarjeta_cliente)
+        cerrada_por=current_user.id, 
+        tarjeta_cliente=tarjeta_cliente
+    )
     
     orden = crud.orden.cerrar_orden(
         db = db,
@@ -102,4 +81,23 @@ def handle_update_orden(
     )
     return orden
 
+@router.get("/{id}", response_model=schemas.OrdenCompra)
+def handle_read_orden_by_id(
+    id: int,
+    db: Session = Depends(deps.get_db)
+):
+    orden_in_db = crud.orden.get(db=db, id=id)
+    if orden_in_db is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    return orden_in_db
 
+@router.get("/", response_model=List[schemas.OrdenCompra])
+def handle_read_ordens(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+):
+    ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
+    # ordens = [orden for orden in ordens if orden.activa==True]
+    return ordens

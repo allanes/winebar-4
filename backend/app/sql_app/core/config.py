@@ -1,6 +1,7 @@
 from pydantic import AnyHttpUrl, EmailStr, HttpUrl, validator
 from pydantic_settings import SettingsConfigDict, BaseSettings
 from typing import List, Optional, Union, Dict, Any
+import bcrypt
 import os
 import secrets
 from dotenv import load_dotenv
@@ -10,8 +11,13 @@ load_dotenv()
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
     API_V1_STR: str = "/api/v1"
+    API_KEY_TERMINAL_CAJA_1: str
+    API_KEY_TERMINAL_TAPA_1: str
     SECRET_KEY: str = secrets.token_urlsafe(32)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 60 minutes * 24 hours * 8 days = 8 days
+    SALT: str = bcrypt.gensalt()
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ACCESS_TOKEN_EXPIRE_MINUTES_LONG: int
+    ALGORITHM: str = "HS256"
     SERVER_NAME: str = "altacava-winebar-server"
     # SERVER_NAME: str = "localhost"
     SERVER_HOST: AnyHttpUrl = "http://localhost"
@@ -53,8 +59,10 @@ class Settings(BaseSettings):
         username = values.get("POSTGRES_USER")
         password = values.get("POSTGRES_PASSWORD")
         server = values.get("POSTGRES_SERVER", "localhost")
+        port = values.get('POSTGRES_PORT', '5432')
         db = values.get("POSTGRES_DB")
-        return f"postgresql://{username}:{password}@localhost/{db}"
+        return f"postgresql://{username}:{password}@{server}:{port}/{db}"
+    
     model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
