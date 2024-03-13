@@ -9,6 +9,9 @@ sequenceDiagram
         Backend->>Backend: Apply business logic
         Backend-->>Tapero: Update order with staged item
     end
-    Tapero-->>Client: Close consumption
-
+    Client->>Tapero: Cerrar Pedido
+    Tapero->>Backend: Confirm Pedido
+    Backend->>Backend: Close Pedido
+    Backend-->>Tapero: Pedido summary
+    Tapero-->>Client: Show summary
 ```

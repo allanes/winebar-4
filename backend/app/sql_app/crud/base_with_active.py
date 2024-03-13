@@ -65,7 +65,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         if not check_passed:
             return None, False, message
         
-        self.apply_deactivation_defaults(obj=obj, db=db)
+        self.apply_deactivation_defaults(db_obj=obj, db=db)
         db.commit()
         db.refresh(obj)
         return obj, True, ""
@@ -98,10 +98,10 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
             created_obj = self.create(db=db, obj_in=obj_in)
             return created_obj, True, ""  # Successful creation
 
-    def apply_deactivation_defaults(self, obj: ModelType, db: Session = None) -> None:
+    def apply_deactivation_defaults(self, db_obj: ModelType, db: Session = None) -> None:
         """Apply default values upon deactivation of a record."""
         # Generic implementation; specific models can override this
-        obj.activa = False  # Reactivate the record
+        db_obj.activa = False  # Reactivate the record
         
 
     def apply_activation_defaults(self, obj_in: CreateSchemaType | UpdateSchemaType, db_obj: ModelType, db: Session = None) -> ModelType:

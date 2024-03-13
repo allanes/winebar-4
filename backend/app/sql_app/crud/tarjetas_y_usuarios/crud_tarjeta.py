@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import Tarjeta, Rol
 from sql_app.schemas.tarjetas_y_usuarios.tarjeta import TarjetaCreate, TarjetaUpdate
-from sql_app.schemas.validators import clean_tarjeta_id
+# from sql_app.schemas.validators import clean_tarjeta_id
 from . import crud_rol
 
 
@@ -24,7 +24,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         rol_en_db = db.query(Rol).filter(Rol.nombre_corto == obj_in.rol_nombre).first()
 
         tarjeta_in = db_obj
-        tarjeta_in.id = clean_tarjeta_id(obj_in.raw_rfid),
+        tarjeta_in.id = int(obj_in.raw_rfid),
         tarjeta_in.raw_rfid = obj_in.raw_rfid,
         tarjeta_in.rol_id = rol_en_db.id,
         tarjeta_in.fecha_alta = datetime.utcnow()
@@ -32,19 +32,21 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         tarjeta_in.presente_en_salon = False
         tarjeta_in.entregada = False
         tarjeta_in.activa = True
-        tarjeta_in.monto_precargado = -1
+        tarjeta_in.monto_precargado = 0
         return tarjeta_in
     
-    def apply_deactivation_defaults(self, obj: Tarjeta, db: Session = None) -> None:
-        self.devolver_a_banca(db=db, id=obj.id)
+    def apply_deactivation_defaults(self, db_obj: Tarjeta, db: Session = None) -> None:
         
-        tarjeta_in = obj
-        tarjeta_in.fecha_alta = None
-        tarjeta_in.fecha_ultimo_uso = None
-        tarjeta_in.presente_en_salon = False
-        tarjeta_in.entregada = False
-        tarjeta_in.activa = False
-        tarjeta_in.monto_precargado = -1
+        tarjeta_in_db = db_obj
+        tarjeta_in_db.fecha_alta = None
+        tarjeta_in_db.fecha_ultimo_uso = None
+        tarjeta_in_db.presente_en_salon = False
+        tarjeta_in_db.entregada = False
+        tarjeta_in_db.activa = False
+        tarjeta_in_db.monto_precargado = -1
+
+        db.commit()
+        db.refresh(tarjeta_in_db)
     
     def pre_create_checks(self, obj_in: TarjetaCreate, db: Session = None) -> tuple[bool, str]:
         puede_crearse = True
@@ -60,7 +62,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         ## La busco entre las tarjetas activas. Si existe, retorna
         preexiste_tarjeta = None
         try:
-            preexiste_tarjeta = self.get_by_raw_rfid(db=db, raw_rfid=tarjeta_in.raw_rfid)
+            preexiste_tarjeta = super().get_active(db=db, id=int(obj_in.raw_rfid))
         except ValueError:
             msg = f"Tarjeta inválida"
             return False, msg
@@ -68,8 +70,6 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         if preexiste_tarjeta:
             msg = f"La tarjeta ya existe"
             return False, msg
-
-        ## Reviso si tiene orden abierta
         
         return puede_crearse, msg
     
@@ -99,11 +99,6 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
     def create_or_reactivate(self, db: Session, *, obj_in: TarjetaCreate) -> tuple[Tarjeta | None, bool, str]:
         return super().create_or_reactivate(db=db, obj_in=obj_in, custom_id_field='raw_rfid')
     ### End of Functions override section
-        
-    def get_by_raw_rfid(self, db: Session, raw_rfid: str) -> Optional[Tarjeta]:
-        # Check if a Tarjeta has to be created or updated (based on 'activa')
-        raw_rfid_transformado = clean_tarjeta_id(raw_rfid)
-        return super().get_active(db=db, id=raw_rfid_transformado)        
         
     def devolver_a_banca(self, db: Session, id: int) -> Tarjeta:
         db_obj = self.get(db=db, id=id)
