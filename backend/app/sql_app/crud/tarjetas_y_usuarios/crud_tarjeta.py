@@ -14,6 +14,17 @@ from . import crud_rol
 
 class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]):
     ### Functions override section
+    def get_multi(
+            self, db: Session, *, only_active:int = True, skip: int = 0, limit: int = 100
+        ) -> List[Tarjeta]:
+        
+        querry = db.query(self.model)
+        if only_active:
+            querry = querry.filter(self.model.activa == True)
+        
+        querry = querry.order_by(self.model.rol_id, self.model.id).offset(skip).limit(limit).all()
+        return querry
+    
     def apply_activation_defaults(
         self, 
         obj_in: TarjetaCreate | TarjetaUpdate, 

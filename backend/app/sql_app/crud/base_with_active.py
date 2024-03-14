@@ -15,16 +15,15 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
     def get_inactive(self, db: Session, id: Any) -> Optional[ModelType]:
         return db.query(self.model).filter(self.model.id == id, self.model.activa == False).first()
     
-    def get_multi_active(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
-        return db.query(self.model).filter(self.model.activa == True).offset(skip).limit(limit).all()
-    
     def get_multi(
             self, db: Session, *, only_active:int = True, skip: int = 0, limit: int = 100
         ) -> List[ModelType]:
+        querry = db.query(self.model)
         if only_active:
-            return self.get_multi_active(db=db, skip=skip, limit=limit)
+            querry = querry.filter(self.model.activa == True)
         
-        return db.query(self.model).offset(skip).limit(limit).all()
+        querry = querry.order_by(self.model.id).offset(skip).limit(limit).all()
+        return querry
     
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
