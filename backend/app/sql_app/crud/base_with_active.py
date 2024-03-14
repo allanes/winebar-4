@@ -15,16 +15,15 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
     def get_inactive(self, db: Session, id: Any) -> Optional[ModelType]:
         return db.query(self.model).filter(self.model.id == id, self.model.activa == False).first()
     
-    def get_multi_active(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
-        return db.query(self.model).filter(self.model.activa == True).offset(skip).limit(limit).all()
-    
     def get_multi(
             self, db: Session, *, only_active:int = True, skip: int = 0, limit: int = 100
         ) -> List[ModelType]:
+        querry = db.query(self.model)
         if only_active:
-            return self.get_multi_active(db=db, skip=skip, limit=limit)
+            querry = querry.filter(self.model.activa == True)
         
-        return db.query(self.model).offset(skip).limit(limit).all()
+        querry = querry.order_by(self.model.id).offset(skip).limit(limit).all()
+        return querry
     
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
@@ -65,7 +64,7 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
         if not check_passed:
             return None, False, message
         
-        self.apply_deactivation_defaults(obj=obj, db=db)
+        self.apply_deactivation_defaults(db_obj=obj, db=db)
         db.commit()
         db.refresh(obj)
         return obj, True, ""
@@ -98,10 +97,10 @@ class CRUDBaseWithActiveField(CRUDBase[ModelType, CreateSchemaType, UpdateSchema
             created_obj = self.create(db=db, obj_in=obj_in)
             return created_obj, True, ""  # Successful creation
 
-    def apply_deactivation_defaults(self, obj: ModelType, db: Session = None) -> None:
+    def apply_deactivation_defaults(self, db_obj: ModelType, db: Session = None) -> None:
         """Apply default values upon deactivation of a record."""
         # Generic implementation; specific models can override this
-        obj.activa = False  # Reactivate the record
+        db_obj.activa = False  # Reactivate the record
         
 
     def apply_activation_defaults(self, obj_in: CreateSchemaType | UpdateSchemaType, db_obj: ModelType, db: Session = None) -> ModelType:

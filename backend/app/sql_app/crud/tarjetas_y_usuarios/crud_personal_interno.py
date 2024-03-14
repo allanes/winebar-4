@@ -24,11 +24,11 @@ from sql_app.core.config import settings
 
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
-    def apply_deactivation_defaults(self, obj: PersonalInterno, db: Session = None) -> None:
-        obj.activa = False
+    def apply_deactivation_defaults(self, db_obj: PersonalInterno, db: Session = None) -> None:
+        db_obj.activa = False
         # super().apply_deactivation_defaults(personal_obj) # mismo que la linea de arriba
-        obj.tarjeta_id = None
-        obj.contraseña = obtener_pass_de_deactivacion()
+        db_obj.tarjeta_id = None
+        db_obj.contraseña = obtener_pass_de_deactivacion()
 
     def apply_activation_defaults(
             self, 
