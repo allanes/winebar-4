@@ -25,6 +25,9 @@ from sql_app.core.config import settings
 class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInternoCreate, PersonalInternoUpdate]):
     ### Functions override section
     def apply_deactivation_defaults(self, db_obj: PersonalInterno, db: Session = None) -> None:
+        if db_obj.tarjeta is not None:
+            tarjeta_devuelta_in_db = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=db_obj.tarjeta_id)
+
         db_obj.activa = False
         # super().apply_deactivation_defaults(personal_obj) # mismo que la linea de arriba
         db_obj.tarjeta_id = None
