@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 from pydantic import BaseModel, ConfigDict
-from .producto import ProductoCreate, Producto
+from .producto import ProductoCreate, ProductoUpdate, Producto
 
 class TapaBase(BaseModel):
     foto: Optional[str] = None
@@ -11,8 +11,9 @@ class TapaCreate(TapaBase):
 class TapaConProductoCreate(ProductoCreate):
     foto: Optional[str] = None
 
-class TapaUpdate(TapaBase):
-    pass
+class TapaUpdate(ProductoUpdate):
+    foto: Optional[str] = None
+
 
 class TapaInDBBase(TapaBase):
     id: int

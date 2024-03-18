@@ -1,10 +1,11 @@
 import os
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.inventario_y_promociones import Tapa
 from sql_app.schemas.inventario_y_promociones.tapa import TapaCreate, TapaUpdate, TapaConProductoCreate
-from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
+from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate, ProductoUpdate
 from sql_app import crud
 
 class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
@@ -41,6 +42,15 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
     def get_tapa_image_name(self, tapa_in_db: Tapa) -> str:
         cadena = f"tapa_{tapa_in_db.id}.jpg"
         return cadena
+    
+    def update(self, db: Session, *, db_obj: Tapa, obj_in: TapaUpdate | Dict[str, Any]) -> Tapa:
+        producto_actualizado_in_db = crud.producto.update(db=db, db_obj=db_obj.producto, obj_in=obj_in)
+        
+        db_obj.id_producto = producto_actualizado_in_db.id
+        db.commit()
+        db.refresh(db_obj)
+
+        return db_obj
 
 
 tapa = CRUDTapa(Tapa)
