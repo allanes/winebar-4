@@ -8,6 +8,21 @@ from sql_app.api import deps
 
 router = APIRouter()
 
+@router.get("/puede-ser-entregada/{id}", response_model=schemas.Tarjeta)
+def handle_check_puede_ser_entregada_a_personal(
+    id: int,
+    db: Session = Depends(deps.get_db)
+):
+    puede_entregarse, msg = crud.tarjeta.check_tarjeta_libre_para_asociar_personal(db=db, id_tarjeta=id)
+    if not puede_entregarse:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    tarjeta_in_db = crud.tarjeta.get_active(db=db, id=id)
+    if tarjeta_in_db is None:
+        raise HTTPException(status_code=404, detail="Tarjeta no encontrada")
+    
+    return tarjeta_in_db
+
 @router.get("/{id}", response_model=schemas.Tarjeta)
 def read_tarjeta_by_id(
     id: int,

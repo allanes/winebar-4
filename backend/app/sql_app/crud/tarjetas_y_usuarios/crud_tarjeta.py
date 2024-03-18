@@ -156,7 +156,8 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         if not esta_libre: return False, msg
 
         tarjeta_in_db = self.get_active(db=db, id=id_tarjeta)
-        if tarjeta_in_db.rol.nombre_corto not in ['ADIMN', 'CAJERO', 'TAPERO']:
+        print(f'comprobando rol de tarjeta: {tarjeta_in_db.rol.nombre_corto}')
+        if tarjeta_in_db.rol.nombre_corto not in ['ADMIN', 'CAJERO', 'TAPERO']:
             return False, 'La tarjeta debe ser de un personal interno'
         
         return True, ''
