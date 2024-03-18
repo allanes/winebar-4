@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
@@ -19,12 +20,9 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
         
         tapa_in = TapaCreate(
             id_producto=producto_in_db.id,
-            foto=tapa_con_producto_in.foto
         )
 
         tapa_in_db = self.create(db=db, obj_in=tapa_in)
-
-        # producto_in_db.tapa = 
 
         if tapa_in_db is None:
             return None, False, 'La tapa no se pudo crear'
@@ -39,6 +37,10 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
         tapa_removida = super().remove(db, id=id)
         
         return tapa_removida
+    
+    def get_tapa_image_name(self, tapa_in_db: Tapa) -> str:
+        cadena = f"tapa_{tapa_in_db.id}.jpg"
+        return cadena
 
 
 tapa = CRUDTapa(Tapa)
