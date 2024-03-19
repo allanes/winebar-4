@@ -29,8 +29,7 @@ def handle_upload_foto(
     with open(file_path, "wb") as file:
         file.write(foto.file.read())
     
-    tapa_in = schemas.TapaUpdate(foto=filename)
-    tapa = crud.tapa.update(db=db, db_obj=tapa, obj_in=tapa_in)
+    tapa = crud.tapa.update_image_field(db=db, id=id)
     return tapa
 
 @router.get("/foto/{id}", response_class=FileResponse)
