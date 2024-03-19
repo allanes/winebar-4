@@ -155,9 +155,11 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
             return None
         
         if usar_api_key:
+            print(f'Authenticating by RFID and API key')
             if not verify_api_key(password):
                 return None
         else:
+            print(f'Authenticating by User and Password"')
             if not verify_password(password, user.contraseña):
                 return None
         return user
