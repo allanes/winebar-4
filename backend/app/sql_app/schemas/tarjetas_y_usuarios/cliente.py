@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from .tarjeta import Tarjeta
+from .detalles_adicionales import DetallesAdicionales
 
 # Shared properties
 class ClienteBase(BaseModel):
@@ -25,7 +26,16 @@ class ClienteInDBBase(ClienteBase):
 # Properties to return to client
 class Cliente(ClienteInDBBase):
     # tarjeta: Optional[Tarjeta] = None
+    # detalles_adicionales: Optional[DetallesAdicionales] = None
     pass
+
+class ClienteWithDetails(BaseModel):
+    # id_tarjeta: int
+    # detalles_adicionales: Optional[DetallesAdicionales] = None
+    cliente: Cliente
+    detalle: Optional[DetallesAdicionales] = None
+    tarjeta: Optional[Tarjeta] = None
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties stored in DB
 class ClienteInDB(ClienteInDBBase):

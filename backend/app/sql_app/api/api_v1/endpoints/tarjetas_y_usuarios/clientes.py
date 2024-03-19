@@ -58,15 +58,19 @@ def handle_delete_cliente(
     
     return cliente
 
-@router.get("/", response_model=List[schemas.Cliente])
+@router.get("/", response_model=List[schemas.ClienteWithDetails])
 def handle_read_clientes(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
 ):
-    clientes = crud.cliente.get_multi_with_tarjeta(db, skip=skip, limit=limit)
-    # clientes = [cliente for cliente in clientes if cliente.activa==True]
-    return clientes
+    clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db, skip=skip, limit=limit)
+    
+    clientes_detallados = crud.cliente_opera_con_tarjeta.convertir_a_cliente_detallado(
+        db=db, clientes_a_convertir=clientes_operan
+    )
+    
+    return clientes_detallados
 
 @router.post("/", response_model=schemas.Cliente)
 def handle_create_cliente_with_tarjeta(
