@@ -1,10 +1,11 @@
 from typing import Any, Dict, Optional, List, Union
+from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta
 from sql_app.crud.gestion_de_pedidos import crud_orden
-from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta
+from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
@@ -13,12 +14,6 @@ from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
-    def pre_create_checks(self, obj_in: ClienteCreate, db: Session = None) -> tuple[bool, str]:
-        # Check if cliente_in.tarjeta_id is available for use
-        # Check if cliente_in.tarjeta_id can be lended to a client
-        # Check if cliente_in.tarjeta_id is available for use in vitte
-        return super().pre_create_checks(obj_in, db)
-    
     def apply_activation_defaults(self, obj_in: ClienteCreate | ClienteUpdate, db_obj: Cliente, db: Session = None) -> Cliente:
         print('aplicando activation defaults')
         cliente_in_db = db_obj
@@ -46,20 +41,12 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         detalles_adicionales_in: DetallesAdicionalesForUI = None
     ) -> tuple[Cliente | None, bool, str]:
         # Tarjeta prechecks
-        puede_asociarse, msg = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar_cliente(db=db, id_tarjeta=tarjeta_id)
+        puede_asociarse, msg = self.pre_entrega_checks(db=db, tarjeta_id=tarjeta_id)
         if not puede_asociarse:
             return None, False, msg
         
-        # Client prechecks
-        check_passed, message = self.pre_create_checks(
-            db=db,
-            obj_in=cliente_in
-        )
-        if not check_passed:
-            return None, False, message
-        
         cliente_in_db = self.create(db=db, obj_in=cliente_in)
-        
+
         # Create detalles_adicionales
         if detalles_adicionales_in:
             detalles_adicionales_con_id_cliente = DetallesAdicionalesCreate(
@@ -69,14 +56,12 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             detalles_in_db = crud_detalles_adicionales.detalles_adicionales.create(
                 db=db, obj_in=detalles_adicionales_con_id_cliente)
             
-        # Create cliente_y_tarjetas asociation
-        cliente_con_tarjeta = ClienteOperaConTarjetaCreate(
-            id_cliente=cliente_in_db.id,
-            tarjeta_id=tarjeta_id)
-
-        crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.create(
-            db=db, obj_in=cliente_con_tarjeta)
+        _, pudo_entregar, msg = self.entregar_tarjeta_a_cliente(db=db, cliente_id=cliente_in_db.id, tarjeta_id=tarjeta_id)
         
+        if not pudo_entregar:
+            ## Remove Cliente and Additional Details
+            return None, False, msg
+
         db.refresh(cliente_in_db)
         
         # Open an order
@@ -125,5 +110,43 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         clientes_con_tarjeta = db.query(Cliente).filter(Cliente.id.in_(cliente_ids)).all()
 
         return clientes_con_tarjeta
+    
+    def pre_entrega_checks(self, db: Session, tarjeta_id: int) -> tuple[bool, str]:
+        """Chequeos para entregar/cambiar tarjeta.
+        """
+        tarjeta_puede_usarse, msg_puede_usarse = crud_tarjeta.tarjeta.check_tarjeta_libre_para_asociar_cliente(db=db, id_tarjeta=tarjeta_id)
+        if not tarjeta_puede_usarse:
+            return False, msg_puede_usarse
+        
+        ## chequeo que noe exista orden abierta para esa tarjeta
+        orden_preexistente = crud_orden.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_id)
+        if orden_preexistente is not None:
+            return False, "Ya existe una orden abierta para esa tarjeta."
+
+        # If all checks pass, the tarjeta can be associated
+        return True, ''
+    
+    def entregar_tarjeta_a_cliente(self, db: Session, cliente_id: int, tarjeta_id: int) -> tuple[ClienteOperaConTarjeta | None, bool, str]:
+
+        # Create cliente_y_tarjetas asociation
+        cliente_con_tarjeta = ClienteOperaConTarjetaCreate(
+            id_cliente=cliente_id,
+            tarjeta_id=tarjeta_id)
+
+        cliente_operando_in_db = crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.create(
+            db=db, obj_in=cliente_con_tarjeta)
+        
+        tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
+        if tarjeta:
+            tarjeta.entregada = True
+            tarjeta.presente_en_salon = True
+            tarjeta.fecha_ultimo_uso = datetime.now()
+            tarjeta.monto_precargado = 0
+            # Commit the transaction to save changes
+            db.commit()
+            # Refresh the instances to reflect the updated state
+            db.refresh(tarjeta)
+        
+        return cliente_operando_in_db, True, ''
 
 cliente = CRUDCliente(Cliente)
