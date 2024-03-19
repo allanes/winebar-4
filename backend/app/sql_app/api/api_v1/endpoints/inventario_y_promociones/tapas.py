@@ -1,12 +1,52 @@
+import os
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from sql_app import crud, schemas
 from sql_app.api import deps
+from sql_app.core.config import settings
 
 router = APIRouter()
+
+@router.post("/foto/{id}", response_model=schemas.Tapa)
+def handle_upload_foto(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: int,
+    foto: UploadFile = File(...)
+):
+    tapa = crud.tapa.get(db=db, id=id)
+    if not tapa:
+        raise HTTPException(status_code=404, detail=f"Tapa no encontrada con ID {id}")
+    
+    # Save the uploaded file and update the tapa's foto field
+    filename = crud.tapa.get_tapa_image_name(tapa_in_db=tapa)  # Generate a unique filename
+    file_path = f"{settings.IMAGES_PATH}/{filename}"  # Specify the path to save the file
+    print(f'ruta de imagenes: {os.path.abspath(settings.IMAGES_PATH)}')
+    with open(file_path, "wb") as file:
+        file.write(foto.file.read())
+    
+    tapa = crud.tapa.update_image_field(db=db, id=id)
+    return tapa
+
+@router.get("/foto/{id}", response_class=FileResponse)
+def handle_get_foto(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: int
+):
+    tapa = crud.tapa.get(db=db, id=id)
+    if not tapa:
+        raise HTTPException(status_code=404, detail=f"Tapa no encontrada con ID {id}")
+    
+    if not tapa.foto:
+        raise HTTPException(status_code=404, detail=f"Foto no encontrada para Tapa con ID {id}")
+    
+    file_path = f"{settings.IMAGES_PATH}/{tapa.foto}"  # Specify the path where the file is saved
+    return file_path
 
 @router.get("/{id}", response_model=schemas.Tapa)
 def handle_read_tapa_by_id(
@@ -28,7 +68,7 @@ def handle_update_tapa(
 ):
     tapa = crud.tapa.get(db=db, id=id)
     if not tapa:
-        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
+        raise HTTPException(status_code=404, detail=f"Tapa no encontrada con id {id}")
     
     tapa = crud.tapa.update(
         db=db, db_obj=tapa, obj_in=tapa_in

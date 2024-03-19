@@ -1,9 +1,11 @@
+import os
+from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.inventario_y_promociones import Tapa
 from sql_app.schemas.inventario_y_promociones.tapa import TapaCreate, TapaUpdate, TapaConProductoCreate
-from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
+from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate, ProductoUpdate
 from sql_app import crud
 
 class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
@@ -19,12 +21,9 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
         
         tapa_in = TapaCreate(
             id_producto=producto_in_db.id,
-            foto=tapa_con_producto_in.foto
         )
 
         tapa_in_db = self.create(db=db, obj_in=tapa_in)
-
-        # producto_in_db.tapa = 
 
         if tapa_in_db is None:
             return None, False, 'La tapa no se pudo crear'
@@ -39,6 +38,34 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
         tapa_removida = super().remove(db, id=id)
         
         return tapa_removida
+    
+    def get_tapa_image_name(self, tapa_in_db: Tapa) -> str:
+        cadena = f"tapa_{tapa_in_db.id}.jpg"
+        return cadena
+    
+    def update(self, db: Session, *, db_obj: Tapa, obj_in: TapaUpdate | Dict[str, Any]) -> Tapa:
+        producto_actualizado_in_db = crud.producto.update(db=db, db_obj=db_obj.producto, obj_in=obj_in)
+        
+        db_obj.id_producto = producto_actualizado_in_db.id
+        db.commit()
+        db.refresh(db_obj)
+
+        return db_obj
+    
+    def update_image_field(self, db: Session, *, id: int) -> Tapa | None:
+        tapa_in_db = db.query(Tapa).filter(Tapa.id == id).first()
+        
+        if tapa_in_db is None:
+            return None
+        
+        tapa_in_db.foto = self.get_tapa_image_name(tapa_in_db=tapa_in_db)
+        db.commit()
+        db.refresh(tapa_in_db)
+        
+        return tapa_in_db
+    
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Tapa]:
+        return db.query(Tapa).order_by(Tapa.id).offset(skip).limit(limit).all()
 
 
 tapa = CRUDTapa(Tapa)
