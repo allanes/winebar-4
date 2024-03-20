@@ -23,11 +23,17 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
     def abrir_pedido(
             self, db: Session, *, pedido_in: PedidoCreate, tarjeta_cliente: int
             ) -> tuple[Pedido | None, bool, str]:
-        ## Busco la orden abierta para esa tarjeta
+        ## Busco la orden abierta para esa tarjeta (capaz esta demas)
         orden_in_db = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
         if orden_in_db is None:
             return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
         
+        ## Busco si ya existia un pedido en curso
+        pedidos_del_turno_por_tarjeta = self.get_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
+        if len(pedidos_del_turno_por_tarjeta) > 0:
+            return pedidos_del_turno_por_tarjeta[0], True, ''
+        
+
         ## Reemplazar
         configuracion = Configuracion()
         configuracion.monto_maximo_orden_def = 200
@@ -85,7 +91,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         pedido_abierto_in_db = db.query(Pedido).filter(Pedido.id == pedido_abierto.id).first()
         return pedido_abierto_in_db
         
-    def agregar_producto_a_renglon(
+    def agregar_producto_a_pedido(
         self, 
         db: Session, 
         tarjeta_cliente:int, 
@@ -110,8 +116,8 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
 
             if not fue_abierto:
                 return None, False, msg
+        print(f'pedido abierto recuperado id: {pedido_in_db.id}')
         
-        print(f'pedido_recuperado: {pedido_in_db.__dict__}')
         ## Busco si tengo que crear un nuevo renglon o actualizar uno existente
         id_renglon_encontrado = None
         renglon_in_db = None
@@ -141,5 +147,44 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             )
         
         return renglon_in_db, renglon_in_db is not None, ''    
+    
+    def quitar_producto_de_pedido(
+        self, 
+        db: Session, 
+        tarjeta_cliente:int, 
+        producto_id: int,
+    ) -> tuple[Pedido | None, bool, str]:
+        ## Mismo que self.agregar_producto()
+        ## Busco la orden abierta para esa tarjeta
+        orden_in_db = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
+        if orden_in_db is None:
+            return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
+        
+        ## Busco un pedido abierto para esa orden
+        pedido_in_db = self.get_pedido_abierto_por_orden(db=db, orden_id=orden_in_db.id)
+        if pedido_in_db is None:
+            return None, False, 'No se encontró un pedido abierto de donde quitar el producto'
+        print(f'pedido abierto recuperado id: {pedido_in_db.id}')
+        
+        ## Busco el renglon a remover
+        id_renglon_encontrado = None
+        
+        renglones_de_orden = crud.renglon.get_by_pedido(
+            db=db,
+            pedido_id=pedido_in_db.id
+        )
+        
+        for renglon in renglones_de_orden:
+            if renglon.producto_id == producto_id:
+                id_renglon_encontrado = renglon.id
+                break
+
+        if id_renglon_encontrado is None:
+            producto_in_db = crud.producto.get(db=db, id=producto_id)
+            nombre_producto = producto_in_db.titulo if producto_in_db else None
+            return None, False, f'No se encontró un renglon con el producto id {producto_id} - {nombre_producto}'
+        
+        renglon_removido = crud.renglon.remove(db=db, id=id_renglon_encontrado)
+        return renglon_removido, True, ''
 
 pedido = CRUDPedido(Pedido)
