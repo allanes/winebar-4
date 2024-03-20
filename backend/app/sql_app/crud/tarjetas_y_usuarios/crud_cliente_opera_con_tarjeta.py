@@ -8,6 +8,9 @@ from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteWithDetails
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales 
 
 class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate]):
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ClienteOperaConTarjeta]:
+        return db.query(ClienteOperaConTarjeta).order_by(ClienteOperaConTarjeta.id.desc()).offset(skip).limit(limit).all()
+    
     def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> Optional[ClienteOperaConTarjeta]:
         return db.query(ClienteOperaConTarjeta).filter(ClienteOperaConTarjeta.id_cliente == cliente_id).first()
 
@@ -31,7 +34,7 @@ class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaCo
                 print(f'detalle adic recuperado: {detalle_adic}')
                 print(f'detalle adic recuperado id: {detalle_adic.id}')
             clientes_detallados.append(ClienteWithDetails(
-                cliente=cliente_opera.cliente,
+                **cliente_opera.cliente.__dict__,
                 tarjeta=cliente_opera.tarjeta,
                 detalle=detalle_adic.__dict__ if detalle_adic else None
             ))

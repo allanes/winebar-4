@@ -29,10 +29,10 @@ class Cliente(ClienteInDBBase):
     # detalles_adicionales: Optional[DetallesAdicionales] = None
     pass
 
-class ClienteWithDetails(BaseModel):
+class ClienteWithDetails(Cliente):
     # id_tarjeta: int
     # detalles_adicionales: Optional[DetallesAdicionales] = None
-    cliente: Cliente
+    # cliente: Cliente
     detalle: Optional[DetallesAdicionales] = None
     tarjeta: Optional[Tarjeta] = None
     model_config = ConfigDict(from_attributes=True)
