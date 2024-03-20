@@ -45,7 +45,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def verify_api_key(plain_password: str) -> bool:
     api_keys = [
         settings.API_KEY_TERMINAL_CAJA_1, 
-        settings.API_KEY_TERMINAL_TAPA_1
+        settings.API_KEY_TERMINAL_TAPA_1,
+        settings.API_KEY_TERMINAL_ADMIN
     ]
     if plain_password not in api_keys:
         return False
@@ -57,6 +58,8 @@ def get_terminal_by_key(plain_password: str) -> str:
         return 'TERMINAL_CAJA_1'
     if plain_password == settings.API_KEY_TERMINAL_TAPA_1:
         return 'TERMINAL_TAPA_1'
+    if plain_password == settings.API_KEY_TERMINAL_ADMIN:
+        return 'TERMINAL_ADMIN'
     return ''
     
 def hashear_contra(contra_in: str | None) -> str:

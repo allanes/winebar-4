@@ -8,19 +8,19 @@ from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
-    def get_by_rfid(self, db: Session, *, tarjeta_id: int, solo_abiertas: bool = True) -> OrdenCompra | None:
+    def get_last_by_rfid(self, db: Session, *, tarjeta_id: int, solo_abiertas: bool = True) -> OrdenCompra | None:
         cliente_in_db = crud.cliente.get_by_rfid_card(db=db, tarjeta_id=tarjeta_id)
         if cliente_in_db is None:
             return None
         
-        orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.cliente_id == cliente_in_db.id).first()
+        orden_in_db = db.query(OrdenCompra)
+        orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_in_db.id)
 
-        if solo_abiertas and orden_in_db is not None:
-            if orden_in_db.cerrada_por is None:
-                # La orden está abierta
-                pass
-            else:
-                orden_in_db = None
+        if solo_abiertas:
+            orden_in_db = orden_in_db.filter(OrdenCompra.cerrada_por is not None)
+
+        orden_in_db = orden_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
+        orden_in_db = orden_in_db.first()
 
         return orden_in_db
 
@@ -30,7 +30,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         if turno_abierto is None: return None
 
         # Chequeo si preexiste orden para ese tarjeta:
-        orden_preexistente = self.get_by_rfid(db=db, tarjeta_id=abrir_orden_in.tarjeta_cliente)
+        orden_preexistente = self.get_last_by_rfid(db=db, tarjeta_id=abrir_orden_in.tarjeta_cliente)
         if orden_preexistente is not None:
             print("Ya existe una orden para esa tarjeta")
             return None
@@ -67,7 +67,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         return orden_in_db
     
     def cerrar_orden(self, db: Session, *, orden_in: OrdenCompraCerrar) -> OrdenCompra:
-        orden_in_db = self.get_by_rfid(db=db, tarjeta_id=orden_in.tarjeta_cliente)
+        orden_in_db = self.get_last_by_rfid(db=db, tarjeta_id=orden_in.tarjeta_cliente)
         if orden_in_db is None:
             return None
         

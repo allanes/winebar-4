@@ -13,7 +13,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         cliente_con_tarjeta_in_db = crud.cliente_opera_con_tarjeta.get_by_tarjeta_id(db=db, tarjeta_id=tarjeta_id)
         if cliente_con_tarjeta_in_db is None: return []
         
-        orden_compra = crud.orden.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
+        orden_compra = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_id)
         if orden_compra is None: return []
 
         print(f"Buscando pedidos por tarjeta {tarjeta_id} para orden: {orden_compra.id}")
@@ -24,7 +24,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             self, db: Session, *, pedido_in: PedidoCreate, tarjeta_cliente: int
             ) -> tuple[Pedido | None, bool, str]:
         ## Busco la orden abierta para esa tarjeta
-        orden_in_db = crud.orden.get_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
+        orden_in_db = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
         if orden_in_db is None:
             return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
         
@@ -93,7 +93,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         atendido_por: int,
     ) -> tuple[Pedido | None, bool, str]:
         ## Busco la orden abierta para esa tarjeta
-        orden_in_db = crud.orden.get_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
+        orden_in_db = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_cliente, solo_abiertas=True)
         if orden_in_db is None:
             return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
         

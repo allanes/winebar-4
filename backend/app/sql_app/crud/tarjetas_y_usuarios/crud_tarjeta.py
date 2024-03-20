@@ -132,7 +132,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
             return puede_asociarse, msg
         if tarjeta_in_db.entregada:
             puede_asociarse = False
-            msg = "La tarjeta ya estaba entregada. El usuario debe devolverla primero"
+            msg = "La tarjeta está entregada. El usuario debe devolverla primero"
             return puede_asociarse, msg
         if tarjeta_in_db.presente_en_salon:
             puede_asociarse = False
@@ -147,7 +147,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
 
         tarjeta_in_db = self.get_active(db=db, id=id_tarjeta)
         if tarjeta_in_db.rol.nombre_corto != 'CLIENTE_ESTANDAR':
-            return False, 'La tarjeta debe ser de Cliente'
+            return False, f'La tarjeta leida es {tarjeta_in_db.rol.nombre_largo} debe ser de Cliente'
         
         return True, ''
     
