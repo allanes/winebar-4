@@ -11,8 +11,8 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_orden_abierta_by_client(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_id)
-        # orden_in_db = orden_in_db.filter(OrdenCompra.cerrada_por)
-        # orden_in_db = orden_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
+        orden_in_db = orden_in_db.filter(OrdenCompra.cerrada_por is not None)
+        orden_in_db = orden_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
         orden_in_db = orden_in_db.first()
         print(f'orden abierta encontrada desde crud_orden: {orden_in_db}. cliente id {cliente_id}')
         return orden_in_db

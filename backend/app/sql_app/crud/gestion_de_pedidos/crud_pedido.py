@@ -19,10 +19,10 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
     
     def get_pedido_abierto_por_orden(self, db: Session, orden_id: int) -> Pedido | None:
         pedido_in_db = db.query(Pedido)
-        pedido_in_db.filter(Pedido.cerrado==False)
-        pedido_in_db.filter(Pedido.orden_id == orden_id)
+        pedido_in_db = pedido_in_db.filter(Pedido.cerrado==False)
+        pedido_in_db = pedido_in_db.filter(Pedido.orden_id == orden_id)
         pedido_in_db = pedido_in_db.first()
-        # .order_by(Pedido.id.desc()).first()
+        
         return pedido_in_db
     
     def get_pedidos_por_orden(self, db: Session, orden_id: int) -> list[Pedido]:
@@ -59,19 +59,24 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
         
         ## Busco si ya existia un pedido en curso
-        pedidos_del_turno_por_tarjeta = self.get_pedidos_por_tarjeta(db=db, tarjeta_id=tarjeta_cliente)
-        if len(pedidos_del_turno_por_tarjeta) > 0:
-            pedidos_abiertos = [pedido for pedido in pedidos_del_turno_por_tarjeta if not pedido.cerrado]
-            if len(pedidos_abiertos) >= 1:
-                if len(pedidos_abiertos) >= 2:
-                    print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para el cliente id {orden_in_db.cliente_id}')
-                return pedidos_abiertos[-1], True, ''
+        pedido_abierto_in_db = self.get_pedido_abierto_por_orden(db=db, orden_id=orden_in_db.id)
+        # pedidos_del_turno_por_tarjeta = self.get_pedidos_por_tarjeta(db=db, tarjeta_id=tarjeta_cliente)
+        # if len(pedidos_del_turno_por_tarjeta) > 0:
+        #     pedidos_abiertos = [pedido for pedido in pedidos_del_turno_por_tarjeta if not pedido.cerrado]
+        #     if len(pedidos_abiertos) >= 1:
+        #         if len(pedidos_abiertos) >= 2:
+        #             print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para el cliente id {orden_in_db.cliente_id}')
+        #         return pedidos_abiertos[-1], True, ''
+        if pedido_abierto_in_db is None:
+            return None, False, f'No se encontró un pedido abierto para la orden {orden_in_db.id}'
+        
+        return pedido_abierto_in_db, True, ''
 
     def abrir_pedido(
             self, db: Session, *, pedido_in: PedidoCreate, tarjeta_cliente: int
             ) -> tuple[Pedido | None, bool, str]:
         pedido_abierto, estaba_abierto, msg = self.pre_apertura_checks(db=db, tarjeta_cliente=tarjeta_cliente)
-        if estaba_abierto:
+        if estaba_abierto == True:
             print(f'Devolviendo pedido que ya estaba abierto (id {pedido_abierto.id})')
             return pedido_abierto, estaba_abierto, msg
         print(f'Creando nuevo pedido')
@@ -80,11 +85,14 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         configuracion.monto_maximo_orden_def = 200
         configuracion.monto_maximo_pedido_def = 100
 
+        orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
+        orden_de_la_tarjeta = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
+
         ## Aplico valores por defecto
         pedido_in_db = Pedido()
         pedido_in_db.timestamp_pedido = None
         pedido_in_db.cerrado = False
-        pedido_in_db.orden_id = pedido_abierto.orden_id
+        pedido_in_db.orden_id = orden_de_la_tarjeta
         pedido_in_db.monto_maximo_pedido = configuracion.monto_maximo_pedido_def
         pedido_in_db.atendido_por = pedido_in.atendido_por
         
@@ -130,7 +138,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         orden_in_db = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         if orden_in_db is None:
             return None, False, 'No se pudo recuperar una orden abierta para esa tarjeta'
-        
+        print(f'orden encontrada para agregar el producto: {orden_in_db.id}')
         ## Busco un pedido abierto para esa orden
         pedido_in_db = self.get_pedido_abierto_por_orden(db=db, orden_id=orden_in_db.id)
         if pedido_in_db: print(f'pedido abierto recuperado id: {pedido_in_db.id}')
