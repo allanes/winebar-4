@@ -13,7 +13,7 @@ def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
 ):
-    orden_in_db = crud.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_id)
+    orden_in_db = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_id)
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     

@@ -13,7 +13,7 @@ def handle_read_pedido_by_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
 ):
-    pedidos_in_db = crud.pedido.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
+    pedidos_in_db = crud.pedido.get_pedidos_por_tarjeta(db=db, tarjeta_id=tarjeta_id)
     return pedidos_in_db
 
 @router.post("/abrir", response_model=schemas.Pedido)

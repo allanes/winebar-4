@@ -15,11 +15,11 @@ class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaCo
         return db.query(ClienteOperaConTarjeta).filter(ClienteOperaConTarjeta.id_cliente == cliente_id).first()
 
     def get_by_tarjeta_id(self, db: Session, *, tarjeta_id: int) -> Optional[ClienteOperaConTarjeta]:
-        print(f'Buscando ClienteOperaConTarjeta con tarjeta {tarjeta_id}')
         db_obj = db.query(ClienteOperaConTarjeta)
         db_obj = db_obj.filter(ClienteOperaConTarjeta.tarjeta_id == tarjeta_id)
         db_obj = db_obj.order_by(ClienteOperaConTarjeta.id.desc())
         db_obj = db_obj.first()
+        print(f'ClienteOperaConTarjeta con tarjeta {tarjeta_id} encontrado. cliente id {db_obj.id_cliente}')
         # print(db_obj.__dict__)
         return db_obj
     

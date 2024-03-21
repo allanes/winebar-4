@@ -119,7 +119,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             return False, msg_puede_usarse
         
         ## chequeo que noe exista orden abierta para esa tarjeta
-        orden_preexistente = crud_orden.orden.get_last_by_rfid(db=db, tarjeta_id=tarjeta_id)
+        orden_preexistente = crud_orden.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_id)
         if orden_preexistente is not None:
             return False, "Ya existe una orden abierta para esa tarjeta."
 
