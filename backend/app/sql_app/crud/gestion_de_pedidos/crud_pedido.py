@@ -19,6 +19,31 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         print(f"Buscando pedidos por tarjeta {tarjeta_id} para orden: {orden_compra.id}")
         pedidos_in_db = db.query(Pedido).filter(Pedido.orden_id == orden_compra.id).all()
         return pedidos_in_db
+    
+    def get_pedido_abierto_por_orden(self, db: Session, orden_id: int) -> Pedido:
+        pedido_in_db = db.query(Pedido)
+        pedido_in_db.filter(Pedido.cerrado==False)
+        pedido_in_db.filter(Pedido.orden_id == orden_id)
+        pedido_in_db = pedido_in_db.first()
+        # .order_by(Pedido.id.desc()).first()
+        return pedido_in_db
+    
+    def get_pedido_abierto_por_tarjeta(self, db: Session, tarjeta_id: int) -> Pedido | None:
+        pedidos_for_card = self.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
+        print(f'cant de pedidos: {len(pedidos_for_card)}')
+        pedidos_abiertos = [pedido_in_db for pedido_in_db in pedidos_for_card if pedido_in_db.cerrado == False]
+        
+        pedido_abierto = None
+        if len(pedidos_abiertos) == 0:
+            return None
+        elif len(pedidos_abiertos) >= 2: 
+            print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para tarjeta {tarjeta_id}')
+            pedido_abierto = pedidos_abiertos[0]
+        elif len(pedidos_abiertos) == 1: 
+            pedido_abierto = pedidos_abiertos[0]
+
+        pedido_abierto_in_db = db.query(Pedido).filter(Pedido.id == pedido_abierto.id).first()
+        return pedido_abierto_in_db
 
     def abrir_pedido(
             self, db: Session, *, pedido_in: PedidoCreate, tarjeta_cliente: int
@@ -81,31 +106,6 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         
         return pedido_in_db, True, ''
     
-    def get_pedido_abierto_por_orden(self, db: Session, orden_id: int) -> Pedido:
-        pedido_in_db = db.query(Pedido)
-        pedido_in_db.filter(Pedido.cerrado==False)
-        pedido_in_db.filter(Pedido.orden_id == orden_id)
-        pedido_in_db = pedido_in_db.first()
-        # .order_by(Pedido.id.desc()).first()
-        return pedido_in_db
-    
-    def get_pedido_abierto_por_tarjeta(self, db: Session, tarjeta_id: int) -> Pedido | None:
-        pedidos_for_card = self.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
-        print(f'cant de pedidos: {len(pedidos_for_card)}')
-        pedidos_abiertos = [pedido_in_db for pedido_in_db in pedidos_for_card if pedido_in_db.cerrado == False]
-        
-        pedido_abierto = None
-        if len(pedidos_abiertos) == 0:
-            return None
-        elif len(pedidos_abiertos) >= 2: 
-            print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para tarjeta {tarjeta_id}')
-            pedido_abierto = pedidos_abiertos[0]
-        elif len(pedidos_abiertos) == 1: 
-            pedido_abierto = pedidos_abiertos[0]
-
-        pedido_abierto_in_db = db.query(Pedido).filter(Pedido.id == pedido_abierto.id).first()
-        return pedido_abierto_in_db
-        
     def agregar_producto_a_pedido(
         self, 
         db: Session, 
