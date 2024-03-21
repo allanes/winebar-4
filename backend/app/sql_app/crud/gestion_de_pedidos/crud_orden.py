@@ -58,6 +58,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in_db = OrdenCompra()
         orden_in_db.timestamp_apertura_orden = datetime.now()
         orden_in_db.monto_cobrado = -1
+        orden_in_db.monto_cargado = 0
         orden_in_db.turno_id = turno_abierto.id
         [setattr(orden_in_db, attr, value) for attr, value in orden_in.model_dump().items()]
 
@@ -82,6 +83,16 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         db.commit()
         db.refresh(orden_in_db)
         
+        return orden_in_db
+    
+    def cargar_monto(self, db: Session, *, orden_id: int, monto_a_agregar: float) -> OrdenCompra | None:
+        orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.id == orden_id).first()
+        if orden_in_db is None:
+            return None
+        orden_in_db.monto_cargado += monto_a_agregar
+        db.commit()
+        db.refresh(orden_in_db)
+    
         return orden_in_db
     
     

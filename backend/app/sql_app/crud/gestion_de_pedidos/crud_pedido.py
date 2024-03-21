@@ -31,8 +31,11 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         ## Busco si ya existia un pedido en curso
         pedidos_del_turno_por_tarjeta = self.get_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         if len(pedidos_del_turno_por_tarjeta) > 0:
-            return pedidos_del_turno_por_tarjeta[0], True, ''
-        
+            pedidos_abiertos = [pedido for pedido in pedidos_del_turno_por_tarjeta if not pedido.cerrado]
+            if len(pedidos_abiertos) >= 1:
+                if len(pedidos_abiertos) >= 2:
+                    print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para el cliente id {orden_in_db.cliente_id}')
+                return pedidos_abiertos[-1], True, ''
 
         ## Reemplazar
         configuracion = Configuracion()
@@ -61,10 +64,20 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             return None, False, f'No se encontró un pedido abierto para la tarjeta {tarjeta_cliente}'
 
         pass
-        pedido_in_db.cerrado=True                
+        pedido_in_db.cerrado=True
+        pedido_in_db.timestamp_pedido = datetime.now()
+        pedido_in_db.atendido_por = cerrado_por
 
         db.commit()
         db.refresh(pedido_in_db)
+        
+        montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
+        
+        crud.orden.cargar_monto(
+            db=db, 
+            orden_id=pedido_in_db.orden_id,
+            monto_a_agregar=sum(montos_de_pedidos)
+        )
         
         return pedido_in_db, True, ''
     
@@ -82,7 +95,9 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         pedidos_abiertos = [pedido_in_db for pedido_in_db in pedidos_for_card if pedido_in_db.cerrado == False]
         
         pedido_abierto = None
-        if len(pedidos_abiertos) >= 2: 
+        if len(pedidos_abiertos) == 0:
+            return None
+        elif len(pedidos_abiertos) >= 2: 
             print(f'Se encontraron {len(pedidos_abiertos)} pedidos abiertos para tarjeta {tarjeta_id}')
             pedido_abierto = pedidos_abiertos[0]
         elif len(pedidos_abiertos) == 1: 

@@ -19,6 +19,7 @@ class OrdenCompra(Base):
     __tablename__ = 'ordenes'
     id = Column(Integer, primary_key=True, autoincrement=True)
     precarga_usada = Column(Float, nullable=False)
+    monto_cargado = Column(Float, nullable = False)
     monto_cobrado = Column(Float, nullable = False)
     monto_maximo_orden = Column(Float, nullable=False)
     timestamp_apertura_orden = Column(DateTime, nullable=False)
@@ -49,6 +50,7 @@ class Renglon(Base):
     pedido_id = Column(Integer, ForeignKey('pedidos.id'))
     producto_id = Column(Integer, ForeignKey('productos.id'))
     pedido = relationship("Pedido", back_populates="renglones", uselist=False)
+    producto = relationship("Producto")
 
 class Configuracion(Base):
     __tablename__ = 'configuraciones'
