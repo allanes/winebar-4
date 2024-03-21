@@ -1,6 +1,7 @@
 from typing import Optional, List, TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from ..inventario_y_promociones.producto import Producto
 
 class RenglonBase(BaseModel):
     cantidad: int
@@ -24,7 +25,7 @@ class RenglonInDBBase(RenglonBase):
     model_config = ConfigDict(from_attributes=True)
 
 class Renglon(RenglonInDBBase):
-    pass
+    producto: Producto
 
 class RenglonInDB(RenglonInDBBase):
     pass

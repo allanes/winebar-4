@@ -185,6 +185,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             return None, False, f'No se encontró un renglon con el producto id {producto_id} - {nombre_producto}'
         
         renglon_removido = crud.renglon.remove(db=db, id=id_renglon_encontrado)
+        renglon_removido.producto = crud.producto.get(db=db, id=renglon_removido.producto_id)
         return renglon_removido, True, ''
 
 pedido = CRUDPedido(Pedido)
