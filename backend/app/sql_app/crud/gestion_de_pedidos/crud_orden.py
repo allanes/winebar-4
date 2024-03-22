@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
-from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal
+from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraCerrada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
@@ -96,5 +96,15 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     
         return orden_in_db
     
+    def convertir_a_orden_cerrada(
+        self, db: Session, orden: OrdenCompra
+    ) -> OrdenCompraCerrada:
+        pedidos_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
+
+    
+        return OrdenCompraCerrada(
+            **orden.__dict__,
+            pedidos = pedidos_in_db
+        )
     
 orden = CRUDOrden(OrdenCompra)

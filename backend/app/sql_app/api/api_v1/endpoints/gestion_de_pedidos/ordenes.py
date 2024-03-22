@@ -8,16 +8,21 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompra)
+@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraCerrada)
 def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
 ):
-    orden_in_db = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_id)
+    orden_in_db = crud.orden.get_orden_abierta_by_rfid(
+        db=db, tarjeta_id=tarjeta_id
+    )
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    return orden_in_db
+    orden_cerrada = crud.orden.convertir_a_orden_cerrada(
+        db=db, orden=orden_in_db
+    )
+    return orden_cerrada
 
 @router.post("/abrir", response_model=schemas.OrdenCompra)
 def handle_abrir_orden(
