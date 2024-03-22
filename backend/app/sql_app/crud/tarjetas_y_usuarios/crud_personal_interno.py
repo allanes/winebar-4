@@ -113,6 +113,8 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         return personal_interno, True, ''
     
     def pre_entrega_checks(self, db: Session, personal_id: int, tarjeta_id: int) -> tuple[bool, str]:
+        """Chequeos para entregar/cambiar tarjeta.
+        """
         # Check if personal exists
         personal_interno = db.query(PersonalInterno).filter(PersonalInterno.id == personal_id).first()
         if not personal_interno:

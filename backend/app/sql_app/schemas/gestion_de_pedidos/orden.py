@@ -27,6 +27,7 @@ class OrdenCompraUpdate(BaseModel):
 class OrdenCompraInDBBase(OrdenCompraBase):
     id: int
     turno_id: int
+    monto_cargado: float
     monto_cobrado: float
     timestamp_apertura_orden: datetime
     timestamp_cierre_orden: Optional[datetime] = None

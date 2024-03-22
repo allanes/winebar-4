@@ -18,7 +18,8 @@ class PedidoInDBBase(PedidoBase):
     id: int
     timestamp_pedido: Optional[datetime]
     cerrado: bool
-    orden_id: int    
+    orden_id: int
+    monto_maximo_pedido: float    
 
     model_config = ConfigDict(from_attributes=True)
 

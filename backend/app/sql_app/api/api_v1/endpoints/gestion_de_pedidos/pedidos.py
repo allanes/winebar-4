@@ -13,7 +13,7 @@ def handle_read_pedido_by_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
 ):
-    pedidos_in_db = crud.pedido.get_by_rfid(db=db, tarjeta_id=tarjeta_id)
+    pedidos_in_db = crud.pedido.get_pedidos_por_tarjeta(db=db, tarjeta_id=tarjeta_id)
     return pedidos_in_db
 
 @router.post("/abrir", response_model=schemas.Pedido)
@@ -46,7 +46,7 @@ def handle_agregar_producto(
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
     print(f'usuario logueado id: {current_user.id}')
-    renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_renglon(
+    renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_pedido(
         db=db,
         renglon_in=renglon_in,
         atendido_por=current_user.id,
@@ -57,6 +57,26 @@ def handle_agregar_producto(
         raise HTTPException(status_code=404, detail=msg)
     
     return renglon_in_db
+
+@router.post("/quitar-producto", response_model=schemas.Renglon)
+def handle_quitar_renglon(
+    *,
+    tarjeta_cliente: int, 
+    producto_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+):
+    print(f'usuario logueado id: {current_user.id}')
+    renglon_removido_in_db, fue_quitado, msg = crud.pedido.quitar_producto_de_pedido(
+        db=db,
+        producto_id=producto_id,
+        tarjeta_cliente=tarjeta_cliente
+    )
+
+    if not fue_quitado:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    return renglon_removido_in_db
 
 @router.post("/cerrar", response_model=schemas.Pedido)
 def handle_cerrar_pedido(
