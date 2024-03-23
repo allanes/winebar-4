@@ -104,15 +104,15 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         if pedido_in_db is None:
             return None, False, f'No se encontró un pedido abierto para la tarjeta {tarjeta_cliente}'
 
-        pass
+        montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
+
         pedido_in_db.cerrado=True
         pedido_in_db.timestamp_pedido = datetime.now()
         pedido_in_db.atendido_por = cerrado_por
+        pedido_in_db.monto_cargado = sum(montos_de_pedidos)
 
         db.commit()
         db.refresh(pedido_in_db)
-        
-        montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
         
         crud.orden.cargar_monto(
             db=db, 

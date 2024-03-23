@@ -21,6 +21,7 @@ class PedidoInDBBase(PedidoBase):
     cerrado: bool
     orden_id: int
     monto_maximo_pedido: float    
+    monto_cargado: Optional[float]
 
     model_config = ConfigDict(from_attributes=True)
 

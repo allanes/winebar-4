@@ -37,6 +37,7 @@ class Pedido(Base):
     timestamp_pedido = Column(DateTime, nullable=True)
     cerrado = Column(Boolean, nullable=False)
     monto_maximo_pedido = Column(Float, nullable=False)
+    monto_cargado = Column(Float, nullable=True)
     orden_id = Column(Integer, ForeignKey('ordenes.id'))
     atendido_por = Column(Integer, ForeignKey('personal_interno.id'))
     renglones = relationship("Renglon", back_populates="pedido", uselist=True)
