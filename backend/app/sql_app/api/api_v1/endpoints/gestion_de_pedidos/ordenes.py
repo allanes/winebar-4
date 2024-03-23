@@ -19,7 +19,7 @@ def handle_read_orden_by_client_rfid(
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    orden_cerrada = crud.orden.convertir_a_orden_cerrada(
+    orden_cerrada = crud.orden.convertir_a_orden_detallada(
         db=db, orden=orden_in_db
     )
     return orden_cerrada

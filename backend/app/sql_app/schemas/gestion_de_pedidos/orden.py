@@ -40,6 +40,8 @@ class OrdenCompra(OrdenCompraInDBBase):
 
 class OrdenCompraCerrada(OrdenCompra):
     pedidos: list[Pedido]
+    nombre_cliente: str
+    rol: str
 
 class OrdenCompraInDB(OrdenCompraInDBBase):
     pass

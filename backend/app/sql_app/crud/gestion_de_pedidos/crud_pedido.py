@@ -25,11 +25,11 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         
         return pedido_in_db
     
-    def get_pedidos_por_orden(self, db: Session, orden_id: int) -> list[Pedido]:
+    def get_pedidos_por_orden(self, db: Session, orden_id: int, asc = True) -> list[Pedido]:
         print(f"Buscando pedidos por tarjeta para orden: {orden_id}")
         pedidos_in_db = db.query(Pedido)
         pedidos_in_db = pedidos_in_db.filter(Pedido.orden_id == orden_id)
-        pedidos_in_db = pedidos_in_db.order_by(Pedido.id.asc())
+        pedidos_in_db = pedidos_in_db.order_by(Pedido.id.asc() if asc else Pedido.id.desc())
         pedidos_in_db = pedidos_in_db.all()
         return pedidos_in_db
     

@@ -96,15 +96,34 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     
         return orden_in_db
     
-    def convertir_a_orden_cerrada(
+    def convertir_a_orden_detallada(
         self, db: Session, orden: OrdenCompra
     ) -> OrdenCompraCerrada:
-        pedidos_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
+        ## Recupero los pedidos
+        pedidos_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id, asc=False)
+        
+        ## Recupero detalles del cliente
+        detalles_in_db = crud.detalles_adicionales.get_by_cliente_id(
+            db=db, cliente_id=orden.cliente.id
+        )
+        apellido_cliente = ''
+        if detalles_in_db is not None:
+            if detalles_in_db.apellido is not None:
+                apellido_cliente = detalles_in_db.apellido
+        nombre_cliente = f'{orden.cliente.nombre} {apellido_cliente}'
 
-    
+        ## Recupero el rol del cliente
+        cliente_opera = crud.cliente_opera_con_tarjeta.get_by_cliente_id(
+            db=db, cliente_id=orden.cliente.id
+        )
+        rol = cliente_opera.tarjeta.rol.nombre_corto
+
+        ## Armo el schema de respuesta
         return OrdenCompraCerrada(
             **orden.__dict__,
-            pedidos = pedidos_in_db
+            pedidos = pedidos_in_db,
+            nombre_cliente=nombre_cliente,
+            rol = rol,
         )
     
 orden = CRUDOrden(OrdenCompra)
