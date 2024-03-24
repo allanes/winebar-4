@@ -68,7 +68,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         return orden_in_db
     
-    def cerrar_orden(self, db: Session, *, orden_in: OrdenCompraCerrar) -> OrdenCompra:
+    def cerrar_orden(self, db: Session, *, orden_in: OrdenCompraCerrar) -> OrdenCompra | None:
         orden_in_db = self.get_orden_abierta_by_rfid(db=db, tarjeta_id=orden_in.tarjeta_cliente)
         if orden_in_db is None:
             return None

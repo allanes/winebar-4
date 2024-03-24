@@ -36,9 +36,14 @@ def handle_upload_foto(
 def handle_get_foto(
     *,
     db: Session = Depends(deps.get_db),
-    id: int
+    id: int,
+    by_product_id: bool = False
 ):
-    tapa = crud.tapa.get(db=db, id=id)
+    tapa = None
+    if by_product_id:
+        tapa = crud.tapa.get_by_product_id(db=db, producto_id=id)
+    else:
+        tapa = crud.tapa.get(db=db, id=id)
     if not tapa:
         raise HTTPException(status_code=404, detail=f"Tapa no encontrada con ID {id}")
     
