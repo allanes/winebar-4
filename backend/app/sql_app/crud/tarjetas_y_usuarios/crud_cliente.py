@@ -126,7 +126,9 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         # If all checks pass, the tarjeta can be associated
         return True, ''
     
-    def entregar_tarjeta_a_cliente(self, db: Session, cliente_id: int, tarjeta_id: int) -> tuple[ClienteOperaConTarjeta | None, bool, str]:
+    def entregar_tarjeta_a_cliente(
+        self, db: Session, cliente_id: int, tarjeta_id: int
+    ) -> tuple[ClienteOperaConTarjeta | None, bool, str]:
 
         # Create cliente_y_tarjetas asociation
         cliente_con_tarjeta = ClienteOperaConTarjetaCreate(
@@ -148,5 +150,17 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             db.refresh(tarjeta)
         
         return cliente_operando_in_db, True, ''
+    
+    def devolver_tarjeta_de_cliente(
+        self, db: Session, id: int
+    ) -> tuple[Tarjeta | None, bool, str]:
+        cliente_opera = crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.get_by_cliente_id(
+            db=db, cliente_id=id
+        )
+        if cliente_opera is None:
+            return None, False, f'No se encontró un cliente operando con el cliente_id {id}'
+        
+        tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=cliente_opera.tarjeta_id)
+        return tarjeta_devuelta        
 
 cliente = CRUDCliente(Cliente)

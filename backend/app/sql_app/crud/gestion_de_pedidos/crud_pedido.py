@@ -77,8 +77,8 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         
         ## Reemplazar
         configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 200
-        configuracion.monto_maximo_pedido_def = 100
+        configuracion.monto_maximo_orden_def = 60000
+        configuracion.monto_maximo_pedido_def = 50000
 
         orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         orden_de_la_tarjeta = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None

@@ -11,7 +11,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_orden_abierta_by_client(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_id)
-        orden_in_db = orden_in_db.filter(OrdenCompra.cerrada_por is not None)
+        orden_in_db = orden_in_db.filter(OrdenCompra.monto_cobrado == -1)
         orden_in_db = orden_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
         orden_in_db = orden_in_db.first()
         print(f'orden abierta encontrada desde crud_orden: {orden_in_db}. cliente id {cliente_id}')
@@ -44,8 +44,8 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # print(f'tarjeta del cliente: {cliente_in_db.tarjeta}')
         ## Reemplazar
         configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 200
-        configuracion.monto_maximo_pedido_def = 100
+        configuracion.monto_maximo_orden_def = 60000
+        configuracion.monto_maximo_pedido_def = 50000
         
         orden_in = OrdenCompraCreateInternal(
             precarga_usada=0,
@@ -68,21 +68,37 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         return orden_in_db
     
-    def cerrar_orden(self, db: Session, *, orden_in: OrdenCompraCerrar) -> OrdenCompra | None:
-        orden_in_db = self.get_orden_abierta_by_rfid(db=db, tarjeta_id=orden_in.tarjeta_cliente)
+    def cerrar_orden(self, db: Session, *, id: int, cerrada_por_id: int) -> OrdenCompra | None:
+        orden_in_db = db.query(OrdenCompra)
+        orden_in_db = orden_in_db.filter(OrdenCompra.id == id)
+        orden_in_db = orden_in_db.filter(OrdenCompra.monto_cobrado == -1)
+        orden_in_db = orden_in_db.first()
+        
         if orden_in_db is None:
             return None
         
         # Check if order is open
         if orden_in_db.cerrada_por is not None:
             return None
-
-        orden_in_db.cerrada_por = orden_in.cerrada_por
+        
+        # Remove any opened Pedido for that order
+        pedido_abierto = crud.pedido.get_pedido_abierto_por_orden(db=db, orden_id=orden_in_db.id)
+        if pedido_abierto is not None:
+            pedido_removido = crud.pedido.remove(db=db, id=pedido_abierto.id)
+            print(f'Removiendo pedido. Pedido removido: {pedido_removido.__dict__ if pedido_removido else ""}')
+            
+        # Calculo valores necesarios
+        orden_in_db.cerrada_por = cerrada_por_id
         orden_in_db.timestamp_cierre_orden = datetime.now()
-        orden_in_db.monto_cobrado = 0
+        orden_in_db.monto_cobrado = orden_in_db.monto_cargado
         
         db.commit()
         db.refresh(orden_in_db)
+
+        # Devuelvo tarjeta a banca
+        tarjeta_devuelta = crud.cliente.devolver_tarjeta_de_cliente(
+            db=db, id=orden_in_db.cliente_id
+        )
         
         return orden_in_db
     
