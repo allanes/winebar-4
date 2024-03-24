@@ -25,11 +25,11 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         
         return pedido_in_db
     
-    def get_pedidos_por_orden(self, db: Session, orden_id: int) -> list[Pedido]:
+    def get_pedidos_por_orden(self, db: Session, orden_id: int, asc = True) -> list[Pedido]:
         print(f"Buscando pedidos por tarjeta para orden: {orden_id}")
         pedidos_in_db = db.query(Pedido)
         pedidos_in_db = pedidos_in_db.filter(Pedido.orden_id == orden_id)
-        pedidos_in_db = pedidos_in_db.order_by(Pedido.id.asc())
+        pedidos_in_db = pedidos_in_db.order_by(Pedido.id.asc() if asc else Pedido.id.desc())
         pedidos_in_db = pedidos_in_db.all()
         return pedidos_in_db
     
@@ -77,8 +77,8 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         
         ## Reemplazar
         configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 200
-        configuracion.monto_maximo_pedido_def = 100
+        configuracion.monto_maximo_orden_def = 60000
+        configuracion.monto_maximo_pedido_def = 50000
 
         orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         orden_de_la_tarjeta = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
@@ -104,15 +104,15 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         if pedido_in_db is None:
             return None, False, f'No se encontró un pedido abierto para la tarjeta {tarjeta_cliente}'
 
-        pass
+        montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
+
         pedido_in_db.cerrado=True
         pedido_in_db.timestamp_pedido = datetime.now()
         pedido_in_db.atendido_por = cerrado_por
+        pedido_in_db.monto_cargado = sum(montos_de_pedidos)
 
         db.commit()
         db.refresh(pedido_in_db)
-        
-        montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
         
         crud.orden.cargar_monto(
             db=db, 

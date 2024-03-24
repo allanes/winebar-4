@@ -116,6 +116,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         db_obj.entregada = False
         db_obj.presente_en_salon = False
         db_obj.monto_precargado = -1
+        db_obj.fecha_ultimo_uso = datetime.now()
 
         db.commit()
         db.refresh(db_obj)

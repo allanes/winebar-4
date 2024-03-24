@@ -67,5 +67,10 @@ class CRUDTapa(CRUDBase[Tapa, TapaCreate, TapaUpdate]):
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Tapa]:
         return db.query(Tapa).order_by(Tapa.id).offset(skip).limit(limit).all()
 
+    def get_by_product_id(self, db: Session, producto_id: int) -> Tapa | None:
+        tapa_in_db = db.query(Tapa)
+        tapa_in_db = tapa_in_db.filter(Tapa.id_producto == producto_id)
+        tapa_in_db = tapa_in_db.first()
+        return tapa_in_db
 
 tapa = CRUDTapa(Tapa)

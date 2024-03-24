@@ -8,16 +8,21 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompra)
+@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraCerrada)
 def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
 ):
-    orden_in_db = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_id)
+    orden_in_db = crud.orden.get_orden_abierta_by_rfid(
+        db=db, tarjeta_id=tarjeta_id
+    )
     if orden_in_db is None:
-        raise HTTPException(status_code=404, detail="Orden no encontrada")
+        raise HTTPException(status_code=404, detail="No se encontró una orden abierta para esta tarjeta")
     
-    return orden_in_db
+    orden_cerrada = crud.orden.convertir_a_orden_detallada(
+        db=db, orden=orden_in_db
+    )
+    return orden_cerrada
 
 @router.post("/abrir", response_model=schemas.OrdenCompra)
 def handle_abrir_orden(
@@ -45,23 +50,20 @@ def handle_abrir_orden(
 @router.post("/cerrar", response_model=schemas.OrdenCompra)
 def handle_cerrar_orden(
     *,
-    tarjeta_cliente: int,
+    id: int,
     db: Session = Depends(deps.get_db),
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
 ):
     print(f'usuario logueado id: {current_user.id}')
-    orden_in = schemas.OrdenCompraCerrar(
-        cerrada_por=current_user.id, 
-        tarjeta_cliente=tarjeta_cliente
-    )
     
     orden = crud.orden.cerrar_orden(
         db = db,
-        orden_in = orden_in
+        id = id,
+        cerrada_por_id = current_user.id
     )
 
     if not orden:
-        raise HTTPException(status_code=404, detail='La orden no se pudo abrir')
+        raise HTTPException(status_code=404, detail='Esta orden ya está cerrada.')
     
     return orden
 

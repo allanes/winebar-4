@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from .pedido import Pedido
 
 class OrdenCompraBase(BaseModel):
     precarga_usada: float
@@ -36,6 +37,11 @@ class OrdenCompraInDBBase(OrdenCompraBase):
 
 class OrdenCompra(OrdenCompraInDBBase):
     pass
+
+class OrdenCompraCerrada(OrdenCompra):
+    pedidos: list[Pedido]
+    nombre_cliente: str
+    rol: str
 
 class OrdenCompraInDB(OrdenCompraInDBBase):
     pass
