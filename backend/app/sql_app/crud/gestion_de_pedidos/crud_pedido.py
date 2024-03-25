@@ -165,7 +165,32 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
                 id_renglon=id_renglon_encontrado,
                 renglon_in=renglon_in
             )
+
+        chequeos = [
+            {
+                'callable': self.check_pedido_no_supera_monto_maximo,
+                'extra_params': {
+                    'pedido_obj':pedido_in_db
+                }
+            },
+            {
+                'callable': crud.orden.check_orden_no_supera_monto_maximo,
+                'extra_params': {
+                    'orden_id': pedido_in_db.orden_id
+                }
+            }
+        ]
         
+        for chequeo in chequeos:
+            puede_continuar, msg = chequeo(
+            db=db, 
+            **chequeo['extra_params']
+        )
+        if not puede_continuar:
+            # Debo borrar producto agregado!
+            # crud.pedido.
+            return None, False, msg
+
         return renglon_in_db, renglon_in_db is not None, ''    
     
     def quitar_producto_de_pedido(
@@ -207,5 +232,19 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         renglon_removido = crud.renglon.remove(db=db, id=id_renglon_encontrado)
         renglon_removido.producto = crud.producto.get(db=db, id=renglon_removido.producto_id)
         return renglon_removido, True, ''
+    
+    def check_pedido_no_supera_monto_maximo(
+        self, 
+        db: Session, 
+        pedido_obj: Pedido
+    ) -> tuple[bool, str]:
+        renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido_obj.id)
+        montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
+        suma = sum(montos_de_renglones)
+        
+        if suma <= pedido_obj.monto_maximo_pedido:
+            return True, ''
+
+        return False, f'Supera monto máximo del pedido ({pedido_obj.monto_maximo_pedido})'
 
 pedido = CRUDPedido(Pedido)

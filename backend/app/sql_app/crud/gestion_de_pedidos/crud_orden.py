@@ -112,6 +112,29 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     
         return orden_in_db
     
+    def check_orden_no_supera_monto_maximo(
+        self, 
+        db: Session, 
+        orden_id: OrdenCompra
+    ) -> tuple[bool, str]:
+        orden_obj = self.get(db=db, id=orden_id)
+        if not orden_obj:
+            return False, 'No se encontró la orden'
+        
+        suma_orden = 0
+
+        pedidos_de_orden = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden_obj.id)
+        for pedido in pedidos_de_orden:
+            renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id)
+            montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
+            suma_pedido = sum(montos_de_renglones)
+            suma_pedido += suma_orden
+        
+        if suma_pedido <= orden_obj.monto_maximo_orden:
+            return True, ''
+
+        return False, f'Supera monto máximo de órden ({orden_obj.monto_maximo_orden})'
+    
     def convertir_a_orden_detallada(
         self, db: Session, orden: OrdenCompra
     ) -> OrdenCompraCerrada:
