@@ -29,7 +29,8 @@ def handle_abrir_orden(
     *,
     db: Session = Depends(deps.get_db),
     tarjeta_cliente: int,
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     orden_in = schemas.OrdenCompraAbrir(
@@ -52,7 +53,8 @@ def handle_cerrar_orden(
     *,
     id: int,
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     

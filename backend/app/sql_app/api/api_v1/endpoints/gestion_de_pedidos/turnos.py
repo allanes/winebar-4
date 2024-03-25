@@ -16,6 +16,10 @@ def handle_abrir_turno(
 ):
     print(f'usuario logueado id: {current_user.id}')
     turno_in = schemas.TurnoCreate(abierto_por=current_user.id)
+
+    turno_abierto = crud.turno.get_open_turno(db=db)
+    if turno_abierto is not None:
+        raise HTTPException(status_code=404, detail='Ya existe un turno abierto')    
     
     turno = crud.turno.abrir_turno(
         db = db, 
@@ -31,7 +35,8 @@ def handle_abrir_turno(
 def handle_cerrar_turno(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     turno = crud.turno.cerrar_turno(
@@ -43,6 +48,18 @@ def handle_cerrar_turno(
         raise HTTPException(status_code=404, detail='El turno no se pudo abrir')
     
     return turno
+
+@router.get('/turno-en-curso', response_model=schemas.Turno)
+def handle_get_turno_abierto(*,
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+):
+    turno_en_curso = crud.turno.get_open_turno(db=db)
+    if not turno_en_curso:
+        raise HTTPException(status_code=404, detail='No se encontró un turno abierto')
+    
+    return turno_en_curso
 
 @router.put("/{id}", response_model=schemas.Turno)
 def handle_update_turno(

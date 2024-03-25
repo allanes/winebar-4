@@ -64,7 +64,7 @@ def handle_read_clientes(
     skip: int = 0,
     limit: int = 100,
 ):
-    clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db, skip=skip, limit=limit)
+    clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db)
     
     clientes_detallados = crud.cliente_opera_con_tarjeta.convertir_a_cliente_detallado(
         db=db, clientes_a_convertir=clientes_operan
@@ -79,9 +79,11 @@ def handle_create_cliente_with_tarjeta(
     tarjeta_id: int,
     cliente_in: schemas.ClienteCreate,
     detalle_adicional_in: schemas.DetallesAdicionalesForUI = None,
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
+
     cliente, fue_creado, error_msg = crud.cliente.create_with_tarjeta(
         db = db, 
         tarjeta_id = tarjeta_id,

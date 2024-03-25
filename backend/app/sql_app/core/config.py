@@ -6,11 +6,15 @@ import os
 import secrets
 from dotenv import load_dotenv
 
-load_dotenv()
+cargado = load_dotenv('..\..\..\.env')
+print(f'LOAD_DOTENV CARGADO: {cargado}')
+print(f'POSTGRES_SERVER: {os.getenv("POSTGRES_SERVER")}')
+print(os.path.abspath(os.path.curdir))
 
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
     API_V1_STR: str = "/api/v1"
+    FIRST_SUPERUSER: str
     API_KEY_TERMINAL_CAJA_1: str
     API_KEY_TERMINAL_TAPA_1: str
     API_KEY_TERMINAL_ADMIN: str

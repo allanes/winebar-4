@@ -8,8 +8,8 @@ from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteWithDetails
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales 
 
 class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate]):
-    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ClienteOperaConTarjeta]:
-        return db.query(ClienteOperaConTarjeta).order_by(ClienteOperaConTarjeta.id.desc()).offset(skip).limit(limit).all()
+    def get_multi(self, db: Session, *, skip: int = 0) -> List[ClienteOperaConTarjeta]:
+        return db.query(ClienteOperaConTarjeta).order_by(ClienteOperaConTarjeta.id.desc()).offset(skip).all()
     
     def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> Optional[ClienteOperaConTarjeta]:
         return db.query(ClienteOperaConTarjeta).filter(ClienteOperaConTarjeta.id_cliente == cliente_id).first()
@@ -19,8 +19,6 @@ class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaCo
         db_obj = db_obj.filter(ClienteOperaConTarjeta.tarjeta_id == tarjeta_id)
         db_obj = db_obj.order_by(ClienteOperaConTarjeta.id.desc())
         db_obj = db_obj.first()
-        print(f'ClienteOperaConTarjeta con tarjeta {tarjeta_id} encontrado. cliente id {db_obj.id_cliente}')
-        # print(db_obj.__dict__)
         return db_obj
     
     def convertir_a_cliente_detallado(

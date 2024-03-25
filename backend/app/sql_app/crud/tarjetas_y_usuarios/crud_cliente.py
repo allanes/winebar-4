@@ -26,6 +26,18 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
 
         return cliente_in_db
     
+    def apply_deactivation_defaults(self, db_obj: Cliente, db: Session = None) -> None:
+        db_obj.activa = False
+        cliente_opera = crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.get_by_cliente_id(
+            db=db, cliente_id=db_obj.id
+        )
+        if cliente_opera is not None:
+            crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.remove(
+                db=db, id=cliente_opera.id
+            )
+
+        return db_obj
+    
     ### End of Functions override section
     
     def get_by_name(self, db: Session, *, name: str) -> Optional[Cliente]:

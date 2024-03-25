@@ -41,3 +41,11 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+async def check_turno_abierto(
+    db: Annotated[Session, Depends(get_db)]
+) ->bool:
+    turno_abierto = crud.turno.get_open_turno(db=db)
+    if turno_abierto is None:
+        raise HTTPException(status_code=404, detail='No hay un turno abierto')
+    return True
