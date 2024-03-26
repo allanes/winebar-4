@@ -1,13 +1,22 @@
 from datetime import datetime
+from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
-from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraCerrada
+from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
+    def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:
+        ordenes = db.query(OrdenCompra)
+        ordenes = ordenes.filter(OrdenCompra.turno_id == turno_id)
+        ordenes = ordenes.order_by(OrdenCompra.monto_cobrado.asc())
+        ordenes = ordenes.order_by(OrdenCompra.timestamp_apertura_orden.asc())
+        ordenes = ordenes.all()
+        return ordenes
+    
     def get_orden_abierta_by_client(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_id)
@@ -137,7 +146,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     
     def convertir_a_orden_detallada(
         self, db: Session, orden: OrdenCompra
-    ) -> OrdenCompraCerrada:
+    ) -> OrdenCompraDetallada:
         ## Recupero los pedidos
         pedidos_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id, asc=False)
         
@@ -157,12 +166,20 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         )
         rol = cliente_opera.tarjeta.rol.nombre_corto
 
+        ## Recupero nombre de vendedor
+        nombre_vendedor = ''
+        if orden.cerrada_por is not None:
+            vendedor = crud.personal_interno.get_active(db=db, id=orden.cerrada_por)
+            if vendedor is not None:
+                nombre_vendedor = f'{vendedor.nombre} {vendedor.apellido}'
+
         ## Armo el schema de respuesta
-        return OrdenCompraCerrada(
+        return OrdenCompraDetallada(
             **orden.__dict__,
             pedidos = pedidos_in_db,
             nombre_cliente=nombre_cliente,
             rol = rol,
+            cerrada_por_nombre=nombre_vendedor
         )
     
 orden = CRUDOrden(OrdenCompra)

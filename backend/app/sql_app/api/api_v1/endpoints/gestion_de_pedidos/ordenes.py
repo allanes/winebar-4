@@ -8,7 +8,7 @@ from sql_app.api import deps
 
 router = APIRouter()
 
-@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraCerrada)
+@router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
     db: Session = Depends(deps.get_db)
@@ -19,10 +19,25 @@ def handle_read_orden_by_client_rfid(
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="No se encontró una orden abierta para esta tarjeta")
     
-    orden_cerrada = crud.orden.convertir_a_orden_detallada(
+    orden_detallada = crud.orden.convertir_a_orden_detallada(
         db=db, orden=orden_in_db
     )
-    return orden_cerrada
+    return orden_detallada
+
+@router.get("/by-turno/{turno_id}", response_model=List[schemas.OrdenCompraDetallada])
+def handle_read_orden_by_turno_id(
+    turno_id: int,
+    db: Session = Depends(deps.get_db)
+):
+    ordenes_in_db = crud.orden.get_by_turno_id(
+        db=db, turno_id=turno_id
+    )
+
+    ordenes_detalladas = [crud.orden.convertir_a_orden_detallada(
+        db=db, orden=orden_in_db
+    ) for orden_in_db in ordenes_in_db]
+    
+    return ordenes_detalladas
 
 @router.post("/abrir", response_model=schemas.OrdenCompra)
 def handle_abrir_orden(
@@ -85,7 +100,7 @@ def handle_update_orden(
     )
     return orden
 
-@router.get("/{id}", response_model=schemas.OrdenCompra)
+@router.get("/{id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_id(
     id: int,
     db: Session = Depends(deps.get_db)
@@ -94,7 +109,12 @@ def handle_read_orden_by_id(
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    return orden_in_db
+    orden_detallada = crud.orden.convertir_a_orden_detallada(
+        db=db,
+        orden=orden_in_db
+    )
+
+    return orden_detallada
 
 @router.get("/", response_model=List[schemas.OrdenCompra])
 def handle_read_ordens(

@@ -14,7 +14,7 @@ from .inventario_y_promociones.promocion import Promocion, PromocionCreate, Prom
 from .inventario_y_promociones.producto_promocion import ProductoPromocion, ProductoPromocionCreate, ProductoPromocionInDB, ProductoPromocionUpdate
 
 from .gestion_de_pedidos.turno import Turno, TurnoCreate, TurnoInDB, TurnoUpdate
-from .gestion_de_pedidos.orden import OrdenCompra, OrdenCompraAbrir, OrdenCompraCerrar, OrdenCompraInDB, OrdenCompraUpdate, OrdenCompraAbrir, OrdenCompraCerrada
+from .gestion_de_pedidos.orden import OrdenCompra, OrdenCompraAbrir, OrdenCompraCerrar, OrdenCompraInDB, OrdenCompraUpdate, OrdenCompraAbrir, OrdenCompraDetallada
 from .gestion_de_pedidos.pedido import Pedido, PedidoCreate, PedidoInDB, PedidoUpdate
 from .gestion_de_pedidos.renglon import Renglon, RenglonCreate, RenglonCreateInternal, RenglonInDB, RenglonUpdate
 

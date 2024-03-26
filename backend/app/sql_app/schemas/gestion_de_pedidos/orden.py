@@ -1,7 +1,8 @@
 from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
 from .pedido import Pedido
+from ..serializers import serializer_for_nombre_personal
 
 class OrdenCompraBase(BaseModel):
     precarga_usada: float
@@ -36,9 +37,16 @@ class OrdenCompraInDBBase(OrdenCompraBase):
     model_config = ConfigDict(from_attributes=True)
 
 class OrdenCompra(OrdenCompraInDBBase):
-    pass
+    cerrada_por_nombre: Optional[str] = None
 
-class OrdenCompraCerrada(OrdenCompra):
+    @field_serializer('cerrada_por_nombre')
+    def serialize_cerrada_por_nombre(self, cerrada_por_nombre: str , _info):
+        nombre_completo = serializer_for_nombre_personal(
+            atendido_por_id = self.cerrada_por
+        )
+        return nombre_completo
+
+class OrdenCompraDetallada(OrdenCompra):
     pedidos: list[Pedido]
     nombre_cliente: str
     rol: str

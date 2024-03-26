@@ -25,7 +25,7 @@ class TurnoInDBBase(TurnoBase):
     model_config = ConfigDict(from_attributes=True)
 
 class Turno(TurnoInDBBase):
-    pass
+    clientes_activos: Optional[int] = 0
 
 class TurnoInDB(TurnoInDBBase):
     pass

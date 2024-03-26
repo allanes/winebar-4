@@ -182,7 +182,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         ]
         
         for chequeo in chequeos:
-            puede_continuar, msg = chequeo(
+            puede_continuar, msg = chequeo['callable'](
             db=db, 
             **chequeo['extra_params']
         )

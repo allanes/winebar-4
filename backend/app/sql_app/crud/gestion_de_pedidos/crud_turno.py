@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import Turno, OrdenCompra
-from sql_app.schemas.gestion_de_pedidos.turno import TurnoCreate, TurnoUpdate
+from sql_app.schemas.gestion_de_pedidos.turno import TurnoCreate, TurnoUpdate, Turno as TurnoSchema
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
@@ -40,10 +40,12 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         return turno_in_db
     
     def get_open_turno(self, db: Session) -> Turno | None:
-        turno = db.query(Turno).order_by(Turno.id.desc()).first()
-        if not turno:
-            return None
+        opened = db.query(Turno).filter(Turno.cerrado_por == None).first()
+        if opened:
+            print(f'turno abierto: {opened.__dict__}')
+        return opened
         
+    def llenar_campos_turno_en_curso(self, db: Session, turno: Turno) -> TurnoSchema:
         # Cantidad de ordenes
         ## Metodo 1
         clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db=db)
@@ -58,14 +60,17 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         print(f'cantidad_ordenes_desde_ordenes: {cantidad_ordenes_desde_ordenes}')
         ## ---
         
-        # Cantidad de tapas
-        
+        # Clientes activos
+        cant_activos = len([orden for orden in ordenes_del_turno if orden.monto_cobrado == -1])
 
         # Pongo todos los datos en el turno actual
-        turno.cantidad_de_ordenes = cantidad_ordenes_desde_cliente_opera
-        # turno.cantidad_tapas = cantidad_tapas
+        turno_con_data = TurnoSchema(
+            # cantidad_de_ordenes = cantidad_ordenes_desde_cliente_opera,
+            clientes_activos = cant_activos,
+            **turno.__dict__            
+        )
 
-        return turno
+        return turno_con_data
 
 
 turno = CRUDTurno(Turno)

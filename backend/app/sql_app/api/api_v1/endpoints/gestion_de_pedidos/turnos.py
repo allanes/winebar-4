@@ -59,7 +59,12 @@ def handle_get_turno_abierto(*,
     if not turno_en_curso:
         raise HTTPException(status_code=404, detail='No se encontró un turno abierto')
     
-    return turno_en_curso
+    turno_con_data = crud.turno.llenar_campos_turno_en_curso(
+        db=db,
+        turno=turno_en_curso
+    )
+    
+    return turno_con_data
 
 @router.put("/{id}", response_model=schemas.Turno)
 def handle_update_turno(
