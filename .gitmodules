@@ -1,0 +1,3 @@
+[submodule "winebar-4-frontend"]
+	path = winebar-4-frontend
+	url = https://github.com/allanes/winebar-4-frontend
