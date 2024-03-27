@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     SERVER_NAME: str = "altacava-winebar-server"
     # SERVER_NAME: str = "localhost"
     SERVER_HOST: AnyHttpUrl = "http://localhost"
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: List[str] = ["*"]
     IMAGES_PATH: str
 
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
