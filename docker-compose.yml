@@ -86,7 +86,7 @@ services:
     container_name: ${SERVIDOR_CLAVES_CONTAINER_NAME}
     build:
       context: ./winebar-servidor-claves
-      dockerfile: ./backend/Dockerfile
+      
     expose:
       - "3001"
     env_file:

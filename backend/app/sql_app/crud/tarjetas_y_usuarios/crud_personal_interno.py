@@ -152,7 +152,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     
     def authenticate(self, db: Session, username: str, password: str, usar_api_key: bool) -> PersonalInterno | None:
         print(f'Authenticating by {"RFID and API key" if usar_api_key else "User and Password"}')
-        user = self.get_by_rfid(db=db, tarjeta_id=username)
+        user = self.get_by_rfid(db=db, tarjeta_id=int(username))
         if not user:
             return None
         
