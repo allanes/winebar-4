@@ -41,8 +41,9 @@ services:
     # environment:
     #   USE_BACKEND_PREFIX: false
     volumes:
+      - ./backend/app:/app
       - ./backend/imagenes/app/sql_app/imagenes:/app/sql_app/imagenes
-    command: uvicorn sql_app.main:app --host 0.0.0.0 --port 5000 --root-path /backend --forwarded-allow-ips * --proxy-headers
+    command: uvicorn sql_app.main:app --host 0.0.0.0 --port 5000 --root-path /backend --forwarded-allow-ips * --proxy-headers --reload
     restart: on-failure
     networks:
       - winebar4-net    
@@ -54,6 +55,10 @@ services:
         ./winebar-4-frontend/frontend
     expose:
       - "3000"
+    volumes:
+      - ./winebar-4-frontend/frontend/src:/app/src
+      - ./winebar-4-frontend/frontend/public:/app/public
+      - ./winebar-4-frontend/frontend/tsconfig.json:/app/tsconfig.json
     command: npm start
     networks:
       - winebar4-net

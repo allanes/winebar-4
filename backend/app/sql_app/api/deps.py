@@ -12,6 +12,7 @@ from sql_app.db.session import SessionLocal
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
+print(f'Token URL for login: {oauth2_scheme.model.model_dump()["flows"]["password"]["tokenUrl"]}')
 
 def get_db() -> Generator:
     try:
