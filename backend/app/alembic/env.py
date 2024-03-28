@@ -36,7 +36,7 @@ def get_url():
     load_dotenv()
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
-    server = 'localhost'
+    server = os.getenv('POSTGRES_SERVER', 'localhost')
     db = os.getenv("POSTGRES_DB", "db")
     url = f"postgresql://{user}:{password}@{server}:5432/{db}"
     print(f'conectado a postgres. url: {url}')

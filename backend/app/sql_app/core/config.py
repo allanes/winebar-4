@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     SERVER_NAME: str = "altacava-winebar-server"
     # SERVER_NAME: str = "localhost"
-    SERVER_HOST: AnyHttpUrl = "http://localhost"
+    # SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     IMAGES_PATH: str
 
