@@ -26,6 +26,7 @@ class TurnoInDBBase(TurnoBase):
 
 class Turno(TurnoInDBBase):
     clientes_activos: Optional[int] = 0
+    suma_ordenes_cobradas: Optional[float] = 0
 
 class TurnoInDB(TurnoInDBBase):
     pass

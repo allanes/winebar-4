@@ -59,6 +59,9 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         print(f'cantidad_ordenes_desde_cliente_opera: {cantidad_ordenes_desde_cliente_opera}')
         print(f'cantidad_ordenes_desde_ordenes: {cantidad_ordenes_desde_ordenes}')
         ## ---
+
+        ## Monto cobrado
+        montos = [orden.monto_cobrado for orden in ordenes_del_turno]
         
         # Clientes activos
         cant_activos = len([orden for orden in ordenes_del_turno if orden.monto_cobrado == -1])
@@ -67,6 +70,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         turno_con_data = TurnoSchema(
             # cantidad_de_ordenes = cantidad_ordenes_desde_cliente_opera,
             clientes_activos = cant_activos,
+            suma_ordenes_cobradas=sum(montos),
             **turno.__dict__            
         )
 
