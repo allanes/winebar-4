@@ -1,3 +1,6 @@
 [submodule "winebar-4-frontend"]
 	path = winebar-4-frontend
 	url = https://github.com/allanes/winebar-4-frontend
+[submodule "winebar-servidor-claves"]
+	path = winebar-servidor-claves
+	url = https://github.com/allanes/winebar-servidor-claves
