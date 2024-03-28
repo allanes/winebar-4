@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -26,6 +27,10 @@ def handle_upload_foto(
     filename = crud.tapa.get_tapa_image_name(tapa_in_db=tapa)  # Generate a unique filename
     file_path = f"{settings.IMAGES_PATH}/{filename}"  # Specify the path to save the file
     print(f'ruta de imagenes: {os.path.abspath(settings.IMAGES_PATH)}')
+
+    if not os.path.exists(settings.IMAGES_PATH):
+        os.mkdir(settings.IMAGES_PATH)
+        
     with open(file_path, "wb") as file:
         file.write(foto.file.read())
     
