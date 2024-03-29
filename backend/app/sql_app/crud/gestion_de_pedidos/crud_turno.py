@@ -22,15 +22,17 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         
         return turno_in_db
     
-    def cerrar_turno(self, db: Session, *, cerrado_por: int, info_de_cierre: InfoDeCierre) -> Turno | None:
+    def cerrar_turno(
+            self, db: Session, *, cerrado_por: int, info_de_cierre: InfoDeCierre
+        ) -> tuple[Turno | None, bool, str]:
         turno_in_db = self.get_open_turno(db=db)
         if turno_in_db is None:
-            return None
+            return None, False, 'No se encontró un turno abierto.'
 
         turno_schema = self.llenar_campos_turno_en_curso(db=db, turno=turno_in_db)
 
         if turno_schema.clientes_activos != 0:
-            return None
+            return None, False, f'Todavía existen {turno_schema.clientes_activos} clientes activos. Debe cerrar todas las ordenes abiertas antes de cerrar la caja.'
         
         turno_in_db.cerrado_por = cerrado_por
         turno_in_db.timestamp_cierre = datetime.now()
@@ -59,7 +61,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
             else:
                 print(f'Cliente {cliente_ingresado.id} REMOVIDO')
         
-        return turno_in_db
+        return turno_in_db, True, ''
     
     def get_open_turno(self, db: Session) -> Turno | None:
         opened = db.query(Turno).filter(Turno.cerrado_por == None).first()

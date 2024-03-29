@@ -40,14 +40,14 @@ def handle_cerrar_turno(
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
-    turno = crud.turno.cerrar_turno(
+    turno, pudo_cerrarse, msg = crud.turno.cerrar_turno(
         db = db,
         cerrado_por = current_user.id,
         info_de_cierre=info_de_cierre
     )
 
-    if not turno:
-        raise HTTPException(status_code=404, detail='El turno no se pudo abrir')
+    if not pudo_cerrarse:
+        raise HTTPException(status_code=404, detail=msg)
     
     return turno
 
