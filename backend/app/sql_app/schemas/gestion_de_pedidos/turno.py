@@ -18,7 +18,8 @@ class TurnoInDBBase(TurnoBase):
     cantidad_de_ordenes: int
     cantidad_tapas: int
     cantidad_usuarios_vip: int
-    ingresos_totales: float    
+    monto_en_caja: float    
+    comentarios: Optional[str] = ''
     cerrado_por: Optional[int] = None
     timestamp_cierre: Optional[datetime] = None
 
@@ -30,3 +31,7 @@ class Turno(TurnoInDBBase):
 
 class TurnoInDB(TurnoInDBBase):
     pass
+
+class InfoDeCierre(BaseModel):
+    comentarios: str
+    monto_en_caja: float

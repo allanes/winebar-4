@@ -30,7 +30,7 @@ class CRUDRenglon(CRUDBase[Renglon, RenglonCreate, RenglonUpdate]):
         renglon_in_db.cantidad_de_ordenes = 0
         renglon_in_db.cantidad_tapas = 0
         renglon_in_db.cantidad_usuarios_vip = 0
-        renglon_in_db.ingresos_totales = 0
+        renglon_in_db.monto_en_caja = 0
 
         db.commit()
         db.refresh(renglon_in_db)

@@ -35,13 +35,15 @@ def handle_abrir_turno(
 def handle_cerrar_turno(
     *,
     db: Session = Depends(deps.get_db),
+    info_de_cierre: schemas.InfoDeCierre,
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     turno = crud.turno.cerrar_turno(
         db = db,
-        cerrado_por = current_user.id
+        cerrado_por = current_user.id,
+        info_de_cierre=info_de_cierre
     )
 
     if not turno:
