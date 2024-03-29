@@ -68,6 +68,15 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         if opened:
             print(f'turno abierto: {opened.__dict__}')
         return opened
+    
+    def get_suma_cobrada_de_ordenes(self, db: Session, turno_id: int) -> float:
+        ordenes_del_turno_in_db = crud.orden.get_by_turno_id(db=db, turno_id=turno_id)
+        ordenes_del_turno_in_db: list[OrdenCompra]
+
+        montos_cobrados = [orden.monto_cobrado for orden in ordenes_del_turno_in_db if orden.monto_cobrado >= 0]
+        monto_cobrado_de_ordenes = sum(montos_cobrados)
+
+        return monto_cobrado_de_ordenes
         
     def llenar_campos_turno_en_curso(self, db: Session, turno: Turno) -> TurnoSchema:
         # Cantidad de ordenes
