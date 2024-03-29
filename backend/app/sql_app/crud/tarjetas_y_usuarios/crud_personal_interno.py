@@ -181,4 +181,17 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         terminal = get_terminal_by_key(plain_password=password)
         print(f'Terminal logueada: {terminal}')
 
+    def armar_nombre_completo(self, db: Session, personal_id: int) -> str:
+        personal_in_db = db.query(PersonalInterno)
+        personal_in_db = personal_in_db.filter(PersonalInterno.id == personal_id)
+        # personal_in_db = personal_in_db.filter(PersonalInterno.activa == True)
+        personal_in_db = personal_in_db.first()
+        
+        if not personal_in_db:
+            return ''
+        
+        nombre_completo = f'{personal_in_db.nombre} {personal_in_db.apellido}'
+        return nombre_completo
+            
+
 personal_interno = CRUDPersonalInterno(PersonalInterno)
