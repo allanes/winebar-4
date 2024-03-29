@@ -15,7 +15,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         turno_in_db.cantidad_de_ordenes = -1
         turno_in_db.cantidad_tapas = -1
         turno_in_db.cantidad_usuarios_vip = -1
-        turno_in_db.monto_en_caja = -1
+        turno_in_db.monto_en_caja = 0
         turno_in_db.abierto_por = turno_in.abierto_por
 
         turno_in_db = super().create(db=db, obj_in=turno_in_db)
@@ -42,6 +42,22 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
 
         db.commit()
         db.refresh(turno_in_db)
+
+        ## Chequeo que no haya quedado usuario operando y limpio
+        clientes_operan_del_turno = crud.cliente_opera_con_tarjeta.get_multi(db=db)
+        for cliente_ingresado in clientes_operan_del_turno:
+            tarjeta = crud.tarjeta.get_active(db=db, id=cliente_ingresado.tarjeta_id)
+            if tarjeta is not None:
+                if tarjeta.presente_en_salon:
+                    print(f'ADVERTENCIA. TURNO CERRADO CON TARJETA {tarjeta.id} PARA CLIENTE {cliente_ingresado.id_cliente}')
+                    crud.cliente.devolver_tarjeta_de_cliente(db=db, id=cliente_ingresado.id)
+                
+            ## Limpio clientes operan
+            cliente_opera_removido = crud.cliente_opera_con_tarjeta.remove(db=db, id=cliente_ingresado.id)
+            if not cliente_opera_removido:
+                print(f'Cliente {cliente_ingresado.id} no se pudo remover')
+            else:
+                print(f'Cliente {cliente_ingresado.id} REMOVIDO')
         
         return turno_in_db
     

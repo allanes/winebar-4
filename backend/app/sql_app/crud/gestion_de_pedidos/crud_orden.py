@@ -161,10 +161,14 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         nombre_cliente = f'{orden.cliente.nombre} {apellido_cliente}'
 
         ## Recupero el rol del cliente
+        rol = None
         cliente_opera = crud.cliente_opera_con_tarjeta.get_by_cliente_id(
             db=db, cliente_id=orden.cliente.id
         )
-        rol = cliente_opera.tarjeta.rol.nombre_corto
+        if cliente_opera is not None: # El cliente es historico. busco el rol guardado al cerrar el turno
+            rol = cliente_opera.tarjeta.rol.nombre_corto
+        else:
+            rol = orden.cliente.rol_usado_nombre
 
         ## Recupero nombre de vendedor
         nombre_vendedor = ''

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
-from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta
+from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta, crud_rol
 from sql_app.crud.gestion_de_pedidos import crud_orden
 from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
@@ -160,6 +160,16 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             db.commit()
             # Refresh the instances to reflect the updated state
             db.refresh(tarjeta)
+
+            cliente_in_db = db.query(Cliente)
+            cliente_in_db = cliente_in_db.filter(Cliente.id == cliente_id)
+            cliente_in_db = cliente_in_db.first()
+
+            nombre_rol = crud_rol.rol.get(db=db, id=tarjeta.rol_id)
+            nombre_rol = nombre_rol.nombre_corto if nombre_rol else None
+            cliente_in_db.rol_usado_nombre = nombre_rol
+            db.commit()
+            db.refresh(cliente_in_db)
         
         return cliente_operando_in_db, True, ''
     

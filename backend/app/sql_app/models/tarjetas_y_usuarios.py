@@ -29,6 +29,7 @@ class Cliente(Base):
     nombre = Column(String, nullable=False)
     contraseña = Column(String, nullable=False)
     activa = Column(Boolean, nullable=False)
+    rol_usado_nombre = Column(String, nullable=True)
     detalles_adicionales = relationship("DetallesAdicionales", back_populates="cliente")
 
 class PersonalInterno(Base):

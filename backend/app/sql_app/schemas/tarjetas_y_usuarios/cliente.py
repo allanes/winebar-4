@@ -21,6 +21,7 @@ class ClienteUpdate(BaseModel):
 class ClienteInDBBase(ClienteBase):
     id: int
     activa: bool
+    rol_usado_nombre: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
