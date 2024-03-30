@@ -152,6 +152,7 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
     
     def authenticate(self, db: Session, username: str, password: str, usar_api_key: bool) -> PersonalInterno | None:
         print(f'Authenticating by {"RFID and API key" if usar_api_key else "User and Password"}')
+        # user = self.get_by_rfid(db=db, tarjeta_id=int(username))
         user = self.get_by_rfid(db=db, tarjeta_id=username)
         if not user:
             return None
@@ -179,5 +180,18 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
         # Abrir tapero o registrar ingreso
         terminal = get_terminal_by_key(plain_password=password)
         print(f'Terminal logueada: {terminal}')
+
+    def armar_nombre_completo(self, db: Session, personal_id: int) -> str:
+        personal_in_db = db.query(PersonalInterno)
+        personal_in_db = personal_in_db.filter(PersonalInterno.id == personal_id)
+        # personal_in_db = personal_in_db.filter(PersonalInterno.activa == True)
+        personal_in_db = personal_in_db.first()
+        
+        if not personal_in_db:
+            return ''
+        
+        nombre_completo = f'{personal_in_db.nombre} {personal_in_db.apellido}'
+        return nombre_completo
+            
 
 personal_interno = CRUDPersonalInterno(PersonalInterno)

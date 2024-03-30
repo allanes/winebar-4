@@ -1,0 +1,104 @@
+services:
+  postgres:
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    image: postgres:latest
+    env_file:
+      - .env
+    # environment:
+    #   POSTGRES_USER: ${POSTGRES_USER}
+    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    #   POSTGRES_DB: ${POSTGRES_DB}    
+    volumes:
+      - ${POSTGRES_VOLUME}:/var/lib/postgresql/data
+    networks:
+      - winebar4-net
+
+  pgadmin:
+    container_name: ${PGADMIN_CONTAINER_NAME}
+    image: dpage/pgadmin4:latest
+    env_file:
+      - .env
+    # environment:
+    #   PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+    #   PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    #   PGADMIN_LISTEN_PORT: ${PGADMIN_LISTEN_PORT_INTERNAL}    
+    ports:
+      - "${PGADMIN_LISTEN_PORT_EXTERNAL}:${PGADMIN_LISTEN_PORT_INTERNAL}"
+    depends_on:
+      - postgres
+    networks:
+      - winebar4-net
+
+  backend:
+    container_name: ${BACKEND_CONTAINER_NAME}
+    build:
+      context:
+        ./backend
+    expose:
+      - "5000"
+    env_file:
+      - .env
+    # environment:
+    #   USE_BACKEND_PREFIX: false
+    volumes:
+      - ./backend/app:/app
+    command: uvicorn sql_app.main:app --host 0.0.0.0 --port 5000 --root-path /backend --forwarded-allow-ips * --proxy-headers --reload
+    restart: on-failure
+    networks:
+      - winebar4-net    
+
+  frontend:
+    container_name: ${DOCKER_CONTAINER_FRONTEND}
+    build: 
+      context:
+        ./winebar-4-frontend/frontend
+    expose:
+      - "3000"
+    volumes:
+      - ./winebar-4-frontend/frontend/src:/app/src
+      - ./winebar-4-frontend/frontend/public:/app/public
+      - ./winebar-4-frontend/frontend/tsconfig.json:/app/tsconfig.json
+    command: npm start
+    networks:
+      - winebar4-net
+    env_file:
+      - .env
+    # environment:
+    #   REACT_APP_BACKEND_URL: http://AdrianPiddef
+    #   REACT_APP_BACKEND_PORT: 80
+
+  nginx:
+    container_name: ${DOCKER_CONTAINER_NGINX}
+    image: nginx:stable
+    volumes:
+      - ./scripts/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:8081"
+    depends_on:
+      -  backend
+      -  frontend
+    networks:
+      - winebar4-net
+    restart: on-failure
+
+  servidor-claves:
+    container_name: ${SERVIDOR_CLAVES_CONTAINER_NAME}
+    build:
+      context: ./winebar-servidor-claves
+      
+    expose:
+      - "3001"
+    env_file:
+      - .env
+    environment:
+      - API_KEY_TERMINAL_ADMIN=${API_KEY_TERMINAL_ADMIN}
+    command: uvicorn main:app --host 0.0.0.0 --port 3001 --reload
+    ports:
+      - "3001:3001"
+    networks:
+      - winebar4-net
+
+networks:
+  winebar4-net: 
+    driver: bridge
+

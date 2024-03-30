@@ -6,11 +6,15 @@ import os
 import secrets
 from dotenv import load_dotenv
 
-load_dotenv()
+cargado = load_dotenv('..\..\..\.env')
+print(f'LOAD_DOTENV CARGADO: {cargado}')
+print(f'POSTGRES_SERVER: {os.getenv("POSTGRES_SERVER")}')
+print(os.path.abspath(os.path.curdir))
 
 class Settings(BaseSettings):
     USE_BACKEND_PREFIX: bool = True
     API_V1_STR: str = "/api/v1"
+    FIRST_SUPERUSER: str
     API_KEY_TERMINAL_CAJA_1: str
     API_KEY_TERMINAL_TAPA_1: str
     API_KEY_TERMINAL_ADMIN: str
@@ -21,8 +25,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     SERVER_NAME: str = "altacava-winebar-server"
     # SERVER_NAME: str = "localhost"
-    SERVER_HOST: AnyHttpUrl = "http://localhost"
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    # SERVER_HOST: AnyHttpUrl = "http://localhost"
+    BACKEND_CORS_ORIGINS: List[str] = ["*"]
     IMAGES_PATH: str
 
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.

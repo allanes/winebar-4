@@ -21,7 +21,8 @@ def handle_abrir_pedido(
     *,
     tarjeta_cliente: int, 
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     pedido_in = schemas.PedidoCreate(atendido_por=current_user.id)
@@ -43,7 +44,8 @@ def handle_agregar_producto(
     tarjeta_cliente: int, 
     renglon_in: schemas.RenglonCreate,
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_pedido(
@@ -64,7 +66,8 @@ def handle_quitar_renglon(
     tarjeta_cliente: int, 
     producto_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     renglon_removido_in_db, fue_quitado, msg = crud.pedido.quitar_producto_de_pedido(
@@ -83,7 +86,8 @@ def handle_cerrar_pedido(
     *,
     tarjeta_cliente: int, 
     db: Session = Depends(deps.get_db),
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)]
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
     pedido, pudo_cerrarse, msg = crud.pedido.cerrar_pedido(

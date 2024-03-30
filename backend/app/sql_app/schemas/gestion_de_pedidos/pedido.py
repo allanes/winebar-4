@@ -1,7 +1,7 @@
 from typing import Optional, List, TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
-from ..validators import custom_pedido_serializer
+from ..serializers import serializer_for_nombre_personal
 
 # if TYPE_CHECKING:
 from .renglon import Renglon
@@ -31,7 +31,7 @@ class Pedido(PedidoInDBBase):
 
     @field_serializer('atendido_por_nombre')
     def serialize_nombre(self, atendido_por_nombre: datetime, _info):
-        nombre_completo = custom_pedido_serializer(self.atendido_por)
+        nombre_completo = serializer_for_nombre_personal(self.atendido_por)
         return  nombre_completo
 
 class PedidoInDB(PedidoInDBBase):

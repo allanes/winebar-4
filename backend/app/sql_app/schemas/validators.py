@@ -15,17 +15,3 @@ def clean_tarjeta_id(value: Union[int, str]) -> int:
         return int(cleaned_value) if cleaned_value else None
     except ValueError:
         raise ValueError(f"Tarjeta no válida: {value}")
-def custom_pedido_serializer(atendido_por_id: int) -> str:
-    ## Armo el nombre
-    db: Session = deps.get_db()
-    db_session = next(db)
-    tapero_in_db = db_session.query(PersonalInterno)
-    tapero_in_db = tapero_in_db.filter(PersonalInterno.id == atendido_por_id)
-    tapero_in_db = tapero_in_db.filter(PersonalInterno.activa == True)
-    tapero_in_db = tapero_in_db.first()
-    
-    nombre_completo = ''
-    if tapero_in_db:
-        nombre_completo = f'{tapero_in_db.nombre} {tapero_in_db.apellido}'
-        
-    return nombre_completo

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from sql_app.db.base_class import Base  # Adjust import based on your setup
@@ -11,7 +11,8 @@ class Turno(Base):
     cantidad_de_ordenes = Column(Integer, nullable=False)
     cantidad_tapas = Column(Integer, nullable=False)
     cantidad_usuarios_vip = Column(Integer, nullable=False)
-    ingresos_totales = Column(Float, nullable=False)
+    monto_en_caja = Column(Float, nullable=False)
+    comentarios = Column(Text, nullable=True)
     abierto_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=False)
     cerrado_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=True)
 

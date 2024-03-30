@@ -1,13 +1,22 @@
 from datetime import datetime
+from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
-from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraCerrada
+from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
+    def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:
+        ordenes = db.query(OrdenCompra)
+        ordenes = ordenes.filter(OrdenCompra.turno_id == turno_id)
+        ordenes = ordenes.order_by(OrdenCompra.monto_cobrado.asc())
+        ordenes = ordenes.order_by(OrdenCompra.timestamp_apertura_orden.asc())
+        ordenes = ordenes.all()
+        return ordenes
+    
     def get_orden_abierta_by_client(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_id)
@@ -112,9 +121,32 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     
         return orden_in_db
     
+    def check_orden_no_supera_monto_maximo(
+        self, 
+        db: Session, 
+        orden_id: OrdenCompra
+    ) -> tuple[bool, str]:
+        orden_obj = self.get(db=db, id=orden_id)
+        if not orden_obj:
+            return False, 'No se encontró la orden'
+        
+        suma_orden = 0
+
+        pedidos_de_orden = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden_obj.id)
+        for pedido in pedidos_de_orden:
+            renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id)
+            montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
+            suma_pedido = sum(montos_de_renglones)
+            suma_pedido += suma_orden
+        
+        if suma_pedido <= orden_obj.monto_maximo_orden:
+            return True, ''
+
+        return False, f'Supera monto máximo de órden ({orden_obj.monto_maximo_orden})'
+    
     def convertir_a_orden_detallada(
         self, db: Session, orden: OrdenCompra
-    ) -> OrdenCompraCerrada:
+    ) -> OrdenCompraDetallada:
         ## Recupero los pedidos
         pedidos_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id, asc=False)
         
@@ -129,17 +161,29 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         nombre_cliente = f'{orden.cliente.nombre} {apellido_cliente}'
 
         ## Recupero el rol del cliente
+        rol = None
         cliente_opera = crud.cliente_opera_con_tarjeta.get_by_cliente_id(
             db=db, cliente_id=orden.cliente.id
         )
-        rol = cliente_opera.tarjeta.rol.nombre_corto
+        if cliente_opera is not None: # El cliente es historico. busco el rol guardado al cerrar el turno
+            rol = cliente_opera.tarjeta.rol.nombre_corto
+        else:
+            rol = orden.cliente.rol_usado_nombre
+
+        ## Recupero nombre de vendedor
+        nombre_vendedor = ''
+        if orden.cerrada_por is not None:
+            vendedor = crud.personal_interno.get_active(db=db, id=orden.cerrada_por)
+            if vendedor is not None:
+                nombre_vendedor = f'{vendedor.nombre} {vendedor.apellido}'
 
         ## Armo el schema de respuesta
-        return OrdenCompraCerrada(
+        return OrdenCompraDetallada(
             **orden.__dict__,
             pedidos = pedidos_in_db,
             nombre_cliente=nombre_cliente,
             rol = rol,
+            cerrada_por_nombre=nombre_vendedor
         )
     
 orden = CRUDOrden(OrdenCompra)
