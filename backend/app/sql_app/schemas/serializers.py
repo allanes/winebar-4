@@ -45,15 +45,13 @@ def serializer_for_clientes_activos(turno_id: int) -> int:
     db: Session = deps.get_db()
     db_session = next(db)
 
-    ordenes_in_db = crud.orden.get_by_turno_id(
+    cant_ordenes_activas = crud.turno.obtener_cantidad_ordenes_abiertas(
         db=db_session,
         turno_id=turno_id
     )
 
-    ordenes_activas = [orden for orden in ordenes_in_db if orden.cerrada_por is None]
-
     db.close()
-    return len(ordenes_activas)
+    return cant_ordenes_activas
 
 def serializer_for_clientes_totales(turno_id: int) -> int:
     # db_session = __get_internal_db_session()

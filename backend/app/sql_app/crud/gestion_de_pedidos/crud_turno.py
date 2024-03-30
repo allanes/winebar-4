@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
@@ -8,6 +9,15 @@ from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
 class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):    
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Turno]:
+        turnos = db.query(Turno)
+        turnos = turnos.order_by(Turno.id.desc())
+        turnos = turnos.order_by(Turno.cerrado_por.is_(None).asc())
+        turnos = turnos.offset(skip)
+        turnos = turnos.limit(limit)
+        turnos = turnos.all()
+        return turnos
+    
     def abrir_turno(self, db: Session, *, turno_in: TurnoCreate) -> Turno:
         turno_in_db = Turno()
         
@@ -29,16 +39,22 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         if turno_in_db is None:
             return None, False, 'No se encontró un turno abierto.'
 
-        turno_schema = self.llenar_campos_turno_en_curso(db=db, turno=turno_in_db)
-
-        if turno_schema.clientes_activos != 0:
-            return None, False, f'Todavía existen {turno_schema.clientes_activos} clientes activos. Debe cerrar todas las ordenes abiertas antes de cerrar la caja.'
+        cant_ordenes_abiertas = self.obtener_cantidad_ordenes_abiertas(
+            db=db,
+            turno_id=turno_in_db.id
+        )
+        if cant_ordenes_abiertas != 0:
+            return None, False, f'Todavía existen {cant_ordenes_abiertas} clientes activos. Debe cerrar todas las ordenes abiertas antes de cerrar la caja.'
         
+        cant_total_ordenes = len(crud.orden.get_by_turno_id(
+            db = db, turno_id = turno_in_db.id
+        ))
+
         turno_in_db.cerrado_por = cerrado_por
         turno_in_db.timestamp_cierre = datetime.now()
-        turno_in_db.cantidad_de_ordenes = turno_schema.cantidad_de_ordenes
-        turno_in_db.cantidad_tapas = turno_schema.cantidad_tapas
-        turno_in_db.cantidad_usuarios_vip = turno_schema.cantidad_usuarios_vip
+        turno_in_db.cantidad_de_ordenes = cant_total_ordenes
+        turno_in_db.cantidad_tapas = 0
+        turno_in_db.cantidad_usuarios_vip = 0
         turno_in_db.monto_en_caja = info_de_cierre.monto_en_caja
         turno_in_db.comentarios = info_de_cierre.comentarios
 
@@ -77,37 +93,16 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         monto_cobrado_de_ordenes = sum(montos_cobrados)
 
         return monto_cobrado_de_ordenes
+    
+    def obtener_cantidad_ordenes_abiertas(self, db: Session, turno_id: int) -> int:
+        turno_abierto = self.get_open_turno(db=db)
+        if not turno_abierto: 
+            return []
         
-    def llenar_campos_turno_en_curso(self, db: Session, turno: Turno) -> TurnoSchema:
-        # Cantidad de ordenes
-        ## Metodo 1
-        clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db=db)
-        cantidad_ordenes_desde_cliente_opera = len(clientes_operan)
-        ## Metodo 2
-        ordenes_del_turno = db.query(OrdenCompra)
-        ordenes_del_turno = ordenes_del_turno.filter(OrdenCompra.turno_id == turno.id)
-        ordenes_del_turno = ordenes_del_turno.all()
-        cantidad_ordenes_desde_ordenes = len(ordenes_del_turno)
-        ## 
-        print(f'cantidad_ordenes_desde_cliente_opera: {cantidad_ordenes_desde_cliente_opera}')
-        print(f'cantidad_ordenes_desde_ordenes: {cantidad_ordenes_desde_ordenes}')
-        ## ---
-
-        ## Monto cobrado
-        montos = [orden.monto_cobrado for orden in ordenes_del_turno]
-        
-        # Clientes activos
-        cant_activos = len([orden for orden in ordenes_del_turno if orden.monto_cobrado == -1])
-
-        # Pongo todos los datos en el turno actual
-        turno_con_data = TurnoSchema(
-            # cantidad_de_ordenes = cantidad_ordenes_desde_cliente_opera,
-            clientes_activos = cant_activos,
-            suma_ordenes_cobradas=sum(montos),
-            **turno.__dict__            
+        ordenes_de_turno_actual = crud.orden.get_by_turno_id(
+            db=db, turno_id=turno_id
         )
-
-        return turno_con_data
-
+        ordenes_activas = [orden for orden in ordenes_de_turno_actual if orden.cerrada_por is None]
+        return len(ordenes_activas)
 
 turno = CRUDTurno(Turno)

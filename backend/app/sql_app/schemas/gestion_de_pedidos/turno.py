@@ -50,13 +50,17 @@ class Turno(TurnoInDBBase):
     
     @field_serializer('suma_ordenes_cobradas')
     def serialize_suma_ordenes_cobradas(self, suma_ordenes_cobradas: float, _info):
+        if self.suma_ordenes_cobradas is not None:
+            print(f'no se serializará la suma_ordenes_cobradas para turno {self.id}')
+            return self.suma_ordenes_cobradas
+        
         suma_ordenes = serializer_for_suma_ordenes_para_turno(turno_id=self.id)
         return  suma_ordenes
     
     @field_serializer('diferencia')
     def serialize_diferencia(self, diferencia: str, _info):
         if not self.timestamp_cierre:
-            print(f'no se pudo serializar la diferencia')
+            print(f'no se pudo serializar la diferencia para turno {self.id}')
             return None
 
         suma_ordenes = serializer_for_suma_ordenes_para_turno(turno_id=self.id)        
@@ -65,6 +69,9 @@ class Turno(TurnoInDBBase):
     
     @field_serializer('clientes_activos')
     def serialize_clientes_activos(self, clientes_activos: int, _info):
+        if not self.timestamp_cierre:
+            return 0
+        
         cant_clientes_activos = serializer_for_clientes_activos(
             turno_id=self.id
         )
