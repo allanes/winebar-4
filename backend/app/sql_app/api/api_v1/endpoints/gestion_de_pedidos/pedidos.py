@@ -60,6 +60,40 @@ def handle_agregar_producto(
     
     return renglon_in_db
 
+@router.post("/agregar-producto-by-phys", response_model=schemas.Renglon)
+def handle_agregar_producto_by_phys(
+    *,
+    tarjeta_cliente: int, 
+    phys_port: str,
+    db: Session = Depends(deps.get_db),
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+):
+    print(f'usuario logueado id: {current_user.id}')
+    mapa_puertos_a_tapas = {
+        "usb-0000:01:00.0-1.1.3/input0": 1,
+        "usb-0000:01:00.0-1.1.2/input0": 2
+    }
+    renglon_in = schemas.RenglonCreate(
+        cantidad=1,
+        producto_id=mapa_puertos_a_tapas.get(phys_port)
+    )
+
+    if not renglon_in.producto_id:
+        raise HTTPException(status_code=404, detail=msg)
+
+    renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_pedido(
+        db=db,
+        renglon_in=renglon_in,
+        atendido_por=current_user.id,
+        tarjeta_cliente=tarjeta_cliente
+    )
+
+    if not fue_agregado:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    return renglon_in_db
+
 @router.post("/quitar-producto", response_model=schemas.Renglon)
 def handle_quitar_renglon(
     *,
