@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
-from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraCerrar, OrdenCompraCreateInternal, OrdenCompraDetallada
+from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
@@ -20,7 +20,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_orden_abierta_by_client(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.cliente_id == cliente_id)
-        orden_in_db = orden_in_db.filter(OrdenCompra.monto_cobrado == -1)
+        orden_in_db = orden_in_db.filter(OrdenCompra.cerrada_por.is_(None))
         orden_in_db = orden_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
         orden_in_db = orden_in_db.first()
         print(f'orden abierta encontrada desde crud_orden: {orden_in_db}. cliente id {cliente_id}')
@@ -67,8 +67,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # Aplico valores pord efecto antes de crear
         orden_in_db = OrdenCompra()
         orden_in_db.timestamp_apertura_orden = datetime.now()
-        orden_in_db.monto_cobrado = -1
         orden_in_db.monto_cargado = 0
+        orden_in_db.monto_cobrado = 0
+        orden_in_db.monto_cobrado_efectivo = 0
+        orden_in_db.monto_cobrado_tarjeta = 0
+        orden_in_db.monto_cobrado_transferencia = 0
         orden_in_db.turno_id = turno_abierto.id
         [setattr(orden_in_db, attr, value) for attr, value in orden_in.model_dump().items()]
 
@@ -77,18 +80,18 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         return orden_in_db
     
-    def cerrar_orden(self, db: Session, *, id: int, cerrada_por_id: int) -> OrdenCompra | None:
+    def cerrar_orden(self, db: Session, *, id: int, cerrada_por_id: int, info_pago: OrdenCompraInfoPago) -> tuple[OrdenCompra | None, bool, str]:
         orden_in_db = db.query(OrdenCompra)
         orden_in_db = orden_in_db.filter(OrdenCompra.id == id)
-        orden_in_db = orden_in_db.filter(OrdenCompra.monto_cobrado == -1)
         orden_in_db = orden_in_db.first()
         
         if orden_in_db is None:
-            return None
+            return None, False, f'No se encontró la orden id {id}'
         
         # Check if order is open
         if orden_in_db.cerrada_por is not None:
-            return None
+            personal = crud.personal_interno.get(db=db, id=orden_in_db.cerrada_por)
+            return None, False, f'La orden id {id} ya está cerrada por {personal.nombre}'
         
         # Remove any opened Pedido for that order
         pedido_abierto = crud.pedido.get_pedido_abierto_por_orden(db=db, orden_id=orden_in_db.id)
@@ -99,7 +102,22 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # Calculo valores necesarios
         orden_in_db.cerrada_por = cerrada_por_id
         orden_in_db.timestamp_cierre_orden = datetime.now()
-        orden_in_db.monto_cobrado = orden_in_db.monto_cargado
+
+        ## Verifico que el monto cobrado sea igual al monto cargado
+        cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0
+        cobrado_tarjeta = info_pago.cobrado_tarjeta if info_pago.cobrado_tarjeta else 0
+        cobrado_transferencia = info_pago.cobrado_transferencia if info_pago.cobrado_transferencia else 0
+        suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia
+
+        if suma_pagos < orden_in_db.monto_cargado:
+            msg = f'La suma cobrada (${suma_pagos}) es menor que la suma cargada (${orden_in_db.monto_cargado})'
+            return None, False, msg
+
+        orden_in_db.monto_cobrado_efectivo = cobrado_efectivo
+        orden_in_db.monto_cobrado_tarjeta = cobrado_tarjeta
+        orden_in_db.monto_cobrado_transferencia = cobrado_transferencia
+        orden_in_db.monto_cobrado = suma_pagos
+        orden_in_db.comentarios = info_pago.comentarios
         
         db.commit()
         db.refresh(orden_in_db)
@@ -109,7 +127,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             db=db, id=orden_in_db.cliente_id
         )
         
-        return orden_in_db
+        return orden_in_db, True, ''
     
     def cargar_monto(self, db: Session, *, orden_id: int, monto_a_agregar: float) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.id == orden_id).first()
