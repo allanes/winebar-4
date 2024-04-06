@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
-from sql_app.models.gestion_de_pedidos import Pedido, Configuracion, OrdenCompra
+from sql_app.models.gestion_de_pedidos import Pedido, Configuracion, OrdenCompra, Renglon
 from sql_app.schemas.gestion_de_pedidos.pedido import PedidoCreate, PedidoUpdate
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app.schemas.gestion_de_pedidos.renglon import RenglonCreate, RenglonCreateInternal
@@ -128,7 +128,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         tarjeta_cliente:int, 
         renglon_in: RenglonCreate,
         atendido_por: int,
-    ) -> tuple[Pedido | None, bool, str]:
+    ) -> tuple[Renglon | None, bool, str]:
         ## Si todavia no existe un pedido abierto, debo abrirlo
         pedido_in_db, fue_abierto, msg = self.abrir_pedido(
             db=db, 

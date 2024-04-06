@@ -50,7 +50,7 @@ class Turno(TurnoInDBBase):
     
     @field_serializer('suma_ordenes_cobradas')
     def serialize_suma_ordenes_cobradas(self, suma_ordenes_cobradas: float, _info):
-        if self.suma_ordenes_cobradas is not None:
+        if self.suma_ordenes_cobradas is not None and self.suma_ordenes_cobradas != 0:
             print(f'no se serializará la suma_ordenes_cobradas para turno {self.id}')
             return self.suma_ordenes_cobradas
         
@@ -69,7 +69,7 @@ class Turno(TurnoInDBBase):
     
     @field_serializer('clientes_activos')
     def serialize_clientes_activos(self, clientes_activos: int, _info):
-        if not self.timestamp_cierre:
+        if self.timestamp_cierre:
             return 0
         
         cant_clientes_activos = serializer_for_clientes_activos(
