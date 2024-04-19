@@ -15,9 +15,11 @@ class OrdenCompraAbrir(BaseModel):
     abierta_por: int
     tarjeta_cliente: int
 
-class OrdenCompraCerrar(BaseModel):
-    cerrada_por: int
-    tarjeta_cliente: int
+class OrdenCompraInfoPago(BaseModel):
+    cobrado_efectivo: Optional[float] = 0
+    cobrado_tarjeta: Optional[float] = 0
+    cobrado_transferencia: Optional[float] = 0
+    comentarios: Optional[str] = ''
 
 class OrdenCompraCreateInternal(OrdenCompraBase):
     pass
@@ -31,9 +33,13 @@ class OrdenCompraInDBBase(OrdenCompraBase):
     turno_id: int
     monto_cargado: float
     monto_cobrado: float
+    monto_cobrado_efectivo: float
+    monto_cobrado_tarjeta: float
+    monto_cobrado_transferencia: float
     timestamp_apertura_orden: datetime
     timestamp_cierre_orden: Optional[datetime] = None
     cerrada_por: Optional[int] = None
+    comentarios: Optional[str] = ''
     model_config = ConfigDict(from_attributes=True)
 
 class OrdenCompra(OrdenCompraInDBBase):

@@ -22,6 +22,9 @@ class OrdenCompra(Base):
     precarga_usada = Column(Float, nullable=False)
     monto_cargado = Column(Float, nullable = False)
     monto_cobrado = Column(Float, nullable = False)
+    monto_cobrado_efectivo = Column(Float, nullable = False)
+    monto_cobrado_tarjeta = Column(Float, nullable = False)
+    monto_cobrado_transferencia = Column(Float, nullable = False)
     monto_maximo_orden = Column(Float, nullable=False)
     timestamp_apertura_orden = Column(DateTime, nullable=False)
     timestamp_cierre_orden = Column(DateTime, nullable=True)
@@ -29,6 +32,7 @@ class OrdenCompra(Base):
     cliente_id = Column(Integer, ForeignKey('clientes.id'))
     abierta_por = Column(Integer, ForeignKey('personal_interno.id'))
     cerrada_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=True)
+    comentarios = Column(Text, nullable=True)
     turno = relationship("Turno")
     cliente = relationship("Cliente")
 
