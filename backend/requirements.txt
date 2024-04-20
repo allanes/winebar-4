@@ -20,3 +20,6 @@ sqladmin[full]
 # testing
 pytest
 httpx
+
+# Vitte integration
+requests
