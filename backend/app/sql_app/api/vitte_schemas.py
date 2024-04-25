@@ -13,8 +13,8 @@ class CategoriasVitte(Enum):
 # Pydantic Models
 class VitteCredencialField(BaseModel):
     id: int = 0
-    valor: Optional[str]
-    clienteid: int = 0
+    valor: Optional[str] = ''
+    clienteId: int = 0
     tipoId: int = 0
 
 class VitteCategoriaField(BaseModel):
@@ -53,7 +53,7 @@ class SaveClienteVitte(ClienteVitte):
     telefono: Optional[str] = None
     documento: Optional[str] = None
     mail: Optional[str] = None
-    categoria: Optional[str] = None
+    categoria: Optional[VitteCategoriaField] = None
     tarjeta: str
     credencial: VitteCredencialField
     montoConsumo: int = 0
