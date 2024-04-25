@@ -11,7 +11,7 @@ from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdi
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
-from sql_app.api.vitte_utils import cargar_cliente_vitte, borrar_cliente_vitte
+from sql_app.api.vitte_utils import vitte_api_client
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -85,9 +85,10 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in)
         
         # Setup Vitte init
-        pudo_cargar = cargar_cliente_vitte(data_cliente=cliente_operando)
-        if not pudo_cargar:
-            print(f'No se pudo cargar el cliente en VITTE')
+        try:
+            vitte_api_client.cargar_cliente_vitte(data_cliente=cliente_operando)
+        except Exception as err:
+            print(f'No se pudo cargar el cliente en VITTE. {err=}')
         
         return cliente_in_db, True, ''
 
@@ -188,9 +189,11 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             return None, False, f'No se encontró un cliente operando con el cliente_id {id}'
         
         print(f'BORRANDO CLIENTE EN VITTE')
-        pudo_borrarse_vitte = borrar_cliente_vitte(data_cliente=cliente_opera)
-        if not pudo_borrarse_vitte:
-            print(f'el cliente no se pudo borrar de vitte {cliente_opera}')
+        try: 
+            vitte_api_client.borrar_cliente_vitte(data_cliente=cliente_opera)
+        except Exception as err:
+            print(f'el cliente no se pudo borrar de vitte. {err=}')
+        
         tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=cliente_opera.tarjeta_id)
         return tarjeta_devuelta        
 

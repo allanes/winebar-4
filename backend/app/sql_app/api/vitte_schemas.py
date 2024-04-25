@@ -10,19 +10,37 @@ class CategoriasVitte(Enum):
     CLIENTE_VIP = 6
     CLIENTE_PREMIUM = 7
 
+# Pydantic Models
+class VitteCredencialField(BaseModel):
+    id: int = 0
+    valor: Optional[str]
+    clienteid: int = 0
+    tipoId: int = 0
+
+class VitteCategoriaField(BaseModel):
+    id: int
+    nombre: str
+    activo: bool
+
+class VitteEmpresaField(BaseModel):
+    id: int
+    nombre: str
+    activo: bool
+
 class ClienteVitte(BaseModel):
     id: int
     activo: bool
     nombre: str
     apellido: str    
-    empresa: Optional[str]
+    empresa: Optional[VitteEmpresaField | str]
     empresaId: int    
     telefono: Optional[str] 
     saldo: float
     documento: Optional[str]
     mail: Optional[str] 
-    categoria: Optional[str]
+    categoria: Optional[VitteCategoriaField]
     categoriaId: int
+    credencial: Optional[VitteCredencialField] = None
 
 class VitteCredencialField(BaseModel):
     id: int = 0
@@ -36,11 +54,10 @@ class SaveClienteVitte(ClienteVitte):
     documento: Optional[str] = None
     mail: Optional[str] = None
     categoria: Optional[str] = None
-
     tarjeta: str
     credencial: VitteCredencialField
     montoConsumo: int = 0
-    validate_field:str = Field('', alias='validate')
+    validate_field: str = Field('', alias='validate')
 
 class RespuestaConsumo(BaseModel):
     consumoId: int

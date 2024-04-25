@@ -13,187 +13,185 @@ from sql_app.api.vitte_schemas import (
     CategoriasVitte, 
     VitteCredencialField
 )
-
-login_dict = {
-    'clave': "1234",
-    'server': "Altacava",
-    'usuario': "Altacava",
-    'validate': "",
-}
-accept_str = 'application/json, text/plain, */*'
-encoding_str = 'gzip, deflate, br'
+from sql_app.core.config import settings
+from sql_app.api.vitte_api_client import VitteApiClientBase
 
 
-@lru_cache
-def obtener_token():
-    login_url = 'https://app.vitte.com.ar/api/seguridad/login'
-    resp = requests.post(url=login_url, json=login_dict).json()
-    resp_exitosa = True  if 'success' in resp else False
-    token_data = resp['result']['token']['token']
-    usuario_data = resp['result']['usuario']
-    return token_data, usuario_data
+class VitteApiClient(VitteApiClientBase):
+    def __init__(self, empresa_id=None):
+        # Initialize the base class with any needed setup
+        super().__init__(empresa_id)
 
-@lru_cache
-def info_usuario_altacava():
-    info_usuario_logueado_url = 'https://app.vitte.com.ar/api/local/localesUsuario/109'
-    resp = requests.get(url=info_usuario_logueado_url).json()
-    user_data = resp['result']
-    return user_data[0]
+    def listar_clientes_vitte(self) -> list[ClienteVitte]:
+        print('VITTE_CLIENT: Entering listar_clientes_vitte')
+        # Ensure headers are ready and include up-to-date authentication tokens
+        headers = self._get_headers()
+        
+        url = f'{self.base_url}/cliente/searchCliente'
+        filtro_empresa = {
+            'Apellido': None,
+            'Nombre': None,
+            'NumeroTarjeta': None,
+            'VerActivos': True,
+            'empresaId': self.empresa_id  # Accessing empresa_id directly which is already fetched
+        }
+        response = self.session.post(url=url, json=filtro_empresa, headers=headers).json()
+        success = response.get('success', False)
 
-def get_empresa_id() -> int:
-    info = info_usuario_altacava()
-    empresa_id = info['empresaId']
-    return empresa_id
+        if success:
+            clientes = [ClienteVitte(**res) for res in response.get('result', [])]
+            print(f'    clientes recuperados: {clientes}')
+        else:
+            print('    no se tuvo éxito en la consulta')
+            clientes = []
 
-def obtener_headers():
-    token = obtener_token()[0]
-    print(f'token: {token}')
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Accept': accept_str,
-        'Accept-Enconding': encoding_str
-    }
-    return headers
+        print(f'    número de clientes recuperados: {len(clientes)}')
+        return clientes
 
-def listar_clientes_vitte() -> list[ClienteVitte]:
-    search_clientes_url = 'https://app.vitte.com.ar/api/cliente/search'
-    filtro_empresa = {
-        'Apellido': None,
-        'Nombre': None,
-        'NumeroTarjeta': None,
-        'VerActivos': False,
-        'empresaId': get_empresa_id()
-    }
-    # resp = requests.post(url=search_clientes_url, json=login_dict).json()
-    resp = requests.post(url=search_clientes_url, json=filtro_empresa, headers=obtener_headers()).json()
-    fue_exitoso = resp.get('success', False)
-
-    if not fue_exitoso:
+    def buscar_cliente_vitte_por_tarjeta_raw(self, tarjeta_id: str) -> Optional[ClienteVitte]:
+        clientes_altacava = self.listar_clientes_vitte()
+        print(f'buscando cliente por tarjeta {tarjeta_id}')
+        clientes_encontrados:list[ClienteVitte] = []
+        for cliente_vitte in clientes_altacava:
+            tiene_cred = cliente_vitte.credencial
+            cred = cliente_vitte.credencial.valor if tiene_cred else None
+            if tiene_cred and cred == tarjeta_id:
+                clientes_encontrados.append(cliente_vitte)
+                
+        for cliente_encontrado in clientes_encontrados:
+            if cliente_encontrado.activo == True:
+                print(f'    cliente encontrado: {cliente_vitte}')
+                return cliente_vitte
+        
+        # Si llegó acá, encontró clientes pero ninguno estaba ACTIVO
+        # if len(clientes_encontrados) > 0:
+        #     return clientes_encontrados[0]
+        
         return None
-    
-    resultados = resp.get('result', None)
-    clientes_altacava = [ClienteVitte(**res) for res in resultados if res['empresaId'] == get_empresa_id()]
 
-    return clientes_altacava
+    def borrar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+        print('Pre-chequeo de cliente en sistema Vitte')
+        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
+        
+        if cliente_en_vitte is None:
+            print('No se encontró ese cliente en Vitte.')
+            return None
+        
+        # if cliente_en_vitte.saldo > 0:
+        #     print('El cliente todavia tiene saldo a cancelar.')
+        #     return None
 
-def buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id: str) -> Optional[ClienteVitte]:
-    clientes_altacava = listar_clientes_vitte()
-    print(f'buscando cliente por tarjeta {tarjeta_id}')
-    clientes_encontrados:list[ClienteVitte] = []
-    for cliente_vitte in clientes_altacava:
-        if cliente_vitte.nombre == tarjeta_id:
-            clientes_encontrados.append(cliente_vitte)
-            
-    for cliente_encontrado in clientes_encontrados:
-        if cliente_encontrado.activo == True:
-            print(f'    cliente encontrado: {cliente_vitte}')
-            return cliente_vitte
-    
-    # Si llegó acá, encontró clientes pero ninguno estaba ACTIVO
-    if len(clientes_encontrados) > 0:
-        return clientes_encontrados[0]
-    
-    return None
+        # restablecer SALDO en CERO
+        if cliente_en_vitte.saldo > 0:
+            print(f'Client has balance to settle. Resetting to zero...')
+            if not self.cargar_saldo_cliente(cliente_en_vitte.id, -cliente_en_vitte.saldo):
+                print('Failed to reset balance.')
+                return False
 
-def borrar_cliente_vitte(data_cliente: schemas.ClienteOperaConTarjeta):
-    print('Pre-chequeo de cliente en sistema Vitte')
-    cliente_en_vitte = buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
-    
-    if cliente_en_vitte is None:
-        print('No se encontró ese cliente en Vitte.')
-        return None
-    
-    # if cliente_en_vitte.saldo > 0:
-    #     print('El cliente todavia tiene saldo a cancelar.')
-    #     return None
+        cargar_cliente_url = f'https://app.vitte.com.ar/api/cliente/{cliente_en_vitte.id}'
+        print(f'haciendo req a {cargar_cliente_url}')
+        resp = self.session.delete(url=cargar_cliente_url, headers=self._get_headers()).json()
+        fue_exitoso = resp.get('success', False)
 
-    # restablecer SALDO en CERO
-    cargar_cliente_url = f'https://app.vitte.com.ar/api/cliente/{cliente_en_vitte.id}'
-    print(f'haciendo req a {cargar_cliente_url}')
-    resp = requests.delete(url=cargar_cliente_url, headers=obtener_headers()).json()
-    fue_exitoso = resp.get('success', False)
-
-    if not fue_exitoso:
-        return False
-    
-    return True
-
-def cargar_cliente_vitte(data_cliente: schemas.ClienteOperaConTarjeta):
-    print('data del cliente')
-    print(data_cliente)
-    cliente_a_cargar = None
-    SALDO_INICIAL = 10000
-    
-    print('Pre-chequeo de cliente en sistema Vitte')
-    cliente_en_vitte = buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
-    
-    if cliente_en_vitte is not None:
-        # print(f'DEBERIA RETORNAR FALSO')
-        if cliente_en_vitte.activo == True:
-            print('El cliente ya existe en Vitte, debe borralo primero.')
+        if not fue_exitoso:
             return False
-            
-    payload = cliente_en_vitte.dict() if cliente_en_vitte else {}
-    tarjeta_in = data_cliente.tarjeta.raw_rfid
-    payload.update(
-        id=0,
-        activo=True,
-        tarjeta= tarjeta_in,
-        credencial= VitteCredencialField(valor=tarjeta_in),
-        saldo=SALDO_INICIAL,
-        nombre=data_cliente.tarjeta.raw_rfid,
-        apellido=data_cliente.cliente.nombre,
-        categoriaId=CategoriasVitte.CLIENTE.value,
-        empresa='',
-        empresaId=get_empresa_id()
-    )
-
-    cliente_a_cargar = SaveClienteVitte(**payload)
+        
+        return True
     
-    cargar_cliente_url = 'https://app.vitte.com.ar/api/cliente/saveCliente'
+    def cargar_saldo_cliente(self, cliente_id: int, monto_a_agregar: float):
+        print(f'Updating balance for client ID {cliente_id} (agregando ${monto_a_agregar})')
+        cliente_url = f'https://app.vitte.com.ar/api/cliente/agregarSaldo'
+        
+        payload = {
+            "clienteId": cliente_id,
+            "saldo": monto_a_agregar,
+        }
+        response = self.session.post(url=cliente_url, json=payload, headers=self._get_headers()).json()
+        if response.get('success', False):
+            print('Balance updated successfully.')
+            return True
+        else:
+            print('Failed to update balance.')
+            return False
 
-    print('No se encontro un cliente con esa tarjeta. Creando...')
-    print(f'posteando json: {cliente_a_cargar.model_dump()}')
-    resp = requests.post(url=cargar_cliente_url, json=cliente_a_cargar.model_dump(), headers=obtener_headers()).json()
-    fue_exitoso = resp.get('success', False)
+    def cargar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+        print('data del cliente')
+        print(data_cliente)
+        cliente_a_cargar = None
+        SALDO_INICIAL = 10000
+        
+        print('Pre-chequeo de cliente en sistema Vitte')
+        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
+        
+        if cliente_en_vitte is not None:
+            # print(f'DEBERIA RETORNAR FALSO')
+            if cliente_en_vitte.activo == True:
+                print('El cliente ya existe en Vitte, debe borralo primero.')
+                return False
+                
+        payload = cliente_en_vitte.dict() if cliente_en_vitte else {}
+        tarjeta_in = data_cliente.tarjeta.raw_rfid
+        payload.update(
+            id=0,
+            activo=True,
+            tarjeta= tarjeta_in,
+            credencial= VitteCredencialField(valor=tarjeta_in),
+            saldo=SALDO_INICIAL,
+            nombre=data_cliente.cliente.nombre,
+            apellido='',
+            categoriaId=CategoriasVitte.CLIENTE.value,
+            empresa='',
+            empresaId=self.empresa_id
+        )
 
-    if not fue_exitoso:
-        return False
+        cliente_a_cargar = SaveClienteVitte(**payload)
+        
+        cargar_cliente_url = 'https://app.vitte.com.ar/api/cliente/saveCliente'
+
+        print('No se encontro un cliente con esa tarjeta. Creando...')
+        print(f'posteando json: {cliente_a_cargar.model_dump()}')
+        resp = self.session.post(url=cargar_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers()).json()
+        fue_exitoso = resp.get('success', False)
+
+        if not fue_exitoso:
+            return False
+        
+        resultados = resp.get('result', None)
+        print(f'Cliente creado. Datos: {resultados}')
+
+        return True
+
+    def cerrar_transacciones_vino(self, data_cliente: schemas.ClienteOperaConTarjeta) -> list:
+        fechaDesde = (data_cliente.tarjeta.fecha_alta - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
+        fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
+        print(f'fecha desde: {fechaDesde}')
+        print(f'fecha hasta: {fechaHasta}')
+        query_params_fecha = {
+            'fechaDesde': fechaDesde,
+            'fechaHasta': fechaHasta
+        }
+        # query_params_fecha = {
+        #     'fechaDesde': '2023-02-01T03:00:00.000Z',
+        #     'fechaHasta': '2023-03-01T03:00:00.000Z'
+        # }
+
+        consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
+
+        resp = self.session.post(url=consumos_url, json=query_params_fecha, headers=self._get_headers()).json()
+        print(f'respuesta : {resp}')
+        # clave_buscada = 'Martín'
+        clave_buscada = str(data_cliente.tarjeta.raw_rfid)
+
+        transacciones = []
+        for trans_vino in resp.get('result', []):
+            clave_extraida = trans_vino['cliente'].split(' ')[-1]
+            print(f'clave extraida: {clave_extraida}, tipo: {type(clave_extraida)}')
+            if clave_buscada==clave_extraida:
+                transacciones.append(trans_vino)
+                print(f'Transaccion encontrada: {clave_buscada}')
+
+        # transacciones = [trans_vino for trans_vino in resp['result'] if clave_buscada==trans_vino['cliente'].split(' ')[-1]]
+        
+        return transacciones
     
-    resultados = resp.get('result', None)
-    print(f'Cliente creado. Datos: {resultados}')
-
-    return True
-
-def cerrar_transacciones_vino(data_cliente: schemas.ClienteOperaConTarjeta) -> list:
-    fechaDesde = (data_cliente.tarjeta.fecha_alta - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
-    fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
-    print(f'fecha desde: {fechaDesde}')
-    print(f'fecha hasta: {fechaHasta}')
-    query_params_fecha = {
-        'fechaDesde': fechaDesde,
-        'fechaHasta': fechaHasta
-    }
-    # query_params_fecha = {
-    #     'fechaDesde': '2023-02-01T03:00:00.000Z',
-    #     'fechaHasta': '2023-03-01T03:00:00.000Z'
-    # }
-
-    consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
-
-    resp = requests.post(url=consumos_url, json=query_params_fecha, headers=obtener_headers()).json()
-    print(f'respuesta : {resp}')
-    # clave_buscada = 'Martín'
-    clave_buscada = str(data_cliente.tarjeta.raw_rfid)
-
-    transacciones = []
-    for trans_vino in resp.get('result', []):
-        clave_extraida = trans_vino['cliente'].split(' ')[-1]
-        print(f'clave extraida: {clave_extraida}, tipo: {type(clave_extraida)}')
-        if clave_buscada==clave_extraida:
-            transacciones.append(trans_vino)
-            print(f'Transaccion encontrada: {clave_buscada}')
-
-    # transacciones = [trans_vino for trans_vino in resp['result'] if clave_buscada==trans_vino['cliente'].split(' ')[-1]]
-    
-    return transacciones
+vitte_api_client = VitteApiClient()

@@ -82,7 +82,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
     def get_open_turno(self, db: Session) -> Turno | None:
         opened = db.query(Turno).filter(Turno.cerrado_por == None).first()
         if opened:
-            print(f'turno abierto: {opened.__dict__}')
+            print(f'Turno abierto encontrado id: {opened.id}')
         return opened
     
     def get_suma_cobrada_de_ordenes(self, db: Session, turno_id: int) -> float:
