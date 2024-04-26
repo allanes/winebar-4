@@ -29,18 +29,35 @@ class VitteEmpresaField(BaseModel):
 
 class ClienteVitte(BaseModel):
     id: int
-    activo: bool
+    activo: bool = True
     nombre: str
     apellido: str    
     empresa: Optional[VitteEmpresaField | str]
     empresaId: int    
-    telefono: Optional[str] 
+    telefono: Optional[str] = None
     saldo: float
-    documento: Optional[str]
-    mail: Optional[str] 
-    categoria: Optional[VitteCategoriaField]
+    montoConsumo: float
+    documento: Optional[str] = None
+    mail: Optional[str] = None
+    categoria: Optional[VitteCategoriaField] = None
     categoriaId: int
     credencial: Optional[VitteCredencialField] = None
+
+class ClienteVitteDesdeMaquina(BaseModel):
+    nombre: Optional[str]
+    apellido: Optional[str] = None
+    empresa: Optional[VitteEmpresaField] = None
+    empresaId: int
+    telefono: Optional[str] = None
+    saldo: float
+    documento: Optional[str] = None
+    mail: Optional[str] = None
+    categoria: Optional[VitteCategoriaField] = None
+    categoriaId: int
+    credenciales: Optional[VitteCredencialField] = None
+    id: int
+    activo: bool
+
 
 class VitteCredencialField(BaseModel):
     id: int = 0
@@ -49,14 +66,10 @@ class VitteCredencialField(BaseModel):
     tipoId: int = 0
 
 class SaveClienteVitte(ClienteVitte):
-    activo: bool = True
-    telefono: Optional[str] = None
-    documento: Optional[str] = None
-    mail: Optional[str] = None
-    categoria: Optional[VitteCategoriaField] = None
     tarjeta: str
-    credencial: VitteCredencialField
-    montoConsumo: int = 0
+    id: int = 0
+    montoConsumo: float = 0.0
+    
     validate_field: str = Field('', alias='validate')
 
 class RespuestaConsumo(BaseModel):

@@ -6,60 +6,58 @@ import requests
 from sql_app.core.config import settings
 
 class VitteApiClientBase():
-    accept_str = 'application/json, text/plain, */*'
-    encoding_str = 'gzip, deflate, br'
-
-    def __init__(self, empresa_id=None, client_id=None):
+    def __init__(self):
         self.session = requests.Session()
         self.base_url = "https://app.vitte.com.ar/api"
-        self.empresa_id = empresa_id
-        self.client_id = client_id
+        self.empresa_id = None
+        self.client_id = None
         self.token = None
         self.token_expiry = datetime.now()
+        self._setup_login_details()
 
+    def _setup_login_details(self):
         # Initialize from environment variables or configuration
-        self.login_dict = {
+        self.login_details = {
             'clave': settings.VITTE_CLAVE,
             'server': settings.VITTE_SERVER,
             'usuario': settings.VITTE_USUARIO,
             'validate': "",
         }
 
-    def _fetch_token_and_usuario_id(self):
-        if self.token is None or datetime.now() >= self.token_expiry:
-            print('VITTE_CLIENT: Refreshing token...')
-            login_url = f'{self.base_url}/seguridad/login'
-            response = self.session.post(url=login_url, json=self.login_dict).json()
-            print(f'respuesta de login_url: {response}')
-            if 'result' in response and 'token' in response['result']:
-                print('encontro algo')
-                self.token = response['result']['token']['token']
-                self.usuario_id = response['result']['usuario']['id']
-                self.token_expiry = datetime.now() + timedelta(hours=1)  # Assuming token is valid for 1 hour
-                print(f"    Token retrieved. Exp: {response['result']['token']['expirationDate']}")
-                print(f'    Usuario ID retrieved: {self.usuario_id}')
-                self._fetch_empresa_id()  # Fetch client id after obtaining empresaId
+    def _fetch_initial_state(self):
+        self._authenticate()
+        self._fetch_empresa_id()
+
+    def _authenticate(self):
+        print('Vitte: Refreshing token...')
+        response = self.session.post(f'{self.base_url}/seguridad/login', json=self.login_details).json()
+        if response.get('result', {}).get('token'):
+            self.token = response['result']['token']['token']
+            self.token_expiry = datetime.now() + timedelta(hours=1)
+            self.client_id = response['result']['usuario']['id']  # Assuming client ID is part of the login result
+            print('Vitte:   Authentication successful, client and token updated.')
+        else:
+            print('Vitte:   Authentication failed.')
 
     def _fetch_empresa_id(self):
-        print('VITTE_CLIENT: Fetching empresa ID...')
-        if self.usuario_id and not self.empresa_id:
-            url = f'{self.base_url}/local/localesUsuario/{self.usuario_id}'
-            response = self.session.get(url=url, headers=self._get_headers()).json()
-            if 'result' in response:
-                self.empresa_id = response['result'][0]['empresaId']
-                print(f'    empresaId retrieved: {self.empresa_id}')
+        if not self.client_id:
+            raise ValueError("Client ID must be available to fetch empresa ID.")
+        empresa_url = f'{self.base_url}/local/localesUsuario/{self.client_id}'
+        response = self.session.get(url=empresa_url, headers=self._get_headers()).json()
+        if 'result' in response and len(response['result']) > 0:
+            self.empresa_id = response['result'][0]['empresaId']
+            print(f'Vitte:  Empresa ID fetched: {self.empresa_id}')
         else:
-            print('VITTE_CLIENT: Saliendo de fetch empresa...')
+            print('Vitte:   Failed to fetch Empresa ID.')
+
+    def _ensure_authentication(self):
+        if self.token is None or datetime.now() >= self.token_expiry:
+            self._authenticate()
 
     def _get_headers(self):
-        self._fetch_token_and_usuario_id()  # Ensure token, empresaId and clientId are up to date
+        self._ensure_authentication()
         return {
             'Authorization': f'Bearer {self.token}',
-            'Accept': self.accept_str,
-            'Accept-Encoding': self.encoding_str
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br'
         }
-
-    # def _fetch_empresa_id(self):
-    #     if not self.empresa_id:
-    #         self._fetch_token_and_empresa_id()  # This ensures empresa_id is always updated with token
-    #     return self.empresa_id

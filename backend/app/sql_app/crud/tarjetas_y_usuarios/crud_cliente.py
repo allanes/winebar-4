@@ -86,7 +86,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         # Setup Vitte init
         try:
-            vitte_api_client.cargar_cliente_vitte(data_cliente=cliente_operando)
+            vitte_api_client.cargar_o_actualizar_cliente_vitte(data_cliente=cliente_operando)
         except Exception as err:
             print(f'No se pudo cargar el cliente en VITTE. {err=}')
         
@@ -190,7 +190,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         print(f'BORRANDO CLIENTE EN VITTE')
         try: 
-            vitte_api_client.borrar_cliente_vitte(data_cliente=cliente_opera)
+            vitte_api_client.inhabilitar_cliente_vitte(data_cliente=cliente_opera)
         except Exception as err:
             print(f'el cliente no se pudo borrar de vitte. {err=}')
         

@@ -12,142 +12,102 @@ from sql_app.api.vitte_schemas import (
     SaveClienteVitte, 
     CategoriasVitte, 
     VitteCredencialField,
-    VitteCategoriaField
+    VitteCategoriaField,
+    ClienteVitteDesdeMaquina
 )
 from sql_app.core.config import settings
 from sql_app.api.vitte_api_client import VitteApiClientBase
 
 
 class VitteApiClient(VitteApiClientBase):
-    def __init__(self, empresa_id=None):
+    def __init__(self):
         # Initialize the base class with any needed setup
-        super().__init__(empresa_id)
-        # self.reset_inactive_clients()
-
+        super().__init__()
+        # self.reset_inactive_clients() 
+        # self.mostrar_clientes()
+    
     def listar_clientes_vitte(self, solo_activos=True) -> list[ClienteVitte]:
-        print('VITTE_CLIENT: Entering listar_clientes_vitte')
-        # Ensure headers are ready and include up-to-date authentication tokens
+        self._ensure_authentication()
+        self._fetch_empresa_id()
+        print(f'VITTE EMPRESA ID {self.empresa_id}')
         headers = self._get_headers()
-        
         url = f'{self.base_url}/cliente/searchCliente'
-        # url = f'{self.base_url}/cliente/search'
-        filtro_empresa = {
+        payload = {
             'Apellido': None,
             'Nombre': None,
             'NumeroTarjeta': None,
             'VerActivos': solo_activos,
             'empresaId': self.empresa_id  # Accessing empresa_id directly which is already fetched
         }
-        response = self.session.post(url=url, json=filtro_empresa, headers=headers).json()
-        success = response.get('success', False)
+        response = self.session.post(url, json=payload, headers=headers).json()
+        clientes = [ClienteVitte(**data) for data in response.get('result', [])]
 
-        if success:
-            clientes = [ClienteVitte(**res) for res in response.get('result', [])]
-            print(f'    clientes recuperados: {clientes}')
-        else:
-            print('    no se tuvo éxito en la consulta')
-            clientes = []
 
-        print(f'    número de clientes recuperados: {len(clientes)}')
+        print(f'Vitte: Listado de clientes recuperados. Cantidad: {len(response.get("result", []))}')
+        # print(f'Vitte:      resp: {response}')
+        print(f'Vitte:      success: {response.get("success")}')
+        print(f'Vitte:      error: {response.get("error")}')
         return clientes
 
-    def buscar_cliente_vitte_por_tarjeta_raw(self, tarjeta_id: str) -> Optional[ClienteVitte]:
-        clientes_altacava = self.listar_clientes_vitte()
-        print(f'buscando cliente por tarjeta {tarjeta_id}')
-        clientes_encontrados:list[ClienteVitte] = []
-        for cliente_vitte in clientes_altacava:
-            tiene_cred = cliente_vitte.credencial
-            cred = cliente_vitte.credencial.valor if tiene_cred else None
-            if tiene_cred and cred == tarjeta_id:
-                clientes_encontrados.append(cliente_vitte)
-                
-        for cliente_encontrado in clientes_encontrados:
-            if cliente_encontrado.activo == True:
-                print(f'    cliente encontrado: {cliente_vitte}')
-                return cliente_vitte
+    def buscar_cliente_vitte_por_tarjeta_raw(self, tarjeta_id: str) -> Optional[ClienteVitteDesdeMaquina]:
+        url = f"{self.base_url}/maquina/tarjeta/{tarjeta_id}/301/asdas"
+        print(f"Vitte: Fetching client details for tarjeta ID: {tarjeta_id} from {url}")
+        response = self.session.get(url, headers=self._get_headers()).json()
         
-        # Si llegó acá, encontró clientes pero ninguno estaba ACTIVO
-        # if len(clientes_encontrados) > 0:
-        #     return clientes_encontrados[0]
-        
-        return None
-
-    def borrar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
-        print('Pre-chequeo de cliente en sistema Vitte')
-        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
+        if response and response['id'] == 0:  # Assuming 'id' == 0 signifies a null response indicating no such client exists
+            print("Vitte:       No existing client found for the given tarjeta ID.")
+            return None
+        elif response and response['id'] != 0:
+            ret = ClienteVitteDesdeMaquina(**response)
+            print(f"Vitte:      Client found: {ret.model_dump()}")
+            return ret
+        else:
+            print("Vitte:       Failed to retrieve valid client data or bad response from server.")
+            return None
+    
+    def inhabilitar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+        print('Vitte: Pre-checking client in Vitte system')
+        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=data_cliente.tarjeta.raw_rfid)
         
         if cliente_en_vitte is None:
-            print('No se encontró ese cliente en Vitte.')
-            return None
-        
-        # if cliente_en_vitte.saldo > 0:
-        #     print('El cliente todavia tiene saldo a cancelar.')
-        #     return None
-
-        # # restablecer SALDO en CERO
-        # if cliente_en_vitte.saldo > 0:
-        #     print(f'Client has balance to settle. Resetting to zero...')
-        #     if not self.cargar_saldo_cliente(cliente_en_vitte.id, -cliente_en_vitte.saldo):
-        #         print('Failed to reset balance.')
-        #         return False
-            
-        # borrar credencial
-        payload = cliente_en_vitte.model_dump()
-        tarjeta_in = data_cliente.tarjeta.raw_rfid
-
-        if cliente_en_vitte.credencial:
-            credencial_a_guardar = cliente_en_vitte.credencial 
-            credencial_a_guardar.valor = ''
-        else:
-            credencial_a_guardar = VitteCredencialField(valor='')
-
-        payload.update(
-            id=cliente_en_vitte.id,
-            activo=True,
-            tarjeta= '',
-            credencial=credencial_a_guardar.model_dump(),
-            saldo=0,
-            nombre=str(data_cliente.cliente.id),
-            apellido=data_cliente.cliente.nombre,
-            categoriaId=cliente_en_vitte.categoria.id,
-            categoria=cliente_en_vitte.categoria if cliente_en_vitte.categoria else VitteCategoriaField(
-                id=cliente_en_vitte.categoriaId,
-                nombre=CategoriasVitte.CLIENTE,
-                activo=True
-            ),
-            empresa=cliente_en_vitte.empresa,
-            empresaId=cliente_en_vitte.empresaId
-        )
-
-        cliente_a_cargar = SaveClienteVitte(**payload)
-        
-        cargar_cliente_url = 'https://app.vitte.com.ar/api/cliente/saveCliente'
-
-        print('No se encontro un cliente con esa tarjeta. Creando...')
-        print(f'posteando json: {cliente_a_cargar.model_dump()}')
-        resp = self.session.post(url=cargar_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers()).json()
-        fue_exitoso = resp.get('success', False)
-
-        # Borro el cliente 
-        cargar_cliente_url = f'https://app.vitte.com.ar/api/cliente/{cliente_en_vitte.id}'
-        print(f'haciendo req a {cargar_cliente_url}')
-        resp = self.session.delete(url=cargar_cliente_url, headers=self._get_headers()).json()
-        fue_exitoso = resp.get('success', False)
-
-        if not fue_exitoso:
+            print('Vitte:       Client not found in Vitte.')
             return False
         
-        return True
-    
-    def cargar_saldo_cliente(self, cliente_id: int, monto_a_agregar: float):
-        print(f'Updating balance for client ID {cliente_id} (agregando ${monto_a_agregar})')
-        cliente_url = f'https://app.vitte.com.ar/api/cliente/agregarSaldo'
+        # Prepare the payload to update client as inactive
+        cliente_a_cargar = self.prepare_cliente_payload(
+            data_cliente_bar = data_cliente, 
+            data_cliente_vitte = cliente_en_vitte, 
+            inactivate=True
+        )
+        update_cliente_url = f'{self.base_url}/cliente/saveCliente'
         
-        payload = {
-            "clienteId": cliente_id,
-            "saldo": monto_a_agregar,
-        }
-        response = self.session.post(url=cliente_url, json=payload, headers=self._get_headers()).json()
+        print('Vitte:       Updating client status to inactive...')
+        response = self.session.post(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
+        fue_exitoso = response.get('success', False)
+        
+        if not fue_exitoso:
+            print('Vitte:       Failed to update client status.')
+        
+        pudo_borrar = self._borrar_cliente_vitte(cliente_id=cliente_en_vitte.id)
+        
+        return pudo_borrar
+
+    def _borrar_cliente_vitte(self, cliente_id: int) -> bool:
+        delete_url = f'{self.base_url}/cliente/{cliente_id}'
+        print(f'Vitte: Deleting client ID: {cliente_id}...')
+        response = self.session.delete(url=delete_url, headers=self._get_headers()).json()
+        if response.get('success', False):
+            print('Vitte:   Client deleted successfully.')
+            return True
+        else:
+            print('Vitte:   Failed to delete client.')
+            return False
+    
+    def cargar_saldo_cliente(self, cliente_id: int, monto_a_agregar: float) -> bool:
+        print(f'Updating balance for client ID {cliente_id} by adding ${monto_a_agregar}')
+        saldo_url = f'{self.base_url}/cliente/agregarSaldo'
+        payload = {"clienteId": cliente_id, "saldo": monto_a_agregar}
+        response = self.session.post(url=saldo_url, json=payload, headers=self._get_headers()).json()
         if response.get('success', False):
             print('Balance updated successfully.')
             return True
@@ -155,52 +115,71 @@ class VitteApiClient(VitteApiClientBase):
             print('Failed to update balance.')
             return False
 
-    def cargar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
-        print('data del cliente')
-        print(data_cliente)
-        cliente_a_cargar = None
-        SALDO_INICIAL = 10000
-        
-        print('Pre-chequeo de cliente en sistema Vitte')
-        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id = data_cliente.tarjeta.raw_rfid)
-        
-        if cliente_en_vitte is not None:
-            # print(f'DEBERIA RETORNAR FALSO')
-            if cliente_en_vitte.activo == True:
-                print('El cliente ya existe en Vitte, debe borralo primero.')
-                return False
-                
-        payload = cliente_en_vitte.dict() if cliente_en_vitte else {}
-        tarjeta_in = data_cliente.tarjeta.raw_rfid
-        payload.update(
-            id=0,
-            activo=True,
-            tarjeta= tarjeta_in,
-            credencial= VitteCredencialField(valor=tarjeta_in),
-            saldo=SALDO_INICIAL,
-            nombre=str(data_cliente.cliente.id),
-            apellido=data_cliente.cliente.nombre,
-            categoriaId=CategoriasVitte.CLIENTE.value,
-            empresa='',
-            empresaId=self.empresa_id
-        )
+    def cargar_o_actualizar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+        # Ensure all necessary properties are ready
+        if not self.empresa_id or not self.client_id:
+            self._fetch_initial_state()
 
-        cliente_a_cargar = SaveClienteVitte(**payload)
+        existing_cliente_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(data_cliente.tarjeta.raw_rfid)
+        if existing_cliente_vitte and existing_cliente_vitte.activo:
+            print(f'Vitte: Client with ID {existing_cliente_vitte.id} already exists and is active. Please delete it first.')
+            return False
+
+        cliente_a_cargar = self.prepare_cliente_payload(data_cliente_bar=data_cliente, data_cliente_vitte=existing_cliente_vitte)
+        save_cliente_url = f'{self.base_url}/cliente/saveCliente'
+        print(f'Vitte: Creating or updating client...')
+        response = self.session.post(url=save_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
         
-        cargar_cliente_url = 'https://app.vitte.com.ar/api/cliente/saveCliente'
-
-        print('No se encontro un cliente con esa tarjeta. Creando...')
-        print(f'posteando json: {cliente_a_cargar.model_dump()}')
-        resp = self.session.post(url=cargar_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers()).json()
-        fue_exitoso = resp.get('success', False)
-
-        if not fue_exitoso:
+        if response.get('success', False):
+            print(f'Vitte:      Client operation successful. Details: {response.get("result")}')
+            return True
+        else:
+            print('Vitte:       Failed to create or update client.')
             return False
         
-        resultados = resp.get('result', None)
-        print(f'Cliente creado. Datos: {resultados}')
+    def prepare_cliente_payload(
+        self, 
+        data_cliente_bar: Optional[schemas.ClienteOperaConTarjeta], 
+        data_cliente_vitte: Optional[ClienteVitteDesdeMaquina], 
+        inactivate=False
+    ) -> SaveClienteVitte:
+        # payload = data_cliente_vitte.dict() if data_cliente_vitte else {}
+        print(f'Vitte: preparando payload para postear cliente. {inactivate=}')
+        if inactivate:
+            payload = SaveClienteVitte(
+                **data_cliente_vitte.model_dump(),
+                tarjeta= '',
+            )
 
-        return True
+            if not data_cliente_vitte.credenciales:
+                credencial_a_guardar = VitteCredencialField(valor='')
+            else:
+                credencial_a_guardar = data_cliente_vitte.credenciales
+                credencial_a_guardar.valor = ''
+            
+            payload.credencial = VitteCredencialField(valor='')
+            payload.saldo = 0  # Optionally resetting the balance
+        else:
+            cred = VitteCredencialField(
+                valor=data_cliente_bar.tarjeta.raw_rfid
+            )
+            print(f'Vitte: credencial creada para nuevo cliente (tipo {type(cred)}): {cred.model_dump()}')
+            payload = SaveClienteVitte(
+            # payload.update(
+                id=data_cliente_vitte.id,
+                activo=True,
+                tarjeta=data_cliente_bar.tarjeta.raw_rfid,
+                credencial=cred.model_dump(),
+                saldo=10000,  # Default initial balance when creating a new client
+                nombre=str(data_cliente_bar.cliente.id),
+                apellido=data_cliente_bar.cliente.nombre,
+                categoriaId=CategoriasVitte.CLIENTE.value,
+                empresa='',
+                empresaId=self.empresa_id
+            )
+        
+        print(f'Vitte: Cliente preparado: {payload.model_dump()}')
+        return payload
 
     def cerrar_transacciones_vino(self, data_cliente: schemas.ClienteOperaConTarjeta) -> list:
         fechaDesde = (data_cliente.tarjeta.fecha_alta - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
@@ -215,8 +194,7 @@ class VitteApiClient(VitteApiClientBase):
         consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
 
         resp = self.session.post(url=consumos_url, json=query_params_fecha, headers=self._get_headers()).json()
-        print(f'respuesta : {resp}')
-        # clave_buscada = 'Martín'
+        # print(f'Vitte: respuesta : {resp}')
         clave_buscada = str(data_cliente.cliente.id)
 
         transacciones = []
@@ -225,59 +203,36 @@ class VitteApiClient(VitteApiClientBase):
             print(f'clave extraida: {clave_extraida}, tipo: {type(clave_extraida)}')
             if clave_buscada==clave_extraida:
                 transacciones.append(trans_vino)
-                print(f'Transaccion encontrada: {clave_buscada}')
+                print(f'Vitte:  Transaccion encontrada: {clave_buscada}')
 
         # transacciones = [trans_vino for trans_vino in resp['result'] if clave_buscada==trans_vino['cliente'].split(' ')[-1]]
         
         return transacciones
     
     def reset_inactive_clients(self):
-        print('Fetching all clients...')
-        all_clients = self.listar_clientes_vitte()
+        print('Vitte: Fetching all clients...')
+        all_clients = self.listar_clientes_vitte(solo_activos=False)
         inactive_clients = [client for client in all_clients if not client.saldo]
+
+        for cliente in inactive_clients:
+            cliente_a_cargar = self.prepare_cliente_payload(
+                data_cliente_vitte=cliente,
+                inactivate=True
+            )
+            update_cliente_url = f'{self.base_url}/cliente/saveCliente'
         
-        print(f'Found {len(inactive_clients)} inactive clients. Processing resets...')
-        for client in inactive_clients:
-            # # Nullifying tarjeta and credencial
-            # reset_payload = SaveClienteVitte(
-            #     id = client.id,
-            #     activo=False,
-            #     tarjeta= '',
-            #     # credencial= VitteCredencialField(valor=tarjeta_in),
-            #     saldo=0,
-            #     nombre=client.nombre,
-            #     apellido=client.apellido,
-            #     categoriaId=client.categoriaId,
-            #     categoria=client.categoria,
-            #     empresa=client.empresa,
-            #     empresaId=client.empresaId,
-            #     # id = client.id,
-            #     # activo = client.activo,
-            #     # tarjeta = "",
-            #     credencial = VitteCredencialField(valor=""),
-            #     # saldo = 0,  # Resetting balance to zero
-            #     # nombre = client.nombre,
-            #     # apellido = client.apellido,
-            #     # categoriaId = client.categoriaId,
-            #     # empresaId = client.empresaId
-            # )
-
-            # # Assuming the endpoint to update the client supports a PATCH method
-            # update_url = 'https://app.vitte.com.ar/api/cliente/saveCliente'
-            # print(f'Resetting client ID {client.id}...')
-            # response = self.session.post(url=update_url, json=reset_payload.model_dump(), headers=self._get_headers()).json()
+            print('Vitte:       Updating client status to inactive...')
+            response = self.session.post(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
+            fue_exitoso = response.get('success', False)
             
-            # Borro el cliente 
-            cargar_cliente_url = f'https://app.vitte.com.ar/api/cliente/{client.id}'
-            print(f'haciendo req a {cargar_cliente_url}')
-            resp = self.session.delete(url=cargar_cliente_url, headers=self._get_headers()).json()
-            fue_exitoso = resp.get('success', False)
-            
-            if fue_exitoso:
-                print(f'Successfully reset client ID {client.id}.')
-            else:
-                print(f'Failed to reset client ID {client.id}. Response: {resp}')
+            if not fue_exitoso:
+                print('Vitte:       Failed to update client status.')
 
+            self._borrar_cliente_vitte(cliente.id)
+        
+    def mostrar_clientes(self):
+        clientes = self.listar_clientes_vitte(solo_activos=False)
+        [print(cliente.model_dump()) for cliente in clientes]
             
 
 vitte_api_client = VitteApiClient()
