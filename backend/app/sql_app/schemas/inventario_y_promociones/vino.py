@@ -4,6 +4,7 @@ from datetime import datetime
 
 class VinoBase(BaseModel):
     id_vitte: Optional[int] = None
+    volumen: int
 
 class VinoCreate(VinoBase):
     pass

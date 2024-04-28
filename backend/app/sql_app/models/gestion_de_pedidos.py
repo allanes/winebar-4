@@ -55,6 +55,7 @@ class Renglon(Base):
     promocion_aplicada = Column(Boolean, default=False)
     pedido_id = Column(Integer, ForeignKey('pedidos.id'))
     producto_id = Column(Integer, ForeignKey('productos.id'))
+    vitte_consumo_id = Column(Integer, nullable=True)
     pedido = relationship("Pedido", back_populates="renglones", uselist=False)
     producto = relationship("Producto")
 

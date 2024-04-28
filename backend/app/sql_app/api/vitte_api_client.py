@@ -10,6 +10,7 @@ class VitteApiClientBase():
         self.session = requests.Session()
         self.base_url = "https://app.vitte.com.ar/api"
         self.empresa_id = None
+        self.local_id = None
         self.client_id = None
         self.token = None
         self.token_expiry = datetime.now()
@@ -46,6 +47,7 @@ class VitteApiClientBase():
         response = self.session.get(url=empresa_url, headers=self._get_headers()).json()
         if 'result' in response and len(response['result']) > 0:
             self.empresa_id = response['result'][0]['empresaId']
+            self.local_id = response['result'][0]['id']
             print(f'Vitte:  Empresa ID fetched: {self.empresa_id}')
         else:
             print('Vitte:   Failed to fetch Empresa ID.')

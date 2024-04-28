@@ -18,12 +18,16 @@ from sql_app.api.vitte_schemas import (
 )
 from sql_app.core.config import settings
 from sql_app.api.vitte_api_client import VitteApiClientBase
+from sql_app.api.vitte_wine_data_retriever import VitteWineDataRetriever
 
 
 class VitteApiClient(VitteApiClientBase):
     def __init__(self):
         # Initialize the base class with any needed setup
         super().__init__()
+        self.vitte_vinos_data_retriever = VitteWineDataRetriever()
+        listado_vinos_ids = self.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
+        print(f'Vitte: Listado de ids de vino en uso: {listado_vinos_ids}')
         # self.reset_inactive_clients() 
         # self.mostrar_clientes()
     

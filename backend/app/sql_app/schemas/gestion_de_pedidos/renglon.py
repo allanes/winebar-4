@@ -28,4 +28,4 @@ class Renglon(RenglonInDBBase):
     producto: Producto
 
 class RenglonInDB(RenglonInDBBase):
-    pass
+    vitte_consumo_id: Optional[int] = None
