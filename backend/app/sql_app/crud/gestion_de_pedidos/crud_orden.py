@@ -7,6 +7,7 @@ from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
+from sql_app.api.vitte_utils import vitte_api_client
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:
@@ -195,13 +196,19 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             if vendedor is not None:
                 nombre_vendedor = f'{vendedor.nombre} {vendedor.apellido}'
 
+        ## Recupero las transacciones de vino desde Vitte
+        transacciones_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
+            data_cliente=cliente_opera
+        )
+
         ## Armo el schema de respuesta
         return OrdenCompraDetallada(
             **orden.__dict__,
             pedidos = pedidos_in_db,
             nombre_cliente=nombre_cliente,
             rol = rol,
-            cerrada_por_nombre=nombre_vendedor
+            cerrada_por_nombre=nombre_vendedor,
+            consumos_vino=transacciones_vino
         )
     
 orden = CRUDOrden(OrdenCompra)

@@ -82,3 +82,14 @@ class RespuestaConsumo(BaseModel):
     volumen: int
     precio: int
     fecha: datetime
+
+class TransaccionVino(BaseModel):
+    consumoId: int
+    bodega: str
+    cliente: str
+    variedad: str
+    vino: str
+    medida: str
+    volumen: float
+    precio: float
+    fecha: str

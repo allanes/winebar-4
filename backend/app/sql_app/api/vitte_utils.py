@@ -13,7 +13,8 @@ from sql_app.api.vitte_schemas import (
     CategoriasVitte, 
     VitteCredencialField,
     VitteCategoriaField,
-    ClienteVitteDesdeMaquina
+    ClienteVitteDesdeMaquina,
+    TransaccionVino
 )
 from sql_app.core.config import settings
 from sql_app.api.vitte_api_client import VitteApiClientBase
@@ -181,7 +182,11 @@ class VitteApiClient(VitteApiClientBase):
         print(f'Vitte: Cliente preparado: {payload.model_dump()}')
         return payload
 
-    def cerrar_transacciones_vino(self, data_cliente: schemas.ClienteOperaConTarjeta) -> list:
+    def consultar_transacciones_vino_por_cliente(
+        self, data_cliente: schemas.ClienteOperaConTarjeta
+    ) -> list[TransaccionVino]:
+        cliente_in_db = data_cliente.cliente
+        print(f'data cliente: tipo: {type(data_cliente.cliente)}, valor: {data_cliente.cliente}')
         fechaDesde = (data_cliente.tarjeta.fecha_alta - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         print(f'fecha desde: {fechaDesde}')
@@ -190,6 +195,7 @@ class VitteApiClient(VitteApiClientBase):
             'fechaDesde': fechaDesde,
             'fechaHasta': fechaHasta
         }
+        print(f'Vitte: Buscando transacciones desde {fechaDesde} hasta {fechaHasta}')
 
         consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
 
@@ -197,18 +203,35 @@ class VitteApiClient(VitteApiClientBase):
         # print(f'Vitte: respuesta : {resp}')
         clave_buscada = str(data_cliente.cliente.id)
 
-        transacciones = []
-        for trans_vino in resp.get('result', []):
-            clave_extraida = trans_vino['cliente'].split(' ')[0]
-            print(f'clave extraida: {clave_extraida}, tipo: {type(clave_extraida)}')
-            if clave_buscada==clave_extraida:
-                transacciones.append(trans_vino)
-                print(f'Vitte:  Transaccion encontrada: {clave_buscada}')
+        transacciones = resp.get('result', [])
+        transacciones = [TransaccionVino(**trans) for trans in transacciones]
+        transacciones = [trans for trans in transacciones if trans.cliente == clave_buscada]
 
-        # transacciones = [trans_vino for trans_vino in resp['result'] if clave_buscada==trans_vino['cliente'].split(' ')[-1]]
+        print(f'Vitte:      transacciones encontradas: {len(transacciones)}')
         
         return transacciones
     
+    def retrieve_vino_img_url_by_nombre(self, nombre: str) -> str:
+        pass
+        url = 'https://app.vitte.com.ar/api/maquina/estado/301/sfsdf'
+        resp = self.session.get(url=url, headers=self._get_headers()).json()
+        listado_modulos = resp.get('modulos', [])
+        vino_id = None
+        for modulo in listado_modulos:
+            listado_picos = modulo.get('posiciones', [])
+            for pico in listado_picos:
+                if pico['vino']['nombre'] == nombre:
+                    vino_id = pico['vino']['id']
+                    print(f'Vitte: recuperado ID de vino: {vino_id}')
+                    break
+            if vino_id is not None:
+                break
+
+        if not vino_id:
+            return ''
+        
+        return f'https://app.vitte.com.ar/api/Vino/Imagen/{vino_id}'
+
     def reset_inactive_clients(self):
         print('Vitte: Fetching all clients...')
         all_clients = self.listar_clientes_vitte(solo_activos=False)
