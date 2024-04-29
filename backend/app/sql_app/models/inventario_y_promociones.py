@@ -41,7 +41,7 @@ class Vino(Base):
     __tablename__ = 'vinos'
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_producto = Column(Integer, ForeignKey('productos.id'))
-    id_vitte = Column(Integer, nullable=True)
+    id_vitte = Column(String, nullable=True)
     volumen = Column(Integer, nullable=False)
     producto = relationship("Producto", back_populates="vino")
 

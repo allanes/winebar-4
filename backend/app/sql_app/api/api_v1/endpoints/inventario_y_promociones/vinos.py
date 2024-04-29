@@ -41,3 +41,8 @@ def handle_get_foto(
 def handle_sync_menu_vinos(db: Session = Depends(deps.get_db)):
     crud.vino.sync_products_with_vitte(db=db)
     return {}
+
+@router.get("/sync-consumos-vinos-por-tarjeta")
+def handle_sync_menu_vinos(db: Session = Depends(deps.get_db), raw_rfid: str = ''):
+    crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid)
+    return {}

@@ -67,64 +67,87 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
                         print(f'No se encontro un producto para el vino id {vino_in_db_by_vitte.id}')
                         continue
 
-                    producto_actualizado = ProductoUpdate(
+                    producto_actualizar = ProductoUpdate(
                         titulo=vino_in_db_by_vitte.producto.titulo,
                         descripcion=vino_in_db_by_vitte.producto.descripcion,
                         precio=vino_in_db_by_vitte.producto.precio,
                         stock=vino_in_db_by_vitte.producto.stock,
                     )
                     hubo_cambios = False
+                    volumen = 0
                     if vino_in_db_by_vitte.producto.titulo != pico.vino.nombre:
                         print(f'Nombres no coinciden')
                         print(f'    vino_vitte_id {vino_in_db_by_vitte.id_vitte}')
                         print(f'    nombre en db: {vino_in_db_by_vitte.producto.titulo}')
                         print(f'    nombre en vitte: {pico.vino.nombre}')    
                         
-                        producto_actualizado.titulo = pico.vino.nombre
+                        producto_actualizar.titulo = pico.vino.nombre
                         hubo_cambios = True
                         print('     Nombre actualizado')
 
                     if vino_in_db_by_vitte.volumen == pico.degustacionMl:
+                        volumen = pico.degustacionMl
                         if vino_in_db_by_vitte.producto.precio != pico.degustacionPrecio:
                             print(f'Precio degustacion no coincide')
                             print(f'    vino_vitte_id {vino_in_db_by_vitte.id_vitte}')
                             print(f'    precio en db: {vino_in_db_by_vitte.producto.precio}')
                             print(f'    precio en vitte: {pico.degustacionPrecio}')    
                             
-                            producto_actualizado.precio = pico.degustacionPrecio
+                            producto_actualizar.precio = pico.degustacionPrecio
                             hubo_cambios = True
                             print('     Precio degustacion actualizado')
 
                     elif vino_in_db_by_vitte.volumen == pico.mediaMl:
+                        volumen = pico.mediaMl
                         if vino_in_db_by_vitte.producto.precio != pico.mediaPrecio:
                             print(f'Precio Media no coincide')
                             print(f'    vino_vitte_id {vino_in_db_by_vitte.id_vitte}')
                             print(f'    precio en db: {vino_in_db_by_vitte.producto.precio}')
                             print(f'    precio en vitte: {pico.mediaPrecio}')    
                             
-                            producto_actualizado.precio = pico.mediaPrecio
+                            producto_actualizar.precio = pico.mediaPrecio
                             hubo_cambios = True
                             print('     Precio media actualizado')
 
                     elif vino_in_db_by_vitte.volumen == pico.copaMl:
+                        volumen = pico.copaMl
                         if vino_in_db_by_vitte.producto.precio != pico.copaPrecio:
                             print(f'Precio Copa no coincide')
                             print(f'    vino_vitte_id {vino_in_db_by_vitte.id_vitte}')
                             print(f'    precio en db: {vino_in_db_by_vitte.producto.precio}')
                             print(f'    precio en vitte: {pico.copaPrecio}')    
                             
-                            producto_actualizado.precio = pico.copaPrecio
+                            producto_actualizar.precio = pico.copaPrecio
                             hubo_cambios = True
                             print('     Precio copa actualizado')
 
                     if hubo_cambios:
-                        crud.producto.update(
+                        producto_actualizado = crud.producto.update(
                             db=db,
                             db_obj=vino_in_db_by_vitte.producto,
-                            obj_in=producto_actualizado
-                        )                        
+                            obj_in=producto_actualizar
+                        )
+
+                        vino_aux:Vino = db.query(Vino).get(vino_in_db_by_vitte.id)
+                        vino_aux.id_producto = producto_actualizado.id
+                        db.commit()
+                        db.refresh(vino_aux)                        
                     
-        return 
+        return
+    
+    def sync_consumos_with_vitte_by_tarjeta(self, db: Session, raw_tarjeta: str):
+        cliente_operando = crud.cliente_opera_con_tarjeta.get_by_tarjeta_id(
+            db=db, tarjeta_id=int(raw_tarjeta)
+        )
+        if not cliente_operando:
+            print(f'No se encontro un cliente activo con tarjeta {raw_tarjeta} para sincronizar los consumos con Vitte.')
+            return
+        
+        consumos_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
+            data_cliente=cliente_operando
+        )
+        
+        [print(f'consumos recuperados: {consumo.model_dump()}') for consumo in consumos_vino]
         
     def remove(self, db: Session, *, id: int) -> Vino:
         vino_in_db = self.get(db=db, id=id)
