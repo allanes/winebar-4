@@ -7,14 +7,13 @@ class VinoBase(BaseModel):
     volumen: int
 
 class VinoCreate(VinoBase):
-    pass
+    id_producto: int
 
 class VinoUpdate(VinoBase):
     pass
 
 class VinoInDBBase(VinoBase):
     id: int
-    id_producto: int
     model_config = ConfigDict(from_attributes=True)
 
 class Vino(VinoInDBBase):

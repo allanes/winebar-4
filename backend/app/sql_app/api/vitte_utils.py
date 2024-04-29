@@ -26,8 +26,10 @@ class VitteApiClient(VitteApiClientBase):
         # Initialize the base class with any needed setup
         super().__init__()
         self.vitte_vinos_data_retriever = VitteWineDataRetriever()
-        listado_vinos_ids = self.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
-        print(f'Vitte: Listado de ids de vino en uso: {listado_vinos_ids}')
+        # listado_vinos_ids = self.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
+        # [print(f'Vitte: Listado de ids de vino en uso: {pico.model_dump()}')  for pico in listado_vinos_ids]
+        
+        ## PRUEBAS
         # self.reset_inactive_clients() 
         # self.mostrar_clientes()
     

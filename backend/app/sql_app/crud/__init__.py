@@ -7,6 +7,7 @@ from .tarjetas_y_usuarios.crud_cliente_opera_con_tarjeta import cliente_opera_co
 
 from .inventario_y_promociones.crud_producto import producto
 from .inventario_y_promociones.crud_tapa import tapa
+from .inventario_y_promociones.crud_vino import vino
 
 from .gestion_de_pedidos.crud_turno import turno
 from .gestion_de_pedidos.crud_orden import orden

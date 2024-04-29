@@ -36,3 +36,8 @@ def handle_get_foto(
         tmp_path = tmp.name  # Get the path to the temp file
 
     return tmp_path
+
+@router.get("/sync-menu-vinos")
+def handle_sync_menu_vinos(db: Session = Depends(deps.get_db)):
+    crud.vino.sync_products_with_vitte(db=db)
+    return {}
