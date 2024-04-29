@@ -51,3 +51,14 @@ def handle_sync_menu_vinos(
 ):
     crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid, abierto_por=current_user)
     return {}
+
+@router.get("/{product_id}", response_model=schemas.Vino)
+def handle_read_vino_by_product_id(
+    product_id: int,
+    db: Session = Depends(deps.get_db)
+):
+    vino_in_db = crud.vino.get_by_product_id(db=db, producto_id=product_id)
+    if vino_in_db is None:
+        raise HTTPException(status_code=404, detail="Vino no encontrado")
+    
+    return vino_in_db
