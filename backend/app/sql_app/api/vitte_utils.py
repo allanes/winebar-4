@@ -3,6 +3,7 @@ import json
 import datetime as dt
 from datetime import datetime
 from typing import Optional
+import dateutil
 from pydantic import BaseModel
 from sql_app import crud, models, schemas
 import requests
@@ -189,9 +190,9 @@ class VitteApiClient(VitteApiClientBase):
         return payload
 
     def consultar_transacciones_vino_por_cliente(
-        self, cliente_id: int, fecha_alta_cliente: schemas.ClienteOperaConTarjeta
+        self, cliente_id: int, fecha_alta_cliente: datetime
     ) -> list[TransaccionVino]:
-        fechaDesde = (fecha_alta_cliente - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
+        fechaDesde = fecha_alta_cliente.isoformat()
         fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         print(f'fecha desde: {fechaDesde}')
         print(f'fecha hasta: {fechaHasta}')
@@ -204,14 +205,19 @@ class VitteApiClient(VitteApiClientBase):
         consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
 
         resp = self.session.post(url=consumos_url, json=query_params_fecha, headers=self._get_headers()).json()
-        # print(f'Vitte: respuesta : {resp}')
         clave_buscada = str(cliente_id)
 
+        # Parse the result
         transacciones = resp.get('result', [])
         transacciones = [TransaccionVino(**trans) for trans in transacciones]
-        transacciones = [trans for trans in transacciones if trans.cliente == clave_buscada]
 
-        print(f'Vitte:      transacciones encontradas: {len(transacciones)}')
+        # Filter transactions both by client ID and by time
+        transacciones = [
+            trans for trans in transacciones if trans.cliente == clave_buscada and
+            trans.fecha >= fecha_alta_cliente
+        ]
+
+        print(f'Vitte: transacciones encontradas: {len(transacciones)}')
         
         return transacciones
     

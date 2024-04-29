@@ -197,10 +197,10 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
                 nombre_vendedor = f'{vendedor.nombre} {vendedor.apellido}'
 
         ## Recupero las transacciones de vino desde Vitte
-        transacciones_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
-            cliente_id=orden.cliente_id,
-            fecha_alta_cliente=orden.timestamp_apertura_orden
-        )
+        # transacciones_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
+        #     cliente_id=orden.cliente_id,
+        #     fecha_alta_cliente=orden.timestamp_apertura_orden
+        # )
 
         ## Armo el schema de respuesta
         return OrdenCompraDetallada(
@@ -209,7 +209,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             nombre_cliente=nombre_cliente,
             rol = rol,
             cerrada_por_nombre=nombre_vendedor,
-            consumos_vino=transacciones_vino
+            # consumos_vino=transacciones_vino
         )
     
 orden = CRUDOrden(OrdenCompra)

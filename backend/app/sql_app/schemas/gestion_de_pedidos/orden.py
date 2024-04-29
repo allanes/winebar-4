@@ -57,7 +57,7 @@ class OrdenCompraDetallada(OrdenCompra):
     pedidos: list[Pedido]
     nombre_cliente: str
     rol: str
-    consumos_vino: list[TransaccionVino]
+    # consumos_vino: list[TransaccionVino]
 
 class OrdenCompraInDB(OrdenCompraInDBBase):
     pass

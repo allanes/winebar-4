@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -98,7 +99,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         return pedido_in_db, True, ''
     
     def cerrar_pedido(
-    self, db: Session, *, cerrado_por: int, tarjeta_cliente: int
+    self, db: Session, *, cerrado_por: int, tarjeta_cliente: int, timestamp_cerrado: Optional[datetime] = None
     ) -> tuple[Pedido | None, bool, str]:
         pedido_in_db = self.get_pedido_abierto_por_tarjeta(db=db, tarjeta_id=tarjeta_cliente)
         if pedido_in_db is None:
@@ -107,7 +108,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
 
         pedido_in_db.cerrado=True
-        pedido_in_db.timestamp_pedido = datetime.now()
+        pedido_in_db.timestamp_pedido = datetime.now() if not timestamp_cerrado else timestamp_cerrado
         pedido_in_db.atendido_por = cerrado_por
         pedido_in_db.monto_cargado = sum(montos_de_pedidos)
 

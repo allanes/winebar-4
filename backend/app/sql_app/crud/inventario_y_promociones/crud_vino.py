@@ -1,14 +1,17 @@
 import os
 from typing import Dict, Any, List
+
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
-from sql_app.models.inventario_y_promociones import Vino
+from sql_app.models.inventario_y_promociones import Vino, Producto as ProductoModel
+from sql_app.models.gestion_de_pedidos import Renglon as RenglonModel
 from sql_app.schemas.inventario_y_promociones.vino import VinoCreate, VinoUpdate
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate, ProductoUpdate
 from sql_app.api.vitte_utils import vitte_api_client
 from sql_app.api.vitte_schemas import PicoDeModulo
 from sql_app.crud.base import CRUDBase
 from sql_app import crud
+from sql_app import schemas
 
 class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
     def sync_products_with_vitte(self, db: Session):
@@ -135,7 +138,12 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
                     
         return
     
-    def sync_consumos_with_vitte_by_tarjeta(self, db: Session, raw_tarjeta: str):
+    def sync_consumos_with_vitte_by_tarjeta(
+        self, 
+        db: Session, 
+        raw_tarjeta: str, 
+        abierto_por: schemas.PersonalInterno
+    ):
         ## Recibiendo la tarjeta solo puedo valerme de una orden ABIERTA
         orden_del_cliente = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=raw_tarjeta)
         if not orden_del_cliente:
@@ -148,6 +156,61 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
         )
         
         [print(f'consumos recuperados: {consumo.model_dump()}') for consumo in consumos_vino]
+        pedidos_guardados = crud.pedido.get_pedidos_por_tarjeta(db=db, tarjeta_id=raw_tarjeta)
+        
+        renglones_guardados = [RenglonModel]
+        for ped in pedidos_guardados:
+            renglones_guardados.extend(ped.renglones)
+        consumos_vino_guardados = [reng.vitte_consumo_id for reng in renglones_guardados if reng.vitte_consumo_id is not None]
+        print(f'Lista de consumos guardada: {consumos_vino_guardados}')
+        for consumo in consumos_vino:
+            if consumo.consumoId in consumos_vino_guardados:
+                print(f'Consumo encontrado. Pasando al siguiente..')
+                continue
+
+            ## Abro pedido
+            print(f'Llamando a abrir pedido...')
+            pedido, pudo_abirse, msg = crud.pedido.abrir_pedido(
+                db=db,
+                pedido_in=schemas.PedidoCreate(atendido_por=abierto_por.id),
+                tarjeta_cliente=raw_tarjeta
+            )
+            if not pudo_abirse:
+                print(f'el consumo {consumo.vino} ({consumo.medida}) no se pudo cargar en la base de datos. error: {msg}')
+                continue
+            
+            ## Agrego 1 renglon 
+            print(f'Llamando a agregar producto...')
+            vino_in_db = self.get_by_vitte_name(db=db, vitte_name=consumo.vino, tamaño_copa=consumo.volumen)
+            if not vino_in_db:
+                msg = f'No se encontro un producto en la db con el nombre {consumo.vino}'
+                print(msg)
+                return None, False, msg
+            else:
+                print(f'producto encontrado en db: {vino_in_db.__dict__}')
+
+            renglon_creado, pudo_agregarse, msg = crud.pedido.agregar_producto_a_pedido(
+                db=db,
+                atendido_por=abierto_por.id,
+                tarjeta_cliente=raw_tarjeta,
+                renglon_in=schemas.RenglonCreate(
+                    cantidad=1,
+                    producto_id=vino_in_db.id_producto,
+                    vitte_consumo_id=consumo.consumoId
+                )
+            )
+            if not pudo_agregarse:
+                print(f'el consumo {consumo.vino} ({consumo.medida}), producto id {vino_in_db.id} no se pudo cargar en la orden. error: {msg}')
+                continue
+
+            ## Cierro pedido
+            print(f'Llamando a cerrar pedido...')
+            crud.pedido.cerrar_pedido(
+                db=db,
+                cerrado_por=abierto_por.id,
+                tarjeta_cliente=raw_tarjeta,   
+                timestamp_cerrado=consumo.fecha
+            )
         
     def remove(self, db: Session, *, id: int) -> Vino:
         vino_in_db = self.get(db=db, id=id)
@@ -174,6 +237,18 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
         vino_in_db = db.query(Vino)
         vino_in_db = vino_in_db.filter(Vino.id_producto == producto_id)
         vino_in_db = vino_in_db.first()
+        return vino_in_db
+    
+    def get_by_vitte_name(self, db: Session, vitte_name: str, tamaño_copa: float) -> Vino | None:
+        print(f'buscando vino por nombre y tam: {vitte_name}, {tamaño_copa}')
+        productos_in_db = db.query(ProductoModel).filter(ProductoModel.titulo == vitte_name).all()
+
+        if not productos_in_db:
+            return None
+        
+        vinos_in_db = db.query(Vino).filter(Vino.id_producto.in_([producto.id for producto in productos_in_db]))
+        vino_in_db = vinos_in_db.filter(Vino.volumen == tamaño_copa).first()
+
         return vino_in_db
 
 vino = CRUDVino(Vino)

@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import List
+from typing import List, Annotated
 import tempfile
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -43,6 +43,11 @@ def handle_sync_menu_vinos(db: Session = Depends(deps.get_db)):
     return {}
 
 @router.get("/sync-consumos-vinos-por-tarjeta")
-def handle_sync_menu_vinos(db: Session = Depends(deps.get_db), raw_rfid: str = ''):
-    crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid)
+def handle_sync_menu_vinos(
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+    db: Session = Depends(deps.get_db), 
+    raw_rfid: str = ''
+):
+    crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid, abierto_por=current_user)
     return {}

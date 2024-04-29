@@ -92,7 +92,7 @@ class TransaccionVino(BaseModel):
     medida: str
     volumen: float
     precio: float
-    fecha: str
+    fecha: datetime
 
 class VinoVariedad(BaseModel):
     nombre: Optional[str] = None
