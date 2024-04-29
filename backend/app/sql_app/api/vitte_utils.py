@@ -189,11 +189,9 @@ class VitteApiClient(VitteApiClientBase):
         return payload
 
     def consultar_transacciones_vino_por_cliente(
-        self, data_cliente: schemas.ClienteOperaConTarjeta
+        self, cliente_id: int, fecha_alta_cliente: schemas.ClienteOperaConTarjeta
     ) -> list[TransaccionVino]:
-        cliente_in_db = data_cliente.cliente
-        print(f'data cliente: tipo: {type(data_cliente.cliente)}, valor: {data_cliente.cliente}')
-        fechaDesde = (data_cliente.tarjeta.fecha_alta - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
+        fechaDesde = (fecha_alta_cliente - dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         print(f'fecha desde: {fechaDesde}')
         print(f'fecha hasta: {fechaHasta}')
@@ -207,7 +205,7 @@ class VitteApiClient(VitteApiClientBase):
 
         resp = self.session.post(url=consumos_url, json=query_params_fecha, headers=self._get_headers()).json()
         # print(f'Vitte: respuesta : {resp}')
-        clave_buscada = str(data_cliente.cliente.id)
+        clave_buscada = str(cliente_id)
 
         transacciones = resp.get('result', [])
         transacciones = [TransaccionVino(**trans) for trans in transacciones]

@@ -136,15 +136,15 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
         return
     
     def sync_consumos_with_vitte_by_tarjeta(self, db: Session, raw_tarjeta: str):
-        cliente_operando = crud.cliente_opera_con_tarjeta.get_by_tarjeta_id(
-            db=db, tarjeta_id=int(raw_tarjeta)
-        )
-        if not cliente_operando:
+        ## Recibiendo la tarjeta solo puedo valerme de una orden ABIERTA
+        orden_del_cliente = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=raw_tarjeta)
+        if not orden_del_cliente:
             print(f'No se encontro un cliente activo con tarjeta {raw_tarjeta} para sincronizar los consumos con Vitte.')
             return
         
         consumos_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
-            data_cliente=cliente_operando
+            cliente_id=orden_del_cliente.cliente_id,
+            fecha_alta_cliente=orden_del_cliente.timestamp_apertura_orden
         )
         
         [print(f'consumos recuperados: {consumo.model_dump()}') for consumo in consumos_vino]

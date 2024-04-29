@@ -198,7 +198,8 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
 
         ## Recupero las transacciones de vino desde Vitte
         transacciones_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
-            data_cliente=cliente_opera
+            cliente_id=orden.cliente_id,
+            fecha_alta_cliente=orden.timestamp_apertura_orden
         )
 
         ## Armo el schema de respuesta
