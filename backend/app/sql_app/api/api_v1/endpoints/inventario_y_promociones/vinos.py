@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
-from sql_app.api.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 import requests
 
 router = APIRouter()
@@ -37,20 +37,20 @@ def handle_get_foto(
 
     return tmp_path
 
-@router.get("/sync-menu-vinos")
-def handle_sync_menu_vinos(db: Session = Depends(deps.get_db)):
-    crud.vino.sync_products_with_vitte(db=db)
-    return {}
+# @router.get("/sync-menu-vinos")
+# def handle_sync_menu_vinos(db: Session = Depends(deps.get_db)):
+#     crud.vino.sync_products_with_vitte(db=db)
+#     return {}
 
-@router.get("/sync-consumos-vinos-por-tarjeta")
-def handle_sync_menu_vinos(
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
-    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
-    db: Session = Depends(deps.get_db), 
-    raw_rfid: str = ''
-):
-    crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid, abierto_por=current_user)
-    return {}
+# @router.get("/sync-consumos-vinos-por-tarjeta")
+# def handle_sync_menu_vinos(
+#     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+#     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+#     db: Session = Depends(deps.get_db), 
+#     raw_rfid: str = ''
+# ):
+#     crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid, abierto_por_id=current_user.id)
+#     return {}
 
 @router.get("/{product_id}", response_model=schemas.Vino)
 def handle_read_vino_by_product_id(

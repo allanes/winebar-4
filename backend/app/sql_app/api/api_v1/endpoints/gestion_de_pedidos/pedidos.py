@@ -47,6 +47,11 @@ def handle_agregar_producto(
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
+    deps.sync_consumos_dependency(
+        db=db, 
+        tarjeta_id=tarjeta_cliente, 
+        abierto_por_id=current_user.id
+    )
     print(f'usuario logueado id: {current_user.id}')
     print(f'Agregando tapa por id: {renglon_in.producto_id}')
     renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_pedido(

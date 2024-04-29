@@ -7,7 +7,7 @@ from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
-from sql_app.api.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:

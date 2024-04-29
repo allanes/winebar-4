@@ -11,8 +11,14 @@ router = APIRouter()
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_client_rfid(
     tarjeta_id: int,
-    db: Session = Depends(deps.get_db)
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    db: Session = Depends(deps.get_db),
 ):
+    deps.sync_consumos_dependency(
+        db=db, 
+        tarjeta_id=tarjeta_id, 
+        abierto_por_id=current_user.id
+    )
     orden_in_db = crud.orden.get_orden_abierta_by_rfid(
         db=db, tarjeta_id=tarjeta_id
     )

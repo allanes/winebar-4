@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
 from .pedido import Pedido
 from ..serializers import serializer_for_nombre_personal
-from sql_app.api.vitte_schemas import TransaccionVino
+from sql_app.api.vitte_integration.vitte_schemas import TransaccionVino
 
 class OrdenCompraBase(BaseModel):
     precarga_usada: float

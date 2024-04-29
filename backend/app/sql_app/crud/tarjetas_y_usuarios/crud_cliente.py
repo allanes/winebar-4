@@ -11,7 +11,7 @@ from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdi
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
-from sql_app.api.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
