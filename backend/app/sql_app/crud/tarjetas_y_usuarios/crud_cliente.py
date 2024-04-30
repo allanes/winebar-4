@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, List, Union
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -160,7 +161,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         if tarjeta:
             tarjeta.entregada = True
             tarjeta.presente_en_salon = True
-            tarjeta.fecha_ultimo_uso = datetime.now()
+            tarjeta.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Buenos_Aires"))
             tarjeta.monto_precargado = 0
             # Commit the transaction to save changes
             db.commit()

@@ -1,5 +1,6 @@
 from typing import Optional
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
@@ -108,7 +109,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
 
         pedido_in_db.cerrado=True
-        pedido_in_db.timestamp_pedido = datetime.now() if not timestamp_cerrado else timestamp_cerrado
+        pedido_in_db.timestamp_pedido = datetime.now(ZoneInfo("America/Buenos_Aires")) if not timestamp_cerrado else timestamp_cerrado
         pedido_in_db.atendido_por = cerrado_por
         pedido_in_db.monto_cargado = sum(montos_de_pedidos)
 

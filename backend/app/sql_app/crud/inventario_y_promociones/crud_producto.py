@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models.inventario_y_promociones import Producto
@@ -13,7 +14,7 @@ class CRUDProducto(CRUDBaseWithActiveField[Producto, ProductoCreate, ProductoUpd
 
         [setattr(producto_in_db, attr, value) for attr, value in producto_in.model_dump().items()]
         producto_in_db.activa = True
-        producto_in_db.ultimo_cambio_precio = datetime.now()
+        producto_in_db.ultimo_cambio_precio = datetime.now(ZoneInfo("America/Buenos_Aires"))
         producto_in_db.id_menu = 1
         producto_in_db.tapa = None
         producto_in_db.vino = None

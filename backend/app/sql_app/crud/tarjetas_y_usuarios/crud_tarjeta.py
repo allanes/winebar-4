@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Any, Dict, Optional, List
-from fastapi import HTTPException
+from zoneinfo import ZoneInfo
+from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -38,7 +38,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         tarjeta_in.id = int(obj_in.raw_rfid),
         tarjeta_in.raw_rfid = obj_in.raw_rfid,
         tarjeta_in.rol_id = rol_en_db.id,
-        tarjeta_in.fecha_alta = datetime.utcnow()
+        tarjeta_in.fecha_alta = datetime.now(ZoneInfo("America/Buenos_Aires"))
         tarjeta_in.fecha_ultimo_uso = None
         tarjeta_in.presente_en_salon = False
         tarjeta_in.entregada = False
@@ -116,7 +116,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         db_obj.entregada = False
         db_obj.presente_en_salon = False
         db_obj.monto_precargado = -1
-        db_obj.fecha_ultimo_uso = datetime.now()
+        db_obj.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Buenos_Aires"))
 
         db.commit()
         db.refresh(db_obj)

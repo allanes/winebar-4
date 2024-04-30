@@ -192,6 +192,7 @@ class VitteApiClient(VitteApiClientBase):
     def consultar_transacciones_vino_por_cliente(
         self, cliente_id: int, fecha_alta_cliente: datetime
     ) -> list[TransaccionVino]:
+        # fecha_alta_cliente = fecha_alta_cliente - dt.timedelta(hours=3)
         fechaDesde = fecha_alta_cliente.isoformat()
         fechaHasta = (datetime.now() + dt.timedelta(days=1)).isoformat()[:10] + 'T03:00:00.000Z'
         print(f'fecha desde: {fechaDesde}')
@@ -210,6 +211,8 @@ class VitteApiClient(VitteApiClientBase):
         # Parse the result
         transacciones = resp.get('result', [])
         transacciones = [TransaccionVino(**trans) for trans in transacciones]
+        # print(f'transacciones encontradas antes de filtrar: {len(transacciones)}')
+        # [print(f'{transaccion}') for transaccion in transacciones]
 
         # Filter transactions both by client ID and by time
         transacciones = [

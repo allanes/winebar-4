@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -67,7 +68,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         # Aplico valores pord efecto antes de crear
         orden_in_db = OrdenCompra()
-        orden_in_db.timestamp_apertura_orden = datetime.now()
+        orden_in_db.timestamp_apertura_orden = datetime.now(ZoneInfo("America/Buenos_Aires"))
         orden_in_db.monto_cargado = 0
         orden_in_db.monto_cobrado = 0
         orden_in_db.monto_cobrado_efectivo = 0
@@ -102,7 +103,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             
         # Calculo valores necesarios
         orden_in_db.cerrada_por = cerrada_por_id
-        orden_in_db.timestamp_cierre_orden = datetime.now()
+        orden_in_db.timestamp_cierre_orden = datetime.now(ZoneInfo("America/Buenos_Aires"))
 
         ## Verifico que el monto cobrado sea igual al monto cargado
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0

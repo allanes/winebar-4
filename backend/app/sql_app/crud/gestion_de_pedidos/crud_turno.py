@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -21,7 +22,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
     def abrir_turno(self, db: Session, *, turno_in: TurnoCreate) -> Turno:
         turno_in_db = Turno()
         
-        turno_in_db.timestamp_apertura = datetime.now()
+        turno_in_db.timestamp_apertura = datetime.now(ZoneInfo("America/Buenos_Aires"))
         turno_in_db.cantidad_de_ordenes = -1
         turno_in_db.cantidad_tapas = -1
         turno_in_db.cantidad_usuarios_vip = -1
@@ -51,7 +52,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         ))
 
         turno_in_db.cerrado_por = cerrado_por
-        turno_in_db.timestamp_cierre = datetime.now()
+        turno_in_db.timestamp_cierre = datetime.now(ZoneInfo("America/Buenos_Aires"))
         turno_in_db.cantidad_de_ordenes = cant_total_ordenes
         turno_in_db.cantidad_tapas = 0
         turno_in_db.cantidad_usuarios_vip = 0
