@@ -161,7 +161,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         if tarjeta:
             tarjeta.entregada = True
             tarjeta.presente_en_salon = True
-            tarjeta.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Buenos_Aires"))
+            tarjeta.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
             tarjeta.monto_precargado = 0
             # Commit the transaction to save changes
             db.commit()

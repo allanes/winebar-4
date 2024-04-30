@@ -1,12 +1,9 @@
-# backend/app/sql_app/schemas/validators.py
-
 from typing import Union, Dict, Any
 from sqlalchemy.orm import Session
 from sql_app.api import deps
-from sql_app.models.tarjetas_y_usuarios import PersonalInterno
-from sql_app.models.gestion_de_pedidos import OrdenCompra
+# from sql_app.models.tarjetas_y_usuarios import PersonalInterno
+# from sql_app.models.gestion_de_pedidos import OrdenCompra
 from sql_app import crud
-import json
 
 def __get_internal_db_session():
     db: Session = deps.get_db()
@@ -65,3 +62,4 @@ def serializer_for_clientes_totales(turno_id: int) -> int:
     
     db.close()
     return len(ordenes_in_db)
+

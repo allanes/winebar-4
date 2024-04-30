@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from sql_app import crud, schemas
 from sql_app.api import deps
+from sql_app.schemas.tarjetas_y_usuarios.tarjetas_y_usuarios_serializer import serialize_tarjeta
 
 router = APIRouter()
 
@@ -62,13 +63,19 @@ def handle_delete_cliente(
 def handle_read_clientes(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
 ):
     clientes_operan = crud.cliente_opera_con_tarjeta.get_multi(db)
     
     clientes_detallados = crud.cliente_opera_con_tarjeta.convertir_a_cliente_detallado(
         db=db, clientes_a_convertir=clientes_operan
     )
+
+    for cliente_detallado in clientes_detallados:
+        cliente_detallado.tarjeta = serialize_tarjeta(
+            cliente_id=cliente_detallado.id,
+            tarjeta=cliente_detallado.tarjeta
+        )
     
     return clientes_detallados
 

@@ -11,6 +11,12 @@ from sql_app import crud
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
+    def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
+        orden = db.query(OrdenCompra)
+        orden = orden.filter(OrdenCompra.cliente_id == cliente_id)
+        orden = orden.first()
+        return orden
+    
     def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:
         ordenes = db.query(OrdenCompra)
         ordenes = ordenes.filter(OrdenCompra.turno_id == turno_id)
@@ -68,7 +74,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         # Aplico valores pord efecto antes de crear
         orden_in_db = OrdenCompra()
-        orden_in_db.timestamp_apertura_orden = datetime.now(ZoneInfo("America/Buenos_Aires"))
+        orden_in_db.timestamp_apertura_orden = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
         orden_in_db.monto_cargado = 0
         orden_in_db.monto_cobrado = 0
         orden_in_db.monto_cobrado_efectivo = 0
@@ -103,7 +109,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             
         # Calculo valores necesarios
         orden_in_db.cerrada_por = cerrada_por_id
-        orden_in_db.timestamp_cierre_orden = datetime.now(ZoneInfo("America/Buenos_Aires"))
+        orden_in_db.timestamp_cierre_orden = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
 
         ## Verifico que el monto cobrado sea igual al monto cargado
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0

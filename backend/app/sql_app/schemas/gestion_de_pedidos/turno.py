@@ -1,12 +1,7 @@
 from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
 from typing import Optional
-from ..serializers import (
-    serializer_for_nombre_personal, 
-    serializer_for_suma_ordenes_para_turno,
-    serializer_for_clientes_activos,
-    serializer_for_clientes_totales
-)
+from .. import serializers
 
 class TurnoBase(BaseModel):
     abierto_por: int
@@ -40,12 +35,12 @@ class Turno(TurnoInDBBase):
 
     @field_serializer('abierto_por_nombre')
     def serialize_nombre_abierto(self, abierto_por_nombre: str, _info):
-        nombre_completo = serializer_for_nombre_personal(self.abierto_por)
+        nombre_completo = serializers.serializer_for_nombre_personal(self.abierto_por)
         return  nombre_completo
     
     @field_serializer('cerrado_por_nombre')
     def serialize_nombre_cerrado(self, cerrado_por_nombre: str, _info):
-        nombre_completo = serializer_for_nombre_personal(self.cerrado_por)
+        nombre_completo = serializers.serializer_for_nombre_personal(self.cerrado_por)
         return  nombre_completo
     
     @field_serializer('suma_ordenes_cobradas')
@@ -54,7 +49,7 @@ class Turno(TurnoInDBBase):
             print(f'no se serializará la suma_ordenes_cobradas para turno {self.id}')
             return self.suma_ordenes_cobradas
         
-        suma_ordenes = serializer_for_suma_ordenes_para_turno(turno_id=self.id)
+        suma_ordenes = serializers.serializer_for_suma_ordenes_para_turno(turno_id=self.id)
         return  suma_ordenes
     
     @field_serializer('diferencia')
@@ -63,7 +58,7 @@ class Turno(TurnoInDBBase):
             print(f'no se pudo serializar la diferencia para turno {self.id}')
             return None
 
-        suma_ordenes = serializer_for_suma_ordenes_para_turno(turno_id=self.id)        
+        suma_ordenes = serializers.serializer_for_suma_ordenes_para_turno(turno_id=self.id)        
         dif = self.monto_en_caja - suma_ordenes
         return  dif
     
@@ -72,14 +67,14 @@ class Turno(TurnoInDBBase):
         if self.timestamp_cierre:
             return 0
         
-        cant_clientes_activos = serializer_for_clientes_activos(
+        cant_clientes_activos = serializers.serializer_for_clientes_activos(
             turno_id=self.id
         )
         return  cant_clientes_activos
     
     @field_serializer('cantidad_de_ordenes')
     def serialize_clientes_totales(self, cantidad_de_ordenes: int, _info):
-        cant_clientes_totales = serializer_for_clientes_totales(
+        cant_clientes_totales = serializers.serializer_for_clientes_totales(
             turno_id=self.id
         )
         return  cant_clientes_totales
