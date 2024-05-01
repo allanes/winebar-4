@@ -88,7 +88,14 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         # Setup Vitte init
         try:
-            vitte_api_client.cargar_o_actualizar_cliente_vitte(data_cliente=cliente_operando)
+            datos = {
+                # data_cliente=cliente_operando,
+                'cliente_id': cliente_in_db.id,
+                'cliente_nombre': cliente_in_db.nombre,
+                'raw_tarjeta_id': cliente_operando.tarjeta.raw_rfid
+            }
+            print(f'Entrando a Vitte para Cargar Cliente. tarjeta: {datos}')
+            vitte_api_client.cargar_o_actualizar_cliente_vitte(**datos)
         except Exception as err:
             print(f'No se pudo cargar el cliente en VITTE. {err=}')
         

@@ -73,9 +73,14 @@ class VitteApiClient(VitteApiClientBase):
             print("Vitte:       Failed to retrieve valid client data or bad response from server.")
             return None
     
-    def inhabilitar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+    def inhabilitar_cliente_vitte(
+        self, 
+        raw_tarjeta_rfid: int,
+        cliente_id: int,
+        cliente_nombre: str,
+    ):
         print('Vitte: Pre-checking client in Vitte system')
-        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=data_cliente.tarjeta.raw_rfid)
+        cliente_en_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(raw_tarjeta_rfid)
         
         if cliente_en_vitte is None:
             print('Vitte:       Client not found in Vitte.')
@@ -83,7 +88,9 @@ class VitteApiClient(VitteApiClientBase):
         
         # Prepare the payload to update client as inactive
         cliente_a_cargar = self.prepare_cliente_payload(
-            data_cliente_bar = data_cliente, 
+            cliente_nombre=cliente_nombre,
+            cliente_id=cliente_id,
+            raw_tarjeta_rfid=raw_tarjeta_rfid,
             data_cliente_vitte = cliente_en_vitte, 
             inactivate=True
         )
@@ -123,20 +130,30 @@ class VitteApiClient(VitteApiClientBase):
             print('Failed to update balance.')
             return False
 
-    def cargar_o_actualizar_cliente_vitte(self, data_cliente: schemas.ClienteOperaConTarjeta):
+    def cargar_o_actualizar_cliente_vitte(
+            self, 
+            raw_tarjeta_id: str, 
+            cliente_nombre: str, 
+            cliente_id: int, 
+        ):
         # Ensure all necessary properties are ready
         if not self.empresa_id or not self.client_id:
             self._fetch_initial_state()
 
-        existing_cliente_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(data_cliente.tarjeta.raw_rfid)
+        existing_cliente_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=raw_tarjeta_id)
         if existing_cliente_vitte and existing_cliente_vitte.activo:
             print(f'Vitte: Client with ID {existing_cliente_vitte.id} already exists and is active. Please delete it first.')
             return False
 
-        cliente_a_cargar = self.prepare_cliente_payload(data_cliente_bar=data_cliente, data_cliente_vitte=existing_cliente_vitte)
+        cliente_a_cargar = self.prepare_cliente_payload(
+            cliente_id=cliente_id,
+            cliente_nombre=cliente_nombre,
+            raw_tarjeta_rfid=raw_tarjeta_id,
+            data_cliente_vitte=existing_cliente_vitte
+        )
         save_cliente_url = f'{self.base_url}/cliente/saveCliente'
         print(f'Vitte: Creating or updating client...')
-        response = self.session.post(url=save_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
+        response = self.session.post(url=save_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers()).json()
         
         if response.get('success', False):
             print(f'Vitte:      Client operation successful. Details: {response.get("result")}')
@@ -147,7 +164,9 @@ class VitteApiClient(VitteApiClientBase):
         
     def prepare_cliente_payload(
         self, 
-        data_cliente_bar: Optional[schemas.ClienteOperaConTarjeta], 
+        raw_tarjeta_rfid: Optional[int],
+        cliente_id: Optional[int],
+        cliente_nombre: Optional[str],
         data_cliente_vitte: Optional[ClienteVitteDesdeMaquina], 
         inactivate=False
     ) -> SaveClienteVitte:
@@ -169,18 +188,22 @@ class VitteApiClient(VitteApiClientBase):
             payload.saldo = 0  # Optionally resetting the balance
         else:
             cred = VitteCredencialField(
-                valor=data_cliente_bar.tarjeta.raw_rfid
+                valor=raw_tarjeta_rfid
             )
             print(f'Vitte: credencial creada para nuevo cliente (tipo {type(cred)}): {cred.model_dump()}')
+            id_a_usar = 0
+            if data_cliente_vitte and data_cliente_vitte.id: 
+                print(f'Vitte: data_cliente_vitte: (tipo {type(data_cliente_vitte)}): {data_cliente_vitte.model_dump()}')
+                id_a_usar = data_cliente_vitte.id
+
             payload = SaveClienteVitte(
-            # payload.update(
-                id=data_cliente_vitte.id,
+                id=id_a_usar,
                 activo=True,
-                tarjeta=data_cliente_bar.tarjeta.raw_rfid,
+                tarjeta=raw_tarjeta_rfid,
                 credencial=cred.model_dump(),
                 saldo=10000,  # Default initial balance when creating a new client
-                nombre=str(data_cliente_bar.cliente.id),
-                apellido=data_cliente_bar.cliente.nombre,
+                nombre=str(cliente_id),
+                apellido=cliente_nombre,
                 categoriaId=CategoriasVitte.CLIENTE.value,
                 empresa='',
                 empresaId=self.empresa_id
