@@ -17,10 +17,17 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         return orden
     
     def get_by_turno_id(self, db: Session, *, turno_id: int) -> List[OrdenCompra]:
+        return self.get_multi(db=db, turno_id=turno_id)
+        
+    def get_multi(
+        self, db: Session, *, turno_id: int = None
+    ) -> List[OrdenCompra]:
         ordenes = db.query(OrdenCompra)
-        ordenes = ordenes.filter(OrdenCompra.turno_id == turno_id)
-        ordenes = ordenes.order_by(OrdenCompra.monto_cobrado.asc())
-        ordenes = ordenes.order_by(OrdenCompra.timestamp_apertura_orden.asc())
+        
+        if turno_id:
+            ordenes = ordenes.filter(OrdenCompra.turno_id == turno_id)
+        
+        ordenes = ordenes.order_by(OrdenCompra.timestamp_cierre_orden.desc())
         ordenes = ordenes.all()
         return ordenes
     

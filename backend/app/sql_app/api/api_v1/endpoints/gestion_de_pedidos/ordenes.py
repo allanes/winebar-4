@@ -135,12 +135,17 @@ def handle_read_orden_by_id(
 
     return orden_detallada
 
-@router.get("/", response_model=List[schemas.OrdenCompra])
+@router.get("/", response_model=List[schemas.OrdenCompraDetallada])
 def handle_read_ordens(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
 ):
-    ordens = crud.orden.get_multi(db, skip=0, limit=10000)
+    # ordens = crud.orden.get_multi(db, skip=0, limit=10000)
+    ordens = crud.orden.get_multi(db)
     # ordens = [orden for orden in ordens if orden.activa==True]
-    return ordens
+    ordenes_detalladas = [crud.orden.convertir_a_orden_detallada(
+        db=db, orden=orden_in_db
+    ) for orden_in_db in ordens]
+    
+    return ordenes_detalladas
