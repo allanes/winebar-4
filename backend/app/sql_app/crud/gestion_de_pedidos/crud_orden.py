@@ -1,5 +1,3 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -8,7 +6,8 @@ from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
-from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+# from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.schemas.validators import get_now_time
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
     def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> OrdenCompra | None:
@@ -73,8 +72,9 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         )
         
         # Aplico valores pord efecto antes de crear
+        ts_apertura = get_now_time()
         orden_in_db = OrdenCompra()
-        orden_in_db.timestamp_apertura_orden = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        orden_in_db.timestamp_apertura_orden = ts_apertura
         orden_in_db.monto_cargado = 0
         orden_in_db.monto_cobrado = 0
         orden_in_db.monto_cobrado_efectivo = 0
@@ -108,8 +108,10 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             print(f'Removiendo pedido. Pedido removido: {pedido_removido.__dict__ if pedido_removido else ""}')
             
         # Calculo valores necesarios
+        ts_cierre = get_now_time()
+        print(f'Cerrando orden con timestamp {ts_cierre.isoformat()}')
         orden_in_db.cerrada_por = cerrada_por_id
-        orden_in_db.timestamp_cierre_orden = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        orden_in_db.timestamp_cierre_orden = ts_cierre
 
         ## Verifico que el monto cobrado sea igual al monto cargado
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0

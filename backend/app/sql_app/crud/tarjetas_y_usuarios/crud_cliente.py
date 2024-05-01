@@ -13,6 +13,7 @@ from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import Client
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.schemas.validators import get_now_time
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -159,9 +160,10 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
         if tarjeta:
+            ts_ultimo_uso = get_now_time()
             tarjeta.entregada = True
             tarjeta.presente_en_salon = True
-            tarjeta.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+            tarjeta.fecha_ultimo_uso = ts_ultimo_uso
             tarjeta.monto_precargado = 0
             # Commit the transaction to save changes
             db.commit()

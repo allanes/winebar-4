@@ -66,4 +66,5 @@ def sync_consumos_dependency(
     if tarjeta_id is None or abierto_por_id is None:
         raise ValueError("Tarjeta ID and Abierto Por ID are required for syncing consumptions.")
     
+    sync_products_dependency(db=db)
     sync_consumos_with_vitte_by_tarjeta(db, tarjeta_id, abierto_por_id)

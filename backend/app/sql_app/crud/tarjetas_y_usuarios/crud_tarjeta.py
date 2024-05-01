@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models import Tarjeta, Rol
 from sql_app.schemas.tarjetas_y_usuarios.tarjeta import TarjetaCreate, TarjetaUpdate
-# from sql_app.schemas.validators import clean_tarjeta_id
+from sql_app.schemas.validators import get_now_time
 from . import crud_rol
 
 
@@ -38,7 +38,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         tarjeta_in.id = int(obj_in.raw_rfid),
         tarjeta_in.raw_rfid = obj_in.raw_rfid,
         tarjeta_in.rol_id = rol_en_db.id,
-        tarjeta_in.fecha_alta = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        tarjeta_in.fecha_alta = get_now_time()
         tarjeta_in.fecha_ultimo_uso = None
         tarjeta_in.presente_en_salon = False
         tarjeta_in.entregada = False
@@ -116,7 +116,7 @@ class CRUDTarjeta(CRUDBaseWithActiveField[Tarjeta, TarjetaCreate, TarjetaUpdate]
         db_obj.entregada = False
         db_obj.presente_en_salon = False
         db_obj.monto_precargado = -1
-        db_obj.fecha_ultimo_uso = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        db_obj.fecha_ultimo_uso = get_now_time()
 
         db.commit()
         db.refresh(db_obj)

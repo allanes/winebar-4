@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models.inventario_y_promociones import Producto
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate, ProductoUpdate
+from sql_app.schemas.validators import get_now_time
 
 class CRUDProducto(CRUDBaseWithActiveField[Producto, ProductoCreate, ProductoUpdate]):
     ### Functions override section
@@ -13,8 +14,10 @@ class CRUDProducto(CRUDBaseWithActiveField[Producto, ProductoCreate, ProductoUpd
         producto_in_db = db_obj
 
         [setattr(producto_in_db, attr, value) for attr, value in producto_in.model_dump().items()]
+
+        ts_cambio_precio = get_now_time()
         producto_in_db.activa = True
-        producto_in_db.ultimo_cambio_precio = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        producto_in_db.ultimo_cambio_precio = ts_cambio_precio
         producto_in_db.id_menu = 1
         producto_in_db.tapa = None
         producto_in_db.vino = None

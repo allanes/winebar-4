@@ -111,11 +111,22 @@ def handle_update_orden(
 @router.get("/{id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_id(
     id: int,
-    db: Session = Depends(deps.get_db)
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    db: Session = Depends(deps.get_db),
 ):
     orden_in_db = crud.orden.get(db=db, id=id)
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    ## Reviso si esta abierta para sincronizar consumos de vino
+    if not orden_in_db.cerrada_por:
+        cliente_operando = crud.cliente_opera_con_tarjeta.get_by_cliente_id(db=db, cliente_id=orden_in_db.cliente_id)
+        deps.sync_consumos_dependency(
+            db=db, 
+            tarjeta_id=cliente_operando.tarjeta_id, 
+            abierto_por_id=current_user.id
+        )
+        orden_in_db = crud.orden.get(db=db, id=id)
     
     orden_detallada = crud.orden.convertir_a_orden_detallada(
         db=db,
@@ -130,6 +141,6 @@ def handle_read_ordens(
     skip: int = 0,
     limit: int = 100,
 ):
-    ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
+    ordens = crud.orden.get_multi(db, skip=0, limit=10000)
     # ordens = [orden for orden in ordens if orden.activa==True]
     return ordens
