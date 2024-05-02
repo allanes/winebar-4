@@ -88,14 +88,11 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         # Setup Vitte init
         try:
-            datos = {
-                # data_cliente=cliente_operando,
-                'cliente_id': cliente_in_db.id,
-                'cliente_nombre': cliente_in_db.nombre,
-                'raw_tarjeta_id': cliente_operando.tarjeta.raw_rfid
-            }
-            print(f'Entrando a Vitte para Cargar Cliente. tarjeta: {datos}')
-            vitte_api_client.cargar_o_actualizar_cliente_vitte(**datos)
+            vitte_api_client.cargar_o_actualizar_cliente_vitte(
+                cliente_id = cliente_in_db.id,
+                cliente_nombre = cliente_in_db.nombre,
+                raw_tarjeta_id = cliente_operando.tarjeta.raw_rfid
+            )
         except Exception as err:
             print(f'No se pudo cargar el cliente en VITTE. {err=}')
         
@@ -198,9 +195,17 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         if cliente_opera is None:
             return None, False, f'No se encontró un cliente operando con el cliente_id {id}'
         
+        cliente = self.get_active(db=db, id=id)
+        tarjeta = crud_tarjeta.tarjeta.get_active(db=db, id=cliente_opera.tarjeta_id)
+        
         print(f'BORRANDO CLIENTE EN VITTE')
         try: 
-            vitte_api_client.inhabilitar_cliente_vitte(data_cliente=cliente_opera)
+            vitte_api_client.inhabilitar_cliente_vitte(
+                # data_cliente=cliente_opera,
+                cliente_id=id,
+                cliente_nombre=cliente.nombre,
+                raw_tarjeta_rfid=tarjeta.raw_rfid
+            )
         except Exception as err:
             print(f'el cliente no se pudo borrar de vitte. {err=}')
         
