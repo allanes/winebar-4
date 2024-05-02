@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, List, Union
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -11,6 +12,8 @@ from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdi
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.schemas.validators import get_now_time
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -68,7 +71,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             detalles_in_db = crud_detalles_adicionales.detalles_adicionales.create(
                 db=db, obj_in=detalles_adicionales_con_id_cliente)
             
-        _, pudo_entregar, msg = self.entregar_tarjeta_a_cliente(db=db, cliente_id=cliente_in_db.id, tarjeta_id=tarjeta_id)
+        cliente_operando, pudo_entregar, msg = self.entregar_tarjeta_a_cliente(db=db, cliente_id=cliente_in_db.id, tarjeta_id=tarjeta_id)
         
         if not pudo_entregar:
             ## Remove Cliente and Additional Details
@@ -82,7 +85,16 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             tarjeta_cliente=tarjeta_id
         )
         crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in)
+        
         # Setup Vitte init
+        try:
+            vitte_api_client.cargar_o_actualizar_cliente_vitte(
+                cliente_id = cliente_in_db.id,
+                cliente_nombre = cliente_in_db.nombre,
+                raw_tarjeta_id = cliente_operando.tarjeta.raw_rfid
+            )
+        except Exception as err:
+            print(f'No se pudo cargar el cliente en VITTE. {err=}')
         
         return cliente_in_db, True, ''
 
@@ -152,9 +164,10 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         tarjeta = db.query(Tarjeta).filter(Tarjeta.id == tarjeta_id).first()
         if tarjeta:
+            ts_ultimo_uso = get_now_time()
             tarjeta.entregada = True
             tarjeta.presente_en_salon = True
-            tarjeta.fecha_ultimo_uso = datetime.now()
+            tarjeta.fecha_ultimo_uso = ts_ultimo_uso
             tarjeta.monto_precargado = 0
             # Commit the transaction to save changes
             db.commit()
@@ -181,6 +194,20 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         )
         if cliente_opera is None:
             return None, False, f'No se encontró un cliente operando con el cliente_id {id}'
+        
+        cliente = self.get_active(db=db, id=id)
+        tarjeta = crud_tarjeta.tarjeta.get_active(db=db, id=cliente_opera.tarjeta_id)
+        
+        print(f'BORRANDO CLIENTE EN VITTE')
+        try: 
+            vitte_api_client.inhabilitar_cliente_vitte(
+                # data_cliente=cliente_opera,
+                cliente_id=id,
+                cliente_nombre=cliente.nombre,
+                raw_tarjeta_rfid=tarjeta.raw_rfid
+            )
+        except Exception as err:
+            print(f'el cliente no se pudo borrar de vitte. {err=}')
         
         tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=cliente_opera.tarjeta_id)
         return tarjeta_devuelta        

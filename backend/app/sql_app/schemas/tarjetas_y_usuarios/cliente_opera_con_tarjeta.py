@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from .tarjeta import Tarjeta
 from .cliente import Cliente
+# from .tarjetas_y_usuarios_serializer import serializer_para_tarjeta_operando
+# from sql_app.schemas.serializers import serializer_para_tarjeta_operando
 
 class ClienteOperaConTarjetaBase(BaseModel):
     id_cliente: int
@@ -25,6 +27,7 @@ class ClienteOperaConTarjetaInDBBase(ClienteOperaConTarjetaBase):
 
 # Properties to return to client
 class ClienteOperaConTarjeta(ClienteOperaConTarjetaInDBBase):
+    
     pass
 
 # Properties stored in DB

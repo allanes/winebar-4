@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -7,6 +8,7 @@ from sql_app.models.gestion_de_pedidos import Turno, OrdenCompra
 from sql_app.schemas.gestion_de_pedidos.turno import TurnoCreate, TurnoUpdate, Turno as TurnoSchema, InfoDeCierre
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
+from sql_app.schemas.validators import get_now_time
 
 class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):    
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Turno]:
@@ -19,9 +21,9 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         return turnos
     
     def abrir_turno(self, db: Session, *, turno_in: TurnoCreate) -> Turno:
+        ts_apertura = get_now_time()
         turno_in_db = Turno()
-        
-        turno_in_db.timestamp_apertura = datetime.now()
+        turno_in_db.timestamp_apertura = ts_apertura
         turno_in_db.cantidad_de_ordenes = -1
         turno_in_db.cantidad_tapas = -1
         turno_in_db.cantidad_usuarios_vip = -1
@@ -49,9 +51,10 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
         cant_total_ordenes = len(crud.orden.get_by_turno_id(
             db = db, turno_id = turno_in_db.id
         ))
+        ts_cierre = get_now_time()
 
         turno_in_db.cerrado_por = cerrado_por
-        turno_in_db.timestamp_cierre = datetime.now()
+        turno_in_db.timestamp_cierre = ts_cierre
         turno_in_db.cantidad_de_ordenes = cant_total_ordenes
         turno_in_db.cantidad_tapas = 0
         turno_in_db.cantidad_usuarios_vip = 0
@@ -82,7 +85,7 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
     def get_open_turno(self, db: Session) -> Turno | None:
         opened = db.query(Turno).filter(Turno.cerrado_por == None).first()
         if opened:
-            print(f'turno abierto: {opened.__dict__}')
+            print(f'Turno abierto encontrado id: {opened.id}')
         return opened
     
     def get_suma_cobrada_de_ordenes(self, db: Session, turno_id: int) -> float:

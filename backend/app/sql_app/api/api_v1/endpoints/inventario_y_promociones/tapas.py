@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
+from sql_app.api.api_v1.endpoints.inventario_y_promociones.vinos import handle_get_foto as handle_get_vino_foto
 
 router = APIRouter()
 
@@ -47,15 +48,21 @@ def handle_get_foto(
     tapa = None
     if by_product_id:
         tapa = crud.tapa.get_by_product_id(db=db, producto_id=id)
+        if not tapa:
+            vino = crud.vino.get_by_product_id(db=db, producto_id=id)            
     else:
         tapa = crud.tapa.get(db=db, id=id)
-    if not tapa:
+    
+    if not tapa and not vino:
         raise HTTPException(status_code=404, detail=f"Tapa no encontrada con ID {id}")
     
-    if not tapa.foto:
-        raise HTTPException(status_code=404, detail=f"Foto no encontrada para Tapa con ID {id}")
-    
-    file_path = f"{settings.IMAGES_PATH}/{tapa.foto}"  # Specify the path where the file is saved
+    if tapa:
+        if not tapa.foto:
+            raise HTTPException(status_code=404, detail=f"Foto no encontrada para Tapa con ID {id}")
+        
+        file_path = f"{settings.IMAGES_PATH}/{tapa.foto}"  # Specify the path where the file is saved
+    else:
+        file_path = handle_get_vino_foto(nombre=vino.producto.titulo)
     return file_path
 
 @router.get("/{id}", response_model=schemas.Tapa)

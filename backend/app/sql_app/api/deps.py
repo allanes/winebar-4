@@ -9,6 +9,10 @@ from sql_app import crud, models, schemas
 # from sql_app.core import security
 from sql_app.core.config import settings
 from sql_app.db.session import SessionLocal
+from sql_app.api.vitte_integration.vitte_db_sync import (
+    sync_products_with_vitte,
+    sync_consumos_with_vitte_by_tarjeta
+)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
@@ -50,3 +54,17 @@ async def check_turno_abierto(
     if turno_abierto is None:
         raise HTTPException(status_code=404, detail='No hay un turno abierto')
     return True
+
+def sync_products_dependency(db: Session = Depends(get_db)):
+    sync_products_with_vitte(db=db)
+
+def sync_consumos_dependency(
+    db: Annotated[Session, Depends(get_db)],
+    tarjeta_id: int = None, 
+    abierto_por_id: int = None
+) -> bool:
+    if tarjeta_id is None or abierto_por_id is None:
+        raise ValueError("Tarjeta ID and Abierto Por ID are required for syncing consumptions.")
+    
+    sync_products_dependency(db=db)
+    sync_consumos_with_vitte_by_tarjeta(db, tarjeta_id, abierto_por_id)

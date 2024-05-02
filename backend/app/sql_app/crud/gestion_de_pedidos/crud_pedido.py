@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
@@ -7,6 +8,7 @@ from sql_app.schemas.gestion_de_pedidos.pedido import PedidoCreate, PedidoUpdate
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app.schemas.gestion_de_pedidos.renglon import RenglonCreate, RenglonCreateInternal
 from sql_app import crud
+from sql_app.schemas.validators import get_now_time
 
 class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):    
     def get_pedidos_por_tarjeta(self, db: Session, *, tarjeta_id: int) -> list[Pedido]:
@@ -98,16 +100,19 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         return pedido_in_db, True, ''
     
     def cerrar_pedido(
-    self, db: Session, *, cerrado_por: int, tarjeta_cliente: int
+    self, db: Session, *, cerrado_por: int, tarjeta_cliente: int, timestamp_cerrado: Optional[datetime] = None
     ) -> tuple[Pedido | None, bool, str]:
         pedido_in_db = self.get_pedido_abierto_por_tarjeta(db=db, tarjeta_id=tarjeta_cliente)
         if pedido_in_db is None:
             return None, False, f'No se encontró un pedido abierto para la tarjeta {tarjeta_cliente}'
-
+        
         montos_de_pedidos = [renglon.monto for renglon in pedido_in_db.renglones]
-
+        
+        ts_cerrado = get_now_time() if not timestamp_cerrado else timestamp_cerrado
+        print(f'Cerrando Pedido con timestamp {ts_cerrado.isoformat()}')
+            
         pedido_in_db.cerrado=True
-        pedido_in_db.timestamp_pedido = datetime.now()
+        pedido_in_db.timestamp_pedido = ts_cerrado
         pedido_in_db.atendido_por = cerrado_por
         pedido_in_db.monto_cargado = sum(montos_de_pedidos)
 

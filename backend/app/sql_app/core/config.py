@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     IMAGES_PATH: str
 
+    # Vitte
+    VITTE_SERVER: str = 'Altacava'
+    VITTE_USUARIO: str = 'Altacava'
+    VITTE_CLAVE: str = '1234'
+
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator('API_V1_STR', pre=True)

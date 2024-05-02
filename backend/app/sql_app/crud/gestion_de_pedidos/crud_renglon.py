@@ -21,21 +21,21 @@ class CRUDRenglon(CRUDBase[Renglon, RenglonCreate, RenglonUpdate]):
         
         return renglon_in_db
     
-    def cerrar_renglon(self, db: Session, *, cerrado_por: int) -> Renglon:
-        renglon_in_db = self.get_open_renglon(db=db)
+    # def cerrar_renglon(self, db: Session, *, cerrado_por: int) -> Renglon:
+    #     renglon_in_db = self.get_open_renglon(db=db)
 
-        renglon_in_db.cerrado_por = cerrado_por
-        renglon_in_db.timestamp_cierre = datetime.now()
-        renglon_in_db.promocion_aplicada
-        renglon_in_db.cantidad_de_ordenes = 0
-        renglon_in_db.cantidad_tapas = 0
-        renglon_in_db.cantidad_usuarios_vip = 0
-        renglon_in_db.monto_en_caja = 0
+    #     renglon_in_db.cerrado_por = cerrado_por
+    #     renglon_in_db.timestamp_cierre = datetime.now()
+    #     renglon_in_db.promocion_aplicada
+    #     renglon_in_db.cantidad_de_ordenes = 0
+    #     renglon_in_db.cantidad_tapas = 0
+    #     renglon_in_db.cantidad_usuarios_vip = 0
+    #     renglon_in_db.monto_en_caja = 0
 
-        db.commit()
-        db.refresh(renglon_in_db)
+    #     db.commit()
+    #     db.refresh(renglon_in_db)
         
-        return renglon_in_db
+    #     return renglon_in_db
     
     # def get_open_renglon(self, db: Session) -> Renglon:
     #     return db.query(Renglon).order_by(Renglon.id.desc()).first()
@@ -55,11 +55,12 @@ class CRUDRenglon(CRUDBase[Renglon, RenglonCreate, RenglonUpdate]):
     
     def calcular_monto(self, db: Session, renglon_in: RenglonCreateInternal) -> tuple[float, bool]:
         monto = 100
-        promocion_aplicada = True
+        promocion_aplicada = False
 
         producto_in_db = crud.producto.get(db=db, id=renglon_in.producto_id)
         if not producto_in_db: return 0, False
 
+        print(f'Calculando monto. Precio del producto encontrado: {producto_in_db.__dict__}')
         monto = renglon_in.cantidad * producto_in_db.precio
 
         return monto, promocion_aplicada
