@@ -14,7 +14,11 @@ from sql_app.api.vitte_integration.vitte_db_sync import (
     sync_consumos_with_vitte_by_tarjeta
 )
 
-
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="No se pudo validar las credenciales",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
 print(f'Token URL for login: {oauth2_scheme.model.model_dump()["flows"]["password"]["tokenUrl"]}')
 
@@ -25,27 +29,41 @@ def get_db() -> Generator:
     finally:
         db.close()
 
+def get_token_data_logueado(
+    token: Annotated[str, Depends(oauth2_scheme)]
+):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        terminal_nombre: str = payload.get("terminal_nombre")
+        if username is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(
+            username=username,
+            terminal_nombre=terminal_nombre
+        )
+    except JWTError:
+        raise credentials_exception
+    
+    return token_data
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)]
 ) -> models.PersonalInterno | None:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudo validar las credenciales",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = schemas.TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
+    token_data: schemas.TokenData = get_token_data_logueado(token=token)
     user = crud.personal_interno.get_by_rfid(db=db, tarjeta_id=token_data.username)
     if user is None:
         raise credentials_exception
     return user
+
+async def get_terminal_logueada(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)]
+) -> str | None:
+    token_data: schemas.TokenData = get_token_data_logueado(token=token)
+    await get_current_user(db=db, token=token)
+    return token_data.terminal_nombre
 
 async def check_turno_abierto(
     db: Annotated[Session, Depends(get_db)]
