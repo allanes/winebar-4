@@ -8,6 +8,7 @@ import pdfkit
 
 from sql_app import crud, schemas
 from sql_app.api import deps
+from sql_app.core.config import settings
 from sql_app.schemas.serializers import format_datetime as datetime_formatter
 
 router = APIRouter()
@@ -119,19 +120,34 @@ async def export_order_to_html(id: int, request: Request, db: Session = Depends(
 
 @router.get("/export/order/pdf", response_class=FileResponse)
 async def export_order_to_pdf(id: int, request: Request, db: Session = Depends(deps.get_db)):
+    # Define the directory for exported orders
+    directory = settings.ORDENES_EXPORTADAS_PATH
+    filename = f'{id}_detalles_orden.pdf'
+    filepath = os.path.join(directory, filename)
+
+    # Ensure the directory exists
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Check if the file already exists
+    if os.path.isfile(filepath):
+        print(f'File {filename} already exists, returning existing file.')
+        return FileResponse(path=filepath, filename=filename)
+
     try:
         # Get HTML content from the HTML endpoint
         response = await export_order_to_html(id=id, request=request, db=db)
         html_content = response.body.decode()
-        # Define path for temporary PDF file
-        filename = f'{id}_detalles_orden.pdf'
-        print(f'contenido recuperado. tamaño: {len(html_content)}. Convirtiendo y guardando en {filename}...')
+
+        print(f'Generating new PDF file: {filename}...')
 
         # Convert HTML to PDF using pdfkit
-        pdfkit.from_string(input=html_content, output_path=filename, verbose=True)
-        print(f'Convertido')
+        pdfkit.from_string(input=html_content, output_path=filepath, verbose=True)
+
+        print(f'PDF file {filename} created successfully.')
+
         # Return PDF file response
-        return FileResponse(path=filename, filename=f'{id}_detalles_orden.pdf')
+        return FileResponse(path=filepath, filename=filename)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
