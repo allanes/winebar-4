@@ -76,36 +76,47 @@ def handle_agregar_producto_by_phys(
     db: Session = Depends(deps.get_db),
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+    nombre_terminal_tapa_logueada: Annotated[str, Depends(deps.get_terminal_tapa_logueada)],
 ):
-    print(f'usuario logueado id: {current_user.id}')
-    print(f'puerto a chequear: {phys_port}')
+    # print(f'usuario logueado id: {current_user.id}')
+    # print(f'puerto a chequear: {phys_port}')
     
-    mapa_puertos_a_tapas = {
-        "usb-0000:01:00.0-1.1.3/input0": 1,
-        "usb-0000:01:00.0-1.1.2/input0": 2
-    }
-    renglon_in = schemas.RenglonCreate(
-        cantidad=1,
-        producto_id=mapa_puertos_a_tapas.get(phys_port)
+    # mapa_puertos_a_tapas = {
+    #     "usb-0000:01:00.0-1.1.3/input0": 1,
+    #     "usb-0000:01:00.0-1.1.2/input0": 2
+    # }
+
+    lector_in_db = crud.lector_tapa.get_by_phys_name(
+        db=db,
+        nombre_terminal=nombre_terminal_tapa_logueada,
+        nombre_puerto=phys_port
     )
 
-    if not renglon_in.producto_id:
-        raise HTTPException(status_code=404, detail=msg)
+    if not lector_in_db:
+        raise HTTPException(status_code=404, detail=f'No se encontró un lector para el puerto {phys_port}')
     
-    print(f'Agregando tapa por id: {renglon_in.producto_id}')
+    if not lector_in_db.id_producto:
+        raise HTTPException(status_code=404, detail=f'El lector RFID no tiene un producto asociado')
+    
+    print(f'Agregando tapa por producto_id: {lector_in_db.id_producto}')
 
     renglon_in_db, fue_agregado, msg = crud.pedido.agregar_producto_a_pedido(
         db=db,
-        renglon_in=renglon_in,
         atendido_por=current_user.id,
-        tarjeta_cliente=tarjeta_cliente
+        tarjeta_cliente=tarjeta_cliente,
+        renglon_in=schemas.RenglonCreate(
+            producto_id=lector_in_db.id_producto,
+            cantidad=1
+        )
     )
 
     if not fue_agregado:
         raise HTTPException(status_code=404, detail=msg)
     
     print(f'renglon cambiado: {renglon_in_db.__dict__}')
-    pedido = crud.pedido.get_pedido_abierto_por_tarjeta(db=db, tarjeta_id=tarjeta_cliente)
+    pedido = crud.pedido.get_pedido_abierto_por_tarjeta(
+        db=db, tarjeta_id=tarjeta_cliente
+    )
     
     return pedido
 

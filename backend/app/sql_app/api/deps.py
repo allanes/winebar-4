@@ -57,12 +57,17 @@ async def get_current_user(
         raise credentials_exception
     return user
 
-async def get_terminal_logueada(
+async def get_terminal_tapa_logueada(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)]
 ) -> str | None:
     token_data: schemas.TokenData = get_token_data_logueado(token=token)
     await get_current_user(db=db, token=token)
+
+    print(f'Terminal logueada: {token_data.terminal_nombre}')
+    if token_data.terminal_nombre.find('TAPA') < 0:
+        raise credentials_exception
+    
     return token_data.terminal_nombre
 
 async def check_turno_abierto(

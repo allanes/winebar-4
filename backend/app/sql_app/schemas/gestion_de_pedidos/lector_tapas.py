@@ -8,7 +8,7 @@ from datetime import datetime
 # Shared properties
 class LectorTapaBase(BaseModel):
     nombre_puerto: Optional[str] = None
-    id_terminal: int
+    nombre_terminal: str
     id_producto: Optional[int] = None
 
 class LectorTapaReceive(BaseModel):
