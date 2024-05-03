@@ -25,3 +25,7 @@ httpx
 requests
 python-dateutil
 tzdata
+
+# Exportacion a PDF
+jinja2
+pdfkit

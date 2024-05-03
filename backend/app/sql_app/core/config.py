@@ -28,11 +28,12 @@ class Settings(BaseSettings):
     # SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     IMAGES_PATH: str
+    ORDENES_EXPORTADAS_PATH: str
 
     # Vitte
-    VITTE_SERVER: str = 'Altacava'
-    VITTE_USUARIO: str = 'Altacava'
-    VITTE_CLAVE: str = '1234'
+    VITTE_SERVER: str
+    VITTE_USUARIO: str
+    VITTE_CLAVE: str
 
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.

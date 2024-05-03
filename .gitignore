@@ -6,3 +6,5 @@ __pycache__
 *.ipynb
 servidor_claves
 imagenes
+ordenes_exportadas
+backend/app/templates
