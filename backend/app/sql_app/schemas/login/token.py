@@ -7,3 +7,4 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
+    terminal_nombre: str | None = None

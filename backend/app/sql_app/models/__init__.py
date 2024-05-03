@@ -20,5 +20,6 @@ from .gestion_de_pedidos import (
     OrdenCompra,
     Pedido,
     Renglon,
-    Configuracion
+    Configuracion,
+    LectorTapa
 )
