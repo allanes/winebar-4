@@ -1,12 +1,18 @@
+import os
 from typing import List, Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
+from fastapi.templating import Jinja2Templates
+import pdfkit
 
 from sql_app import crud, schemas
 from sql_app.api import deps
+from sql_app.schemas.serializers import format_datetime as datetime_formatter
 
 router = APIRouter()
+
+templates = Jinja2Templates(directory="templates")
 
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_client_rfid(
@@ -91,6 +97,43 @@ def handle_cerrar_orden(
         raise HTTPException(status_code=404, detail=msg)
     
     return orden
+
+@router.get("/export/order/html", response_class=HTMLResponse)
+async def export_order_to_html(id: int, request: Request, db: Session = Depends(deps.get_db)):
+    try:
+        cur_user = crud.personal_interno.get_by_rfid(db=db, tarjeta_id='0243473251')
+        order_details = handle_read_orden_by_id(db=db, id=id, current_user=cur_user)
+        if order_details is not None:
+            print(f'Orden recuperada. Procesando Plantilla')
+        
+        # Reverse the order of pedidos
+        pedidos_reversed = []
+        for idx in range(len(order_details.pedidos)):
+            pedidos_reversed.append(order_details.pedidos[len(order_details.pedidos) - 1 - idx])
+        order_details.pedidos = pedidos_reversed
+        # Add the custom filter to Jinja2 environment
+        templates.env.filters['format_datetime'] = datetime_formatter
+        return templates.TemplateResponse("orden_detallada.html", {"request": request, "order": order_details.model_dump()})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/export/order/pdf", response_class=FileResponse)
+async def export_order_to_pdf(id: int, request: Request, db: Session = Depends(deps.get_db)):
+    try:
+        # Get HTML content from the HTML endpoint
+        response = await export_order_to_html(id=id, request=request, db=db)
+        html_content = response.body.decode()
+        # Define path for temporary PDF file
+        filename = f'{id}_detalles_orden.pdf'
+        print(f'contenido recuperado. tamaño: {len(html_content)}. Convirtiendo y guardando en {filename}...')
+
+        # Convert HTML to PDF using pdfkit
+        pdfkit.from_string(input=html_content, output_path=filename, verbose=True)
+        print(f'Convertido')
+        # Return PDF file response
+        return FileResponse(path=filename, filename=f'{id}_detalles_orden.pdf')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{id}", response_model=schemas.OrdenCompra)
 def handle_update_orden(

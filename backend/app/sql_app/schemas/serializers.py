@@ -63,3 +63,19 @@ def serializer_for_clientes_totales(turno_id: int) -> int:
     db.close()
     return len(ordenes_in_db)
 
+# Define a custom filter to format datetime strings
+def format_datetime(value, format: str = '%Y-%m-%d %H:%M'):
+    """Converts a datetime or string to the specified format, or returns 'N/A' if None."""
+    if value is None:
+        return "N/A"
+    from datetime import datetime
+    # If value is already a datetime object, format it directly
+    if isinstance(value, datetime):
+        return value.strftime(format)
+    
+    # If value is a string, parse it first
+    try:
+        date = datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
+        return date.strftime(format)
+    except ValueError:
+        return "Invalid date"  # Optional: Handle wrong format errors
