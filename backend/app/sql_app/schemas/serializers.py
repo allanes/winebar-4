@@ -64,7 +64,7 @@ def serializer_for_clientes_totales(turno_id: int) -> int:
     return len(ordenes_in_db)
 
 # Define a custom filter to format datetime strings
-def format_datetime(value, format: str = '%Y-%m-%d %H:%M'):
+def datetime_formatter(value, format: str = '%Y-%m-%d %H:%M'):
     """Converts a datetime or string to the specified format, or returns 'N/A' if None."""
     if value is None:
         return "N/A"
@@ -79,3 +79,4 @@ def format_datetime(value, format: str = '%Y-%m-%d %H:%M'):
         return date.strftime(format)
     except ValueError:
         return "Invalid date"  # Optional: Handle wrong format errors
+    

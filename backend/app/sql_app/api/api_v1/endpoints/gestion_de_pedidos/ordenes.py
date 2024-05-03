@@ -9,7 +9,7 @@ import pdfkit
 from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
-from sql_app.schemas.serializers import format_datetime as datetime_formatter
+from sql_app.schemas.serializers import datetime_formatter
 
 router = APIRouter()
 

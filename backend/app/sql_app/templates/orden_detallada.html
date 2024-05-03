@@ -76,8 +76,8 @@
             <td>{{ order.timestamp_cierre_orden.strftime('%d/%m/%Y %H:%M') if order.timestamp_cierre_orden else 'N/A' }}</td>
         </tr>
         <tr>
-            <th>Abierta por/Cerrada por</th>
-            <td>{{ order.abierta_por_nombre }} / {{ order.cerrada_por_nombre }}</td>
+            <th>Cerrada por</th>
+            <td>{{ order.cerrada_por_nombre }}</td>
         </tr>
     </table>
     <h2>Items:</h2>
