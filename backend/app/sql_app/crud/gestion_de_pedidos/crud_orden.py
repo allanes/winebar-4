@@ -172,10 +172,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id)
             montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
             suma_pedido = sum(montos_de_renglones)
-            suma_pedido += suma_orden
+            suma_orden += suma_pedido
         
-        if suma_pedido <= orden_obj.monto_maximo_orden:
+        if suma_orden <= orden_obj.monto_maximo_orden:
             return True, ''
+        print(f'suma de la orden al chequear: {suma_orden}')
 
         return False, f'Supera monto máximo de órden ({orden_obj.monto_maximo_orden})'
     
