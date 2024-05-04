@@ -21,7 +21,6 @@ class LectorTapaCreate(LectorTapaBase):
 # Properties to receive on item update
 class LectorTapaUpdate(BaseModel):
     id_producto: Optional[int] = None
-    nombre_puerto: Optional[str] = None
 
 # Properties shared by models stored in DB
 class LectorTapaInDBBase(LectorTapaBase):

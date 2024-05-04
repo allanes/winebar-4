@@ -68,6 +68,25 @@ def handle_agregar_lector_tapa(
     
 #     return lector_tapa_in_db
 
+@router.post("/cambiar-asociacion-tapa", response_model=schemas.LectorTapa)
+def handle_asociar_lector_con_tapa(
+    *,
+    id_lector: int,
+    id_producto: int | None,
+    db: Session = Depends(deps.get_db)
+):
+    lector_in_db = crud.lector_tapa.get(db=db, id=id_lector)
+    if not lector_in_db:
+        raise HTTPException(status_code=404, detail=f"Lector de Tapa con id {id_lector} no encontrado")
+
+    tapa_actualizada = crud.lector_tapa.update(
+        db=db,
+        db_obj=lector_in_db,
+        obj_in=schemas.LectorTapaUpdate(id_producto=id_producto)
+    )
+
+    return tapa_actualizada
+
 @router.get("/por-terminal", response_model=List[schemas.LectorTapa])
 def handle_read_lectors_tapas_por_terminal(
     nombre_terminal_tapa_logueada: Annotated[str, Depends(deps.get_terminal_tapa_logueada)],

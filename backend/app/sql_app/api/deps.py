@@ -65,7 +65,7 @@ async def get_terminal_tapa_logueada(
     await get_current_user(db=db, token=token)
 
     print(f'Terminal logueada: {token_data.terminal_nombre}')
-    if token_data.terminal_nombre.find('TAPA') < 0:
+    if not token_data.terminal_nombre or token_data.terminal_nombre.find('TAPA') < 0:
         raise credentials_exception
     
     return token_data.terminal_nombre
