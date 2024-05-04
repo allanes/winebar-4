@@ -8,10 +8,17 @@ from sql_app.schemas.gestion_de_pedidos.lector_tapas import LectorTapaCreate, Le
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
 
-class CRUDLectorTapa(CRUDBase[LectorTapa, LectorTapaCreate, LectorTapaUpdate]):    
+class CRUDLectorTapa(CRUDBase[LectorTapa, LectorTapaCreate, LectorTapaUpdate]):  
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[LectorTapa]:
+        lectores = db.query(LectorTapa)
+        lectores = lectores.order_by(LectorTapa.id.asc())
+        lectores = lectores.all()
+        return lectores
+      
     def get_multi_by_terminal(self, db: Session, nombre_terminal: str) -> List[LectorTapa]:
         lectores = db.query(LectorTapa)
         lectores = lectores.filter(LectorTapa.nombre_terminal == nombre_terminal)
+        lectores = lectores.order_by(LectorTapa.id.asc())
         lectores = lectores.all()
         return lectores
     
