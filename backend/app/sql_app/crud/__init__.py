@@ -14,3 +14,4 @@ from .gestion_de_pedidos.crud_orden import orden
 from .gestion_de_pedidos.crud_pedido import pedido
 from .gestion_de_pedidos.crud_renglon import renglon
 from .gestion_de_pedidos.crud_lector_tapas import lector_tapa
+from .gestion_de_pedidos.crud_configuracion import configuracion
