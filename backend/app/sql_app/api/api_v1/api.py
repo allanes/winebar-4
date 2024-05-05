@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from sql_app.api.api_v1.endpoints.tarjetas_y_usuarios import roles, tarjetas, personal_internos, clientes
 from sql_app.api.api_v1.endpoints.inventario_y_promociones import tapas, vinos
-from sql_app.api.api_v1.endpoints.gestion_de_pedidos import turnos, ordenes, pedidos
+from sql_app.api.api_v1.endpoints.gestion_de_pedidos import turnos, ordenes, pedidos, lectores_tapas, configuraciones
 from sql_app.api.api_v1.endpoints import login
 
 api_router = APIRouter()
@@ -16,3 +16,5 @@ api_router.include_router(turnos.router, prefix="/turnos", tags=["Turnos"])
 api_router.include_router(ordenes.router, prefix="/ordenes", tags=["Ordenes"])
 api_router.include_router(pedidos.router, prefix="/pedidos", tags=["Pedidos"])
 api_router.include_router(vinos.router, prefix="/vinos", tags=["Vinos"])
+api_router.include_router(lectores_tapas.router, prefix="/lectores-tapas", tags=["Lectores de Tapas"])
+api_router.include_router(configuraciones.router, prefix="/configuraciones", tags=["Configuracion"])

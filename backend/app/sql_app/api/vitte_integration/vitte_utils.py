@@ -118,10 +118,15 @@ class VitteApiClient(VitteApiClientBase):
             print('Vitte:   Failed to delete client.')
             return False
     
-    def cargar_saldo_cliente(self, cliente_id: int, monto_a_agregar: float) -> bool:
-        print(f'Updating balance for client ID {cliente_id} by adding ${monto_a_agregar}')
+    def cargar_saldo_cliente(self, tarjeta_rfid: str, monto_a_agregar: float) -> bool:
+        cliente_in_vitte = self.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=tarjeta_rfid)
+        if cliente_in_vitte is None:
+            print(f'No se encontro cliente en vite para la tarjeta {tarjeta_rfid}')
+            return False
+        
+        print(f'Updating balance for client vitte ID {cliente_in_vitte.id} by adding ${monto_a_agregar}')
         saldo_url = f'{self.base_url}/cliente/agregarSaldo'
-        payload = {"clienteId": cliente_id, "saldo": monto_a_agregar}
+        payload = {"clienteId": cliente_in_vitte.id, "saldo": monto_a_agregar}
         response = self.session.post(url=saldo_url, json=payload, headers=self._get_headers()).json()
         if response.get('success', False):
             print('Balance updated successfully.')
@@ -201,7 +206,7 @@ class VitteApiClient(VitteApiClientBase):
                 activo=True,
                 tarjeta=raw_tarjeta_rfid,
                 credencial=cred.model_dump(),
-                saldo=10000,  # Default initial balance when creating a new client
+                saldo=0,
                 nombre=str(cliente_id),
                 apellido=cliente_nombre,
                 categoriaId=CategoriasVitte.CLIENTE.value,

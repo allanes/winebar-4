@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
-from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
+from sql_app.models.gestion_de_pedidos import OrdenCompra
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
@@ -64,15 +64,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             print("No existe la tarjeta")
             return None
         
-        # print(f'tarjeta del cliente: {cliente_in_db.tarjeta}')
-        ## Reemplazar
-        configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 60000
-        configuracion.monto_maximo_pedido_def = 50000
+        configuracion_montos = crud.configuracion.get_last(db=db)
         
         orden_in = OrdenCompraCreateInternal(
             precarga_usada=0,
-            monto_maximo_orden=configuracion.monto_maximo_orden_def,
+            monto_maximo_orden=configuracion_montos.monto_maximo_orden_def,
             turno_id=turno_abierto.id,
             abierta_por=abrir_orden_in.abierta_por,
             cliente_id=cliente_in_db.id
@@ -172,10 +168,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id)
             montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
             suma_pedido = sum(montos_de_renglones)
-            suma_pedido += suma_orden
+            suma_orden += suma_pedido
         
-        if suma_pedido <= orden_obj.monto_maximo_orden:
+        if suma_orden <= orden_obj.monto_maximo_orden:
             return True, ''
+        print(f'suma de la orden al chequear: {suma_orden}')
 
         return False, f'Supera monto máximo de órden ({orden_obj.monto_maximo_orden})'
     

@@ -10,7 +10,7 @@ from sql_app import crud, schemas, models
 from sql_app.api import deps
 from sql_app.core.config import settings
 from sql_app.core import security
-from sql_app.core.security import create_access_token
+from sql_app.core.security import create_access_token, get_terminal_by_key
 
 router = APIRouter()
 
@@ -41,13 +41,24 @@ async def login(
             user_in_db=user,      
         )
     
+    # Calculo tiempo de expiracion
     delta_de_expiracion = settings.ACCESS_TOKEN_EXPIRE_MINUTES
     if usar_api_key:
         delta_de_expiracion = settings.ACCESS_TOKEN_EXPIRE_MINUTES_LONG 
     print(f'Generando token válido por {delta_de_expiracion/60:.2f} hs.')
+
+    # Recupero nombre de terminal
+    terminal_nombre = get_terminal_by_key(plain_password=form_data.password)
+    print(f'Terminal logueada: {terminal_nombre}')
+
+    # Armo acces token
     access_token_expires = timedelta(minutes=delta_de_expiracion)
     access_token = create_access_token(
-        data={"sub": str(user.tarjeta_id)}, expires_delta=access_token_expires
+        data={
+            "sub": str(user.tarjeta_id),
+            "terminal_nombre": terminal_nombre
+        }, 
+        expires_delta=access_token_expires
     )
     return schemas.Token(access_token=access_token, token_type="bearer")
 

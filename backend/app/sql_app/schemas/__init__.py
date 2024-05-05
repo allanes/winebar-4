@@ -17,5 +17,7 @@ from .gestion_de_pedidos.turno import Turno, TurnoCreate, TurnoInDB, TurnoUpdate
 from .gestion_de_pedidos.orden import OrdenCompra, OrdenCompraAbrir, OrdenCompraInfoPago, OrdenCompraInDB, OrdenCompraUpdate, OrdenCompraAbrir, OrdenCompraDetallada
 from .gestion_de_pedidos.pedido import Pedido, PedidoCreate, PedidoInDB, PedidoUpdate
 from .gestion_de_pedidos.renglon import Renglon, RenglonCreate, RenglonCreateInternal, RenglonInDB, RenglonUpdate
+from .gestion_de_pedidos.lector_tapas import LectorTapa, LectorTapaCreate, LectorTapaInDB, LectorTapaUpdate, LectorTapaReceive
+from .gestion_de_pedidos.configuracion import Configuracion, ConfiguracionCreate, ConfiguracionInDB, ConfiguracionUpdate
 
 from .login.token import Token, TokenData

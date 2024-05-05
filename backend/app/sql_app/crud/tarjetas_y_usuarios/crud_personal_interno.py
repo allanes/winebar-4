@@ -18,7 +18,7 @@ from sql_app.core.security import (
     verify_password, 
     get_password_hash, 
     verify_api_key,
-    get_terminal_by_key
+    # get_terminal_by_key
 )
 from sql_app.core.config import settings
 
@@ -178,8 +178,8 @@ class CRUDPersonalInterno(CRUDBaseWithActiveField[PersonalInterno, PersonalInter
                 print("   Encontrado")
 
         # Abrir tapero o registrar ingreso
-        terminal = get_terminal_by_key(plain_password=password)
-        print(f'Terminal logueada: {terminal}')
+        # terminal = get_terminal_by_key(plain_password=password)
+        # print(f'Terminal logueada: {terminal}')
 
     def armar_nombre_completo(self, db: Session, personal_id: int) -> str:
         personal_in_db = db.query(PersonalInterno)

@@ -78,9 +78,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         print(f'Creando nuevo pedido')
         
         ## Reemplazar
-        configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 60000
-        configuracion.monto_maximo_pedido_def = 50000
+        configuracion_montos = crud.configuracion.get_last(db=db)
 
         orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         orden_de_la_tarjeta = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
@@ -90,7 +88,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         pedido_in_db.timestamp_pedido = None
         pedido_in_db.cerrado = False
         pedido_in_db.orden_id = orden_de_la_tarjeta
-        pedido_in_db.monto_maximo_pedido = configuracion.monto_maximo_pedido_def
+        pedido_in_db.monto_maximo_pedido = configuracion_montos.monto_maximo_pedido_def
         pedido_in_db.atendido_por = pedido_in.atendido_por
         
         pedido_in_db = super().create(db=db, obj_in=pedido_in_db)
@@ -120,11 +118,11 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         db.refresh(pedido_in_db)
         
         crud.orden.cargar_monto(
-            db=db, 
-            orden_id=pedido_in_db.orden_id,
-            monto_a_agregar=sum(montos_de_pedidos)
+            db = db, 
+            orden_id = pedido_in_db.orden_id,
+            monto_a_agregar = pedido_in_db.monto_cargado
         )
-        
+
         return pedido_in_db, True, ''
     
     def agregar_producto_a_pedido(
@@ -171,33 +169,40 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
                 renglon_in=renglon_in
             )
 
-        chequeos = [
-            {
-                'callable': self.check_pedido_no_supera_monto_maximo,
-                'extra_params': {
-                    'pedido_obj':pedido_in_db
-                }
-            },
-            {
-                'callable': crud.orden.check_orden_no_supera_monto_maximo,
-                'extra_params': {
-                    'orden_id': pedido_in_db.orden_id
-                }
-            }
-        ]
-        
-        for chequeo in chequeos:
-            puede_continuar, msg = chequeo['callable'](
-            db=db, 
-            **chequeo['extra_params']
+        puede_continuar, msg = self.chequear_montos_pedido(
+            db=db, pedido=pedido_in_db
         )
+        print(f'resultados de chequeo: {puede_continuar=}, {msg=}')
+        
         if not puede_continuar:
             # Debo borrar producto agregado!
-            # crud.pedido.
-            return None, False, msg
+            renglon_in_quitar = renglon_in.copy()
+            renglon_in_quitar.cantidad = -renglon_in_quitar.cantidad
+            renglon_in_db_anterior = crud.renglon.agregar_a_renglon(
+                db=db,
+                id_renglon=renglon_in_db.id,
+                renglon_in=renglon_in_quitar
+            )
+            return renglon_in_db_anterior, False, msg
 
         return renglon_in_db, renglon_in_db is not None, ''    
     
+    def chequear_montos_pedido(self, db: Session, pedido: Pedido) -> tuple[bool, str]:
+        puede_continuar, msg = self.check_pedido_no_supera_monto_maximo(
+            db = db, 
+            pedido_obj = pedido
+        )
+
+        if not puede_continuar:
+            return puede_continuar, msg
+
+        puede_continuar, msg = crud.orden.check_orden_no_supera_monto_maximo(
+            db = db, 
+            orden_id = pedido.orden_id
+        )
+        
+        return puede_continuar, msg
+        
     def quitar_producto_de_pedido(
         self, 
         db: Session, 
@@ -245,11 +250,12 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
     ) -> tuple[bool, str]:
         renglones_del_pedido = crud.renglon.get_by_pedido(db=db, pedido_id=pedido_obj.id)
         montos_de_renglones = [renglon.monto for renglon in renglones_del_pedido]
-        suma = sum(montos_de_renglones)
+        suma_pedido = sum(montos_de_renglones)
         
-        if suma <= pedido_obj.monto_maximo_pedido:
+        if suma_pedido > pedido_obj.monto_maximo_pedido:
+            return False, f'Supera monto máximo del pedido ({pedido_obj.monto_maximo_pedido})'
             return True, ''
 
-        return False, f'Supera monto máximo del pedido ({pedido_obj.monto_maximo_pedido})'
+        return True, ''
 
 pedido = CRUDPedido(Pedido)

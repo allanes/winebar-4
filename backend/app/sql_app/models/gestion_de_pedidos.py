@@ -65,7 +65,12 @@ class Configuracion(Base):
     monto_maximo_orden_def = Column(Float, nullable=False)
     monto_maximo_pedido_def = Column(Float, nullable=False)
     fecha_ultima_actualizacion = Column(DateTime, nullable=False)
-    vitte_listado_nombres = Column(String, nullable=False)
-    vitte_listado_precios_sugeridos = Column(String, nullable=False)
-    vitte_listado_metadatos = Column(String, nullable=False)
-    vitte_ultima_sincronizacion = Column(DateTime, nullable=False)
+
+class LectorTapa(Base):
+    __tablename__ = 'lectorestapas'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre_puerto = Column(String, nullable=False)
+    nombre_terminal = Column(String, nullable=False)
+    id_producto = Column(Integer, ForeignKey('productos.id'), nullable=True)
+    producto = relationship("Producto")
+
