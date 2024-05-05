@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from sql_app import crud, schemas
 from sql_app.api import deps
 
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+
 router = APIRouter()
 
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.Pedido)
@@ -160,6 +162,12 @@ def handle_cerrar_pedido(
 
     if not pudo_cerrarse:
         raise HTTPException(status_code=404, detail=msg)
+    
+    tarjeta_in_db = crud.tarjeta.get(db=db, id=tarjeta_cliente)
+    vitte_api_client.cargar_saldo_cliente(
+        tarjeta_rfid = tarjeta_in_db.raw_rfid,
+        monto_a_agregar = -(pedido.monto_cargado)
+    )
     
     return pedido
 

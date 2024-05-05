@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import Configuracion
 from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate, ConfiguracionUpdate
+from sql_app.schemas.validators import get_now_time
 
 class CRUDConfiguracion(CRUDBase[Configuracion, ConfiguracionCreate, ConfiguracionUpdate]):
     def get_last(self, db: Session) -> Configuracion | None:
@@ -18,7 +19,7 @@ class CRUDConfiguracion(CRUDBase[Configuracion, ConfiguracionCreate, Configuraci
     def create(self, db: Session, *, obj_in: ConfiguracionCreate) -> Configuracion:
         db_obj = Configuracion(
             **obj_in.model_dump(),
-            fecha_ultima_actualizacion=datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+            fecha_ultima_actualizacion=get_now_time()
         ) 
         db.add(db_obj)
         db.commit()

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta, crud_rol
-from sql_app.crud.gestion_de_pedidos import crud_orden
+from sql_app.crud.gestion_de_pedidos import crud_orden, crud_configuracion
 from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta, Tarjeta
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
@@ -92,6 +92,10 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
                 cliente_id = cliente_in_db.id,
                 cliente_nombre = cliente_in_db.nombre,
                 raw_tarjeta_id = cliente_operando.tarjeta.raw_rfid
+            )
+            vitte_api_client.cargar_saldo_cliente(
+                tarjeta_rfid = cliente_operando.tarjeta.raw_rfid,
+                monto_a_agregar = crud_configuracion.configuracion.get_last(db=db).monto_maximo_orden_def,
             )
         except Exception as err:
             print(f'No se pudo cargar el cliente en VITTE. {err=}')

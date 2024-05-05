@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
-from sql_app.models.gestion_de_pedidos import OrdenCompra, Configuracion
+from sql_app.models.gestion_de_pedidos import OrdenCompra
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
 from sql_app import crud
@@ -64,15 +64,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             print("No existe la tarjeta")
             return None
         
-        # print(f'tarjeta del cliente: {cliente_in_db.tarjeta}')
-        ## Reemplazar
-        configuracion = Configuracion()
-        configuracion.monto_maximo_orden_def = 60000
-        configuracion.monto_maximo_pedido_def = 50000
+        configuracion_montos = crud.configuracion.get_last(db=db)
         
         orden_in = OrdenCompraCreateInternal(
             precarga_usada=0,
-            monto_maximo_orden=configuracion.monto_maximo_orden_def,
+            monto_maximo_orden=configuracion_montos.monto_maximo_orden_def,
             turno_id=turno_abierto.id,
             abierta_por=abrir_orden_in.abierta_por,
             cliente_id=cliente_in_db.id
