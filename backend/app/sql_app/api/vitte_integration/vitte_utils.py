@@ -58,7 +58,8 @@ class VitteApiClient(VitteApiClientBase):
         return clientes
 
     def buscar_cliente_vitte_por_tarjeta_raw(self, tarjeta_id: str) -> Optional[ClienteVitteDesdeMaquina]:
-        url = f"{self.base_url}/maquina/tarjeta/{tarjeta_id}/301/asdas"
+        # El siguiente enlace fue capturado con Wireshark
+        url = f"{self.base_url}/maquina/tarjeta/{tarjeta_id}/26/asdas"
         print(f"Vitte: Fetching client details for tarjeta ID: {tarjeta_id} from {url}")
         response = self.session.get(url, headers=self._get_headers()).json()
         
@@ -253,19 +254,12 @@ class VitteApiClient(VitteApiClientBase):
         return transacciones
     
     def retrieve_vino_img_url_by_nombre(self, nombre: str) -> str:
-        pass
-        url = 'https://app.vitte.com.ar/api/maquina/estado/301/sfsdf'
-        resp = self.session.get(url=url, headers=self._get_headers()).json()
-        listado_modulos = resp.get('modulos', [])
         vino_id = None
-        for modulo in listado_modulos:
-            listado_picos = modulo.get('posiciones', [])
-            for pico in listado_picos:
-                if pico['vino']['nombre'] == nombre:
-                    vino_id = pico['vino']['id']
-                    print(f'Vitte: recuperado ID de vino: {vino_id}')
-                    break
-            if vino_id is not None:
+        lista_picos = self.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
+        for pico in lista_picos:
+            if pico.vino.nombre == nombre:
+                vino_id = pico.vinoId
+                print(f'Vitte: recuperado ID de vino: {vino_id}')
                 break
 
         if not vino_id:

@@ -4,11 +4,9 @@ from typing import Optional, Any
 from pydantic import BaseModel, Field
 
 class CategoriasVitte(Enum):
-    NO_INFORMA = 1
-    INACTIVO = 2
-    CLIENTE = 5
-    CLIENTE_VIP = 6
-    CLIENTE_PREMIUM = 7
+    CLIENTE = 1
+    CLIENTE_VIP = 2
+    CLIENTE_PREMIUM = 3
 
 # Pydantic Models
 class VitteCredencialField(BaseModel):
