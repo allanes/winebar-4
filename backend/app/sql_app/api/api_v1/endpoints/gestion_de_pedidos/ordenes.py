@@ -197,11 +197,26 @@ def handle_read_orden_by_id(
 @router.get("/", response_model=List[schemas.OrdenCompraDetallada])
 def handle_read_ordens(
     db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
+    para_turno_abierto: bool | None = None,
 ):
-    # ordens = crud.orden.get_multi(db, skip=0, limit=10000)
-    ordens = crud.orden.get_multi(db)
+    if not para_turno_abierto:
+        para_turno_abierto = False
+
+    ordens = None
+    if para_turno_abierto:
+        print(f'Obteniendo ordenes para el turno abierto')
+        turno_abierto = crud.turno.get_open_turno(db=db)
+        if turno_abierto is not None:
+            ordens = crud.orden.get_by_turno_id(db=db, turno_id=turno_abierto.id)
+            print(f'    Turno abierto id: {turno_abierto.id}.')
+            print(f'    Cant de ordenes recuperadas: {len(ordens)}.')
+        else:
+            print(f'    No se recuperó un turno abierto')
+    
+    if ordens is None:
+        print(f'Obteniendo ordenes para todos los turnos')
+        ordens = crud.orden.get_multi(db)
+        print(f'    Cant de ordenes recuperadas: {len(ordens)}.')
     # ordens = [orden for orden in ordens if orden.activa==True]
     ordenes_detalladas = [crud.orden.convertir_a_orden_detallada(
         db=db, orden=orden_in_db
