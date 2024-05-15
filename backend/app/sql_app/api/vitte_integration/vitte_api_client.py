@@ -63,3 +63,17 @@ class VitteApiClientBase():
             'Accept': 'application/json, text/plain, */*',
             'Accept-Encoding': 'gzip, deflate, br'
         }
+
+    def check_health(self) -> tuple[bool, str]:
+        """
+        Checks the health of the Vitte API service by trying to fetch the empresa ID.
+        This ensures the API is responsive and the authentication is valid.
+        """
+        try:
+            self._ensure_authentication()  # Ensure the API is authenticated before the check
+            self._fetch_empresa_id()       # Attempt to fetch the empresa ID as a health check
+            return True, f'Health check passed: Connected to Empresa ID {self.empresa_id}'
+        except Exception as e:
+            # Handle any exceptions that may occur during the health check
+            print(f'Health check failed: {str(e)}')
+            return False, 'API health check failed'

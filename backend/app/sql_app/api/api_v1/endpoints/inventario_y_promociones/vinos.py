@@ -52,6 +52,22 @@ def handle_get_foto(
 #     crud.vino.sync_consumos_with_vitte_by_tarjeta(db=db, raw_tarjeta=raw_rfid, abierto_por_id=current_user.id)
 #     return {}
 
+@router.get("/check-health", response_model=str)
+def handle_check_health():
+    """
+    Endpoint to check the health of the Vitte API.
+    Returns the status of the API.
+    """
+    try:
+        health_status, msg = vitte_api_client.check_health()  # Assuming vitte_api_client is an instance of VitteApiClientBase
+        if not health_status:
+            raise HTTPException(status_code=404, detail=msg)
+        return msg
+    except Exception as e:
+        # Log or handle the exception as necessary
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{product_id}", response_model=schemas.Vino)
 def handle_read_vino_by_product_id(
     product_id: int,
