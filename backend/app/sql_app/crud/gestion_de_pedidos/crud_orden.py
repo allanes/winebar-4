@@ -54,6 +54,21 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in_db = self.get_orden_abierta_by_client(db=db, cliente_id=cliente_opera_in_db.id_cliente)        
         return orden_in_db
     
+    def get_ordenes_abiertas_by_name(self, db: Session, *, client_name: str) -> OrdenCompra | None:
+        clientes_operando = crud.cliente_opera_con_tarjeta.get_multi_by_client_name(
+            db=db, client_name=client_name
+        )
+        cliente_ids = [cliente_operando.id_cliente for cliente_operando in clientes_operando]
+        print(f'clientes operando recuperados: {cliente_ids}')
+
+        ordenes_in_db = db.query(OrdenCompra)
+        ordenes_in_db = ordenes_in_db.filter(OrdenCompra.cerrada_por.is_(None)) # Solo las abiertas
+        ordenes_in_db = ordenes_in_db.filter(OrdenCompra.cliente_id.in_(cliente_ids))
+        ordenes_in_db = ordenes_in_db.order_by(OrdenCompra.timestamp_apertura_orden.desc())
+        ordenes_in_db = ordenes_in_db.all()
+        
+        return ordenes_in_db
+    
     def abrir_orden(self, db: Session, *, abrir_orden_in: OrdenCompraAbrir) -> OrdenCompra:
         # Recupero pre requisitos (turno actual)
         turno_abierto = crud.turno.get_open_turno(db=db)

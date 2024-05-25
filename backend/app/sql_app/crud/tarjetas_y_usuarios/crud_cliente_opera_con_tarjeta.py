@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, List
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from ..base import CRUDBase
-from sql_app.models.tarjetas_y_usuarios import ClienteOperaConTarjeta
+from sql_app.models.tarjetas_y_usuarios import ClienteOperaConTarjeta, Cliente
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteWithDetails
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales 
@@ -10,6 +10,17 @@ from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales
 class CRUDClienteOperaConTarjeta(CRUDBase[ClienteOperaConTarjeta, ClienteOperaConTarjetaCreate, ClienteOperaConTarjetaUpdate]):
     def get_multi(self, db: Session, *, skip: int = 0) -> List[ClienteOperaConTarjeta]:
         return db.query(ClienteOperaConTarjeta).order_by(ClienteOperaConTarjeta.id.desc()).offset(skip).all()
+    
+    def get_multi_by_client_name(self, db: Session, client_name: str) -> List[ClienteOperaConTarjeta]:
+        print(f'Buscando lista de clientes operando...')
+        
+        db_obj = db.query(ClienteOperaConTarjeta)
+        db_obj = db_obj.join(Cliente, Cliente.id == ClienteOperaConTarjeta.id_cliente)
+        db_obj = db_obj.filter(Cliente.nombre.ilike(f"%{client_name.lower()}%"))
+        db_obj = db_obj.order_by(ClienteOperaConTarjeta.id.desc())
+        db_obj = db_obj.all()
+        print(f'Lista encontrada: {[cliente.id_cliente for cliente in db_obj]}')
+        return db_obj
     
     def get_by_cliente_id(self, db: Session, *, cliente_id: int) -> Optional[ClienteOperaConTarjeta]:
         return db.query(ClienteOperaConTarjeta).filter(ClienteOperaConTarjeta.id_cliente == cliente_id).first()
