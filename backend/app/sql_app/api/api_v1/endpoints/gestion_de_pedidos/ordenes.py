@@ -198,6 +198,10 @@ def handle_read_orden_by_id(
 def handle_read_ordens(
     db: Session = Depends(deps.get_db),
     para_turno_abierto: bool | None = None,
+    skip: int = 0,
+    limit: int = 100,
+    order_by: str = '',
+    order_asc: bool = True
 ):
     if not para_turno_abierto:
         para_turno_abierto = False
@@ -215,7 +219,7 @@ def handle_read_ordens(
     
     if ordens is None:
         print(f'Obteniendo ordenes para todos los turnos')
-        ordens = crud.orden.get_multi(db)
+        ordens = crud.orden.get_multi(db, skip=skip, limit=limit)
         print(f'    Cant de ordenes recuperadas: {len(ordens)}.')
     # ordens = [orden for orden in ordens if orden.activa==True]
     ordenes_detalladas = [crud.orden.convertir_a_orden_detallada(
