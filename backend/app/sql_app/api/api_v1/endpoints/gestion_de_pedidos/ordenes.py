@@ -37,6 +37,29 @@ def handle_read_orden_by_client_rfid(
     )
     return orden_detallada
 
+@router.get("/by-name/{client_name}", response_model=list[schemas.OrdenCompraDetallada])
+def handle_read_orden_abierta_by_client_name(
+    client_name: str,
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+    db: Session = Depends(deps.get_db),
+):
+    # deps.sync_consumos_dependency(
+    #     db=db, 
+    #     tarjeta_id=client_name, 
+    #     abierto_por_id=current_user.id
+    # )
+    print(f'entrando a get_ordenes_abiertas_by_name...')
+    ordenes_in_db = crud.orden.get_ordenes_abiertas_by_name(
+        db=db, client_name=client_name
+    )
+    
+    ordenes_detallada = [
+        crud.orden.convertir_a_orden_detallada(db=db, orden=orden)
+        for orden in ordenes_in_db
+    ]
+    return ordenes_detallada
+
 @router.get("/by-turno/{turno_id}", response_model=List[schemas.OrdenCompraDetallada])
 def handle_read_orden_by_turno_id(
     turno_id: int,
