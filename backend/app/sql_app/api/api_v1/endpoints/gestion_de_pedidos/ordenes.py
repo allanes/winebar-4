@@ -199,7 +199,9 @@ def handle_read_ordens(
     db: Session = Depends(deps.get_db),
     para_turno_abierto: bool | None = None,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    order_by: str = '',
+    order_asc: bool = True
 ):
     if not para_turno_abierto:
         para_turno_abierto = False
