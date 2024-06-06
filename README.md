@@ -16,8 +16,8 @@ Before running the backend, make sure you have the following installed:
     ```
     git clone https://github.com/allanes/winebar-4.git
     cd winebar-backend
-    git submodules init
-    git submodules update
+    git submodule init
+    git submodule update
     ```
 
 2. Create a copy of the `.env.example` file and rename it to `.env`:
