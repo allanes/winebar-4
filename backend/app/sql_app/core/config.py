@@ -6,11 +6,14 @@ import os
 import secrets
 from dotenv import load_dotenv
 
-iniciado_desde_docker = os.path.exists('app') # otra forma de chequear
 iniciado_desde_local = load_dotenv('..\..\..\.env')
-assert iniciado_desde_docker != iniciado_desde_local
+# iniciado_desde_docker = os.path.exists('app') # otra forma de chequear
+iniciado_desde_docker = not iniciado_desde_local
 print(f'LOAD_DOTENV CARGADO: {iniciado_desde_local}')
+print(f'INICIADO_DESDE_DOCKER: {iniciado_desde_docker}')
+print(f'INICIADO_DESDE_LOCAL: {iniciado_desde_local}')
 print(f'POSTGRES_SERVER: {os.getenv("POSTGRES_SERVER")}')
+assert iniciado_desde_docker != iniciado_desde_local
 print(os.path.abspath(os.path.curdir))
 
 class Settings(BaseSettings):

@@ -47,8 +47,10 @@ async def lifespan(app: FastAPI):
         db.close()
 
 def should_initialize_db(db: Session) -> bool:
+    print('Chequeando db...')
     should = crud.personal_interno.get_multi(db, only_active=False)
     if not should:
+        'Necesita inicializar. Mandando Señal...'
         return True
     print('Salteando inicializacion de db. La base de datos ya se encuentra inicializada.')
     return False

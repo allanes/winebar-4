@@ -40,7 +40,10 @@ services:
       - .env
     volumes:
       - ./backend/app:/app
-    command: uvicorn sql_app.main:app --host 0.0.0.0 --port BACKEND_INTERNAL_PORT --root-path /backend --forwarded-allow-ips * --proxy-headers --reload
+    depends_on:
+      - postgres
+      - nginx
+    command: uvicorn sql_app.main:app --host 0.0.0.0 --port ${BACKEND_INTERNAL_PORT} --root-path /backend --forwarded-allow-ips * --proxy-headers --reload
     restart: on-failure
     networks:
       - winebar4-net    
@@ -67,17 +70,19 @@ services:
     build:
       context: ./nginx
     ports:
-      - ${NGINX_INTERNAL_PORT}:${NGINX_EXTERNAL_PORT}
-    depends_on:
-      - backend
-      - frontend
+      - ${NGINX_EXTERNAL_PORT}:${NGINX_INTERNAL_PORT}
+    # depends_on:
+    #   - backend
+    #   - frontend
     networks:
       - winebar4-net
     restart: on-failure
     environment:
-      - 
-      - BACKEND_CONTAINER_NAME: ${BACKEND_CONTAINER_NAME}
-      - FRONTEND_CONTAINER_NAME: ${FRONTEND_CONTAINER_NAME}
+      - NGINX_INTERNAL_PORT=${NGINX_INTERNAL_PORT}
+      - BACKEND_CONTAINER_NAME=${BACKEND_CONTAINER_NAME}
+      - FRONTEND_CONTAINER_NAME=${FRONTEND_CONTAINER_NAME}
+      - FRONTEND_INTERNAL_PORT=${FRONTEND_INTERNAL_PORT}
+      - BACKEND_INTERNAL_PORT=${BACKEND_INTERNAL_PORT}
 
   servidor-claves:
     container_name: ${SERVIDOR_CLAVES_CONTAINER_NAME}

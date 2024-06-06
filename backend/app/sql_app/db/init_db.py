@@ -14,7 +14,7 @@ def init_db(db: Session) -> None:
     # But if you don't want to use migrations, create
     # the tables un-commenting the next line
     # Base.metadata.create_all(bind=engine)
-
+    print('Inicializando base de datos')
     user = crud.personal_interno.get_active(db, id=settings.FIRST_SUPERUSER)
     if not user:
         ## Crear la tarjeta
@@ -59,3 +59,5 @@ def init_db(db: Session) -> None:
         montos_in_db = crud.configuracion.create(db=db, obj_in=montos_cfg)
         print(f'Configuracion de montos creada.')
         print(f'    {montos_in_db}')
+
+        print('Base de datos inicializada')

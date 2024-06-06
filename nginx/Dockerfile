@@ -1,9 +1,11 @@
+# nginx/Dockerfile
 FROM nginx:stable
 
-COPY nginx.conf.template /etc/nginx/nginx.conf.template
-COPY entrypoint.sh /entrypoint.sh
+COPY ./nginx.conf.template /etc/nginx/nginx.conf.template
+COPY ./entrypoint.sh /etc/nginx/entrypoint.sh
 
 # Make the entrypoint script executable
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /etc/nginx/entrypoint.sh
+# RUN cat ls -al /etc/nginx
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/etc/nginx/entrypoint.sh"]
