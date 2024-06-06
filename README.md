@@ -42,14 +42,6 @@ Before running the backend, make sure you have the following installed:
 
 5. Run migrations manually (See below)
 
-## Database Migrations
-
-Manually run the database migrations and initialization using the following commands from inside the `winebar-backend` container:
-
-    alembic upgrade head
-    cd sql_app
-    python initial_data.py
-
 ## Using the app  
 
 - Navigate to http://localhost and login using '1234' as default user. That will open the admin view.
