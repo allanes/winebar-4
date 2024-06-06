@@ -13,7 +13,8 @@ from sql_app.schemas.serializers import datetime_formatter
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=settings.TEMPLATES_PATH)
+orden_detallada_template_filename = 'orden_detallada.html'
 
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_client_rfid(
@@ -137,7 +138,7 @@ async def export_order_to_html(id: int, request: Request, db: Session = Depends(
         order_details.pedidos = pedidos_reversed
         # Add the custom filter to Jinja2 environment
         templates.env.filters['format_datetime'] = datetime_formatter
-        return templates.TemplateResponse("orden_detallada.html", {"request": request, "order": order_details.model_dump()})
+        return templates.TemplateResponse(orden_detallada_template_filename, {"request": request, "order": order_details.model_dump()})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

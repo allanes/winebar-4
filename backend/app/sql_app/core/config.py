@@ -6,13 +6,15 @@ import os
 import secrets
 from dotenv import load_dotenv
 
-cargado = load_dotenv('..\..\..\.env')
-print(f'LOAD_DOTENV CARGADO: {cargado}')
+iniciado_desde_docker = os.path.exists('app') # otra forma de chequear
+iniciado_desde_local = load_dotenv('..\..\..\.env')
+assert iniciado_desde_docker != iniciado_desde_local
+print(f'LOAD_DOTENV CARGADO: {iniciado_desde_local}')
 print(f'POSTGRES_SERVER: {os.getenv("POSTGRES_SERVER")}')
 print(os.path.abspath(os.path.curdir))
 
 class Settings(BaseSettings):
-    USE_BACKEND_PREFIX: bool = True
+    USE_BACKEND_PREFIX: bool = False if iniciado_desde_docker else True
     API_V1_STR: str = "/api/v1"
     FIRST_SUPERUSER: str
     API_KEY_TERMINAL_CAJA_1: str
@@ -27,8 +29,15 @@ class Settings(BaseSettings):
     # SERVER_NAME: str = "localhost"
     # SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
+    
     IMAGES_PATH: str
     ORDENES_EXPORTADAS_PATH: str
+    TEMPLATES_PATH: str
+
+    if iniciado_desde_local:
+        IMAGES_PATH = os.path.join('..', os.path.split(IMAGES_PATH)[1])
+        ORDENES_EXPORTADAS_PATH = os.path.join('..', os.path.split(ORDENES_EXPORTADAS_PATH)[1])
+        TEMPLATES_PATH = os.path.split(TEMPLATES_PATH)[1]
 
     # Vitte
     VITTE_SERVER: str

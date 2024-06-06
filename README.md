@@ -28,6 +28,8 @@ Before running the backend, make sure you have the following installed:
 
 3. Update the `.env` file with your specific configuration values, such as database credentials and API keys.
 
+    NOTE: use `openssl rand -hex 32` for generating new keys.
+
 4. Build and run the Docker containers:
 
 - For production:
