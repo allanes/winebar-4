@@ -10,58 +10,17 @@ from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 from dotenv import load_dotenv
 
-from sql_app.api.api_v1.api import api_router
+from sql_app.api.api_v1.api import api_router, tags_metadata
 from sql_app.core.config import settings
+from sql_app.lifespan_handlers import lifespan
 
 load_dotenv()
-
-tags_metadata = [
-    # {
-    #     "name": "items",
-    #     "description": "Manage items. So _fancy_ they have their own docs.",
-    #     "externalDocs": {
-    #         "description": "Items external docs",
-    #         "url": "https://fastapi.tiangolo.com/",
-    #     },
-    # },
-    {
-        "name": "login",
-        "description": ""
-    },
-    {
-        "name": "Tarjetas",
-        "description": ""
-    },
-    {
-        "name": "Personal Interno",
-        "description": ""
-    },
-    {
-        "name": "Clientes",
-        "description": ""
-    },
-    {
-        "name": "Tapas",
-        "description": ""
-    },
-    {
-        "name": "Turnos",
-        "description": ""
-    },
-    {
-        "name": "Ordenes",
-        "description": ""
-    },
-    {
-        "name": "Pedidos",
-        "description": ""
-    },
-]
 
 app = FastAPI(
     title=settings.PROJECT_NAME, 
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
+    lifespan=lifespan
 )
 
 # Set all CORS enabled origins
