@@ -33,14 +33,9 @@ class Settings(BaseSettings):
     # SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     
-    IMAGES_PATH: str
-    ORDENES_EXPORTADAS_PATH: str
-    TEMPLATES_PATH: str
-
-    if iniciado_desde_local:
-        IMAGES_PATH = os.path.join('..', os.path.split(IMAGES_PATH)[1])
-        ORDENES_EXPORTADAS_PATH = os.path.join('..', os.path.split(ORDENES_EXPORTADAS_PATH)[1])
-        TEMPLATES_PATH = os.path.split(TEMPLATES_PATH)[1]
+    IMAGES_PATH: str = "default_images_path"
+    ORDENES_EXPORTADAS_PATH: str = "default_ordenes_exportadas_path"
+    TEMPLATES_PATH: str = "default_templates_path"
 
     # Vitte
     VITTE_SERVER: str
@@ -68,7 +63,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", 'localhost')
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -87,6 +82,24 @@ class Settings(BaseSettings):
         db = values.get("POSTGRES_DB")
         return f"postgresql://{username}:{password}@{server}:{port}/{db}"
     
+    def __init__(self, **values):
+        super().__init__(**values)
+        if iniciado_desde_local:
+            def transformar_a_local(ruta: str) -> str:
+                ret = ruta.replace('/app/', '')
+                ruta_aux = os.path.abspath('..')
+                for carpeta in ret.split('/'):
+                    ruta_aux = os.path.join(ruta_aux, carpeta)
+                return ruta_aux
+
+            self.IMAGES_PATH = transformar_a_local(self.IMAGES_PATH)
+            self.ORDENES_EXPORTADAS_PATH = transformar_a_local(self.ORDENES_EXPORTADAS_PATH)
+            self.TEMPLATES_PATH = transformar_a_local(self.TEMPLATES_PATH)
+    
     model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
+
+print(f'{settings.IMAGES_PATH=}')
+print(f'{settings.ORDENES_EXPORTADAS_PATH=}')
+print(f'{settings.TEMPLATES_PATH=}')

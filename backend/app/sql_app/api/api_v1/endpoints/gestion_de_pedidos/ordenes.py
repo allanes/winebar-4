@@ -124,12 +124,20 @@ def handle_cerrar_orden(
     return orden
 
 @router.get("/export/order/html", response_class=HTMLResponse)
-async def export_order_to_html(id: int, request: Request, db: Session = Depends(deps.get_db)):
+async def export_order_to_html(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(deps.get_db),
+):
+    # current_user: schemas.PersonalInterno = kwargs.get('current_user', None)
+    current_user = crud.personal_interno.get_multi(db=db, limit=1)[0]
     try:
-        cur_user = crud.personal_interno.get_by_rfid(db=db, tarjeta_id='0243473251')
-        order_details = handle_read_orden_by_id(db=db, id=id, current_user=cur_user)
+        if not current_user:
+            current_user = crud.personal_interno.get_multi(db=db, limit=1)[0]
+        order_details = handle_read_orden_by_id(db=db, id=id, current_user=current_user)
         if order_details is not None:
             print(f'Orden recuperada. Procesando Plantilla')
+            print(f'Directorio de plantillas: {os.path.abspath(settings.TEMPLATES_PATH)} (existe: {os.path.exists(settings.TEMPLATES_PATH)})')
         
         # Reverse the order of pedidos
         pedidos_reversed = []
@@ -143,9 +151,14 @@ async def export_order_to_html(id: int, request: Request, db: Session = Depends(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/export/order/pdf", response_class=FileResponse)
-async def export_order_to_pdf(id: int, request: Request, db: Session = Depends(deps.get_db)):
+async def export_order_to_pdf(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(deps.get_db),
+):
     # Define the directory for exported orders
     directory = settings.ORDENES_EXPORTADAS_PATH
+    print(f'preparando para exportar orden en {directory=}')
     filename = f'{id}_detalles_orden.pdf'
     filepath = os.path.join(directory, filename)
 

@@ -17,7 +17,7 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -37,8 +37,9 @@ def get_url():
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
     server = os.getenv('POSTGRES_SERVER', 'localhost')
+    port = os.getenv('POSTGRES_PORT', '5432')
     db = os.getenv("POSTGRES_DB", "db")
-    url = f"postgresql://{user}:{password}@{server}:5432/{db}"
+    url = f"postgresql://{user}:{password}@{server}:{port}/{db}"
     print(f'conectado a postgres. url: {url}')
     return url
 

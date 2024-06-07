@@ -10,6 +10,8 @@ services:
     #   POSTGRES_DB: ${POSTGRES_DB}    
     volumes:
       - ${POSTGRES_VOLUME}:/var/lib/postgresql/data
+    # ports:
+    #   - "${POSTGRES_PORT}:${POSTGRES_CONTAINER_NAME}"
     networks:
       - winebar4-net
 
@@ -38,6 +40,8 @@ services:
       - ${BACKEND_INTERNAL_PORT}
     env_file:
       - .env
+    environment:
+      - POSTGRES_SERVER=${POSTGRES_CONTAINER_NAME}
     volumes:
       - ./backend/app:/app
     depends_on:
@@ -87,8 +91,7 @@ services:
   servidor-claves:
     container_name: ${SERVIDOR_CLAVES_CONTAINER_NAME}
     build:
-      context: ./winebar-servidor-claves
-      
+      context: ./winebar-servidor-claves      
     expose:
       - ${SERVIDOR_CLAVES_PORT}
     env_file:

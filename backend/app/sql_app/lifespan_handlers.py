@@ -31,7 +31,7 @@ def get_alembic_ini_path() -> str:
     return alembic_ini_path
 
 async def wait_for_db():
-    retries = 10
+    retries = 20
     while retries > 0:
         try:
             # Try to create a session to check if the DB is available
@@ -43,7 +43,7 @@ async def wait_for_db():
         except OperationalError:
             logger.info("Database is not available yet, retrying...")
             retries -= 1
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
     raise Exception("Database is not available after multiple retries")
 
 @asynccontextmanager

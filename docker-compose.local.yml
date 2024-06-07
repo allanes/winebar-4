@@ -5,14 +5,13 @@ services:
     env_file:
       - .env
     # environment:
-    # these env vars are used for postgres image
-    #   POSTGRES_USER: ${POSTGRES_USER}
+    # - POSTGRES_SERVER=localhost
     #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     #   POSTGRES_DB: ${POSTGRES_DB}    
-    ports:
-      - "5432:5432"
     volumes:
       - ${POSTGRES_VOLUME}:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
 
   pgadmin:
     container_name: ${PGADMIN_CONTAINER_NAME}
@@ -33,11 +32,11 @@ services:
     build:
       context: ./winebar-servidor-claves      
     expose:
-      - "3001"
+      - ${SERVIDOR_CLAVES_PORT}
     env_file:
       - .env
     environment:
       - API_KEY_TERMINAL_ADMIN=${API_KEY_TERMINAL_ADMIN}
-    command: uvicorn main:app --host 0.0.0.0 --port 3001 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port ${SERVIDOR_CLAVES_PORT} --reload
     ports:
-      - "3001:3001"
+      - ${SERVIDOR_CLAVES_PORT}:${SERVIDOR_CLAVES_PORT}
