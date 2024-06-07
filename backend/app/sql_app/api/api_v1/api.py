@@ -18,3 +18,46 @@ api_router.include_router(pedidos.router, prefix="/pedidos", tags=["Pedidos"])
 api_router.include_router(vinos.router, prefix="/vinos", tags=["Vinos"])
 api_router.include_router(lectores_tapas.router, prefix="/lectores-tapas", tags=["Lectores de Tapas"])
 api_router.include_router(configuraciones.router, prefix="/configuraciones", tags=["Configuracion"])
+
+tags_metadata = [
+    # {
+    #     "name": "items",
+    #     "description": "Manage items. So _fancy_ they have their own docs.",
+    #     "externalDocs": {
+    #         "description": "Items external docs",
+    #         "url": "https://fastapi.tiangolo.com/",
+    #     },
+    # },
+    {
+        "name": "login",
+        "description": ""
+    },
+    {
+        "name": "Tarjetas",
+        "description": ""
+    },
+    {
+        "name": "Personal Interno",
+        "description": ""
+    },
+    {
+        "name": "Clientes",
+        "description": ""
+    },
+    {
+        "name": "Tapas",
+        "description": ""
+    },
+    {
+        "name": "Turnos",
+        "description": ""
+    },
+    {
+        "name": "Ordenes",
+        "description": ""
+    },
+    {
+        "name": "Pedidos",
+        "description": ""
+    },
+]

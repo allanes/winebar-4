@@ -16,8 +16,8 @@ Before running the backend, make sure you have the following installed:
     ```
     git clone https://github.com/allanes/winebar-4.git
     cd winebar-backend
-    git submodules init
-    git submodules update
+    git submodule init
+    git submodule update
     ```
 
 2. Create a copy of the `.env.example` file and rename it to `.env`:
@@ -27,6 +27,8 @@ Before running the backend, make sure you have the following installed:
     ```
 
 3. Update the `.env` file with your specific configuration values, such as database credentials and API keys.
+
+    NOTE: use `openssl rand -hex 32` for generating new keys.
 
 4. Build and run the Docker containers:
 
@@ -41,14 +43,6 @@ Before running the backend, make sure you have the following installed:
   ```
 
 5. Run migrations manually (See below)
-
-## Database Migrations
-
-Manually run the database migrations and initialization using the following commands from inside the `winebar-backend` container:
-
-    alembic upgrade head
-    cd sql_app
-    python initial_data.py
 
 ## Using the app  
 

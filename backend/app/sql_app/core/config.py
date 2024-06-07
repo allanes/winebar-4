@@ -6,13 +6,18 @@ import os
 import secrets
 from dotenv import load_dotenv
 
-cargado = load_dotenv('..\..\..\.env')
-print(f'LOAD_DOTENV CARGADO: {cargado}')
+iniciado_desde_local = load_dotenv('..\..\..\.env')
+# iniciado_desde_docker = os.path.exists('app') # otra forma de chequear
+iniciado_desde_docker = not iniciado_desde_local
+print(f'LOAD_DOTENV CARGADO: {iniciado_desde_local}')
+print(f'INICIADO_DESDE_DOCKER: {iniciado_desde_docker}')
+print(f'INICIADO_DESDE_LOCAL: {iniciado_desde_local}')
 print(f'POSTGRES_SERVER: {os.getenv("POSTGRES_SERVER")}')
+assert iniciado_desde_docker != iniciado_desde_local
 print(os.path.abspath(os.path.curdir))
 
 class Settings(BaseSettings):
-    USE_BACKEND_PREFIX: bool = True
+    USE_BACKEND_PREFIX: bool = False if iniciado_desde_docker else True
     API_V1_STR: str = "/api/v1"
     FIRST_SUPERUSER: str
     API_KEY_TERMINAL_CAJA_1: str
@@ -27,8 +32,10 @@ class Settings(BaseSettings):
     # SERVER_NAME: str = "localhost"
     # SERVER_HOST: AnyHttpUrl = "http://localhost"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
-    IMAGES_PATH: str
-    ORDENES_EXPORTADAS_PATH: str
+    
+    IMAGES_PATH: str = "default_images_path"
+    ORDENES_EXPORTADAS_PATH: str = "default_ordenes_exportadas_path"
+    TEMPLATES_PATH: str = "default_templates_path"
 
     # Vitte
     VITTE_SERVER: str
@@ -56,7 +63,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", 'localhost')
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -75,6 +82,24 @@ class Settings(BaseSettings):
         db = values.get("POSTGRES_DB")
         return f"postgresql://{username}:{password}@{server}:{port}/{db}"
     
+    def __init__(self, **values):
+        super().__init__(**values)
+        if iniciado_desde_local:
+            def transformar_a_local(ruta: str) -> str:
+                ret = ruta.replace('/app/', '')
+                ruta_aux = os.path.abspath('..')
+                for carpeta in ret.split('/'):
+                    ruta_aux = os.path.join(ruta_aux, carpeta)
+                return ruta_aux
+
+            self.IMAGES_PATH = transformar_a_local(self.IMAGES_PATH)
+            self.ORDENES_EXPORTADAS_PATH = transformar_a_local(self.ORDENES_EXPORTADAS_PATH)
+            self.TEMPLATES_PATH = transformar_a_local(self.TEMPLATES_PATH)
+    
     model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
+
+print(f'{settings.IMAGES_PATH=}')
+print(f'{settings.ORDENES_EXPORTADAS_PATH=}')
+print(f'{settings.TEMPLATES_PATH=}')

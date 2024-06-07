@@ -13,7 +13,8 @@ from sql_app.schemas.serializers import datetime_formatter
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=settings.TEMPLATES_PATH)
+orden_detallada_template_filename = 'orden_detallada.html'
 
 @router.get("/by-rfid/{tarjeta_id}", response_model=schemas.OrdenCompraDetallada)
 def handle_read_orden_by_client_rfid(
@@ -123,12 +124,20 @@ def handle_cerrar_orden(
     return orden
 
 @router.get("/export/order/html", response_class=HTMLResponse)
-async def export_order_to_html(id: int, request: Request, db: Session = Depends(deps.get_db)):
+async def export_order_to_html(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(deps.get_db),
+):
+    # current_user: schemas.PersonalInterno = kwargs.get('current_user', None)
+    current_user = crud.personal_interno.get_multi(db=db, limit=1)[0]
     try:
-        cur_user = crud.personal_interno.get_by_rfid(db=db, tarjeta_id='0243473251')
-        order_details = handle_read_orden_by_id(db=db, id=id, current_user=cur_user)
+        if not current_user:
+            current_user = crud.personal_interno.get_multi(db=db, limit=1)[0]
+        order_details = handle_read_orden_by_id(db=db, id=id, current_user=current_user)
         if order_details is not None:
             print(f'Orden recuperada. Procesando Plantilla')
+            print(f'Directorio de plantillas: {os.path.abspath(settings.TEMPLATES_PATH)} (existe: {os.path.exists(settings.TEMPLATES_PATH)})')
         
         # Reverse the order of pedidos
         pedidos_reversed = []
@@ -137,14 +146,19 @@ async def export_order_to_html(id: int, request: Request, db: Session = Depends(
         order_details.pedidos = pedidos_reversed
         # Add the custom filter to Jinja2 environment
         templates.env.filters['format_datetime'] = datetime_formatter
-        return templates.TemplateResponse("orden_detallada.html", {"request": request, "order": order_details.model_dump()})
+        return templates.TemplateResponse(orden_detallada_template_filename, {"request": request, "order": order_details.model_dump()})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/export/order/pdf", response_class=FileResponse)
-async def export_order_to_pdf(id: int, request: Request, db: Session = Depends(deps.get_db)):
+async def export_order_to_pdf(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(deps.get_db),
+):
     # Define the directory for exported orders
     directory = settings.ORDENES_EXPORTADAS_PATH
+    print(f'preparando para exportar orden en {directory=}')
     filename = f'{id}_detalles_orden.pdf'
     filepath = os.path.join(directory, filename)
 
