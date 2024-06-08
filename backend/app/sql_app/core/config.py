@@ -63,7 +63,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: Optional[str] = 'localhost'
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
