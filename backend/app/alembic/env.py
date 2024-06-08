@@ -40,7 +40,7 @@ def get_url():
     port = os.getenv('POSTGRES_PORT', '5432')
     db = os.getenv("POSTGRES_DB", "db")
     url = f"postgresql://{user}:{password}@{server}:{port}/{db}"
-    print(f'conectado a postgres. url: {url}')
+    print(f'URL de conexion a DB armada. Servidor: {server}:{port}, db: {db}, usuario: {user}')
     return url
 
 

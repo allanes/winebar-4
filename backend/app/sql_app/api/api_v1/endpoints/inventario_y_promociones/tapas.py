@@ -30,7 +30,7 @@ def handle_upload_foto(
     print(f'ruta de imagenes: {os.path.abspath(settings.IMAGES_PATH)}')
 
     if not os.path.exists(settings.IMAGES_PATH):
-        os.mkdir(settings.IMAGES_PATH)
+        os.makedirs(settings.IMAGES_PATH)
         
     with open(file_path, "wb") as file:
         file.write(foto.file.read())

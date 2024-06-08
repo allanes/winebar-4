@@ -2,34 +2,30 @@ services:
   postgres:
     container_name: ${POSTGRES_CONTAINER_NAME}
     image: postgres:latest
-    env_file:
-      - .env
-    # environment:
-    #   POSTGRES_USER: ${POSTGRES_USER}
-    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    #   POSTGRES_DB: ${POSTGRES_DB}    
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_VOLUME}:/var/lib/postgresql/data
     # ports:
-    #   - "${POSTGRES_PORT}:${POSTGRES_CONTAINER_NAME}"
+    #   - "5432:5432"
     networks:
-      - winebar4-net
+      - winebar-app_network
 
   pgadmin:
     container_name: ${PGADMIN_CONTAINER_NAME}
     image: dpage/pgadmin4:latest
-    env_file:
-      - .env
-    # environment:
-    #   PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-    #   PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-    #   PGADMIN_LISTEN_PORT: ${PGADMIN_LISTEN_PORT_INTERNAL}    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_LISTEN_PORT: ${PGADMIN_LISTEN_PORT_INTERNAL}    
     ports:
       - "${PGADMIN_LISTEN_PORT_EXTERNAL}:${PGADMIN_LISTEN_PORT_INTERNAL}"
     depends_on:
       - postgres
     networks:
-      - winebar4-net
+      - winebar-app_network
 
   backend:
     container_name: ${BACKEND_CONTAINER_NAME}
@@ -50,7 +46,7 @@ services:
     command: uvicorn sql_app.main:app --host 0.0.0.0 --port ${BACKEND_INTERNAL_PORT} --root-path /backend --forwarded-allow-ips * --proxy-headers --reload
     restart: on-failure
     networks:
-      - winebar4-net    
+      - winebar-app_network    
 
   frontend:
     container_name: ${FRONTEND_CONTAINER_NAME}
@@ -65,9 +61,12 @@ services:
       - ./winebar-4-frontend/frontend/tsconfig.json:/app/tsconfig.json
     command: npm start
     networks:
-      - winebar4-net
-    env_file:
-      - .env
+      - winebar-app_network
+    environment:
+      - PORT=${FRONTEND_INTERNAL_PORT}
+      - REACT_APP_SERVIDOR_CLAVES_PORT=${SERVIDOR_CLAVES_PORT}
+      - REACT_APP_BACKEND_INTERNAL_PORT=${BACKEND_INTERNAL_PORT}
+      - REACT_APP_NGINX_PORT=${NGINX_INTERNAL_PORT}
 
   nginx:
     container_name: ${NGINX_CONTAINER_NAME}
@@ -79,7 +78,7 @@ services:
     #   - backend
     #   - frontend
     networks:
-      - winebar4-net
+      - winebar-app_network
     restart: on-failure
     environment:
       - NGINX_INTERNAL_PORT=${NGINX_INTERNAL_PORT}
@@ -102,9 +101,9 @@ services:
     ports:
       - ${SERVIDOR_CLAVES_PORT}:${SERVIDOR_CLAVES_PORT}
     networks:
-      - winebar4-net
+      - winebar-app_network
 
 networks:
-  winebar4-net: 
+  winebar-app_network: 
     driver: bridge
 
