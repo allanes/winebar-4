@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
-    POSTGRES_PORT: str
+    POSTGRES_PORT: Optional[str] = '5432'
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     CONEXION: Optional[str] = None
 
