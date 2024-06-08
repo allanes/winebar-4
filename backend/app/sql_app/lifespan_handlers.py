@@ -31,7 +31,8 @@ def get_alembic_ini_path() -> str:
     return alembic_ini_path
 
 async def wait_for_db():
-    retries = 20
+    # logger.info()
+    retries = 4
     while retries > 0:
         try:
             # Try to create a session to check if the DB is available

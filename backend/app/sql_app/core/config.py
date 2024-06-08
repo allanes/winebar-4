@@ -63,11 +63,13 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", 'localhost')
+    POSTGRES_SERVER: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    POSTGRES_PORT: str
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    CONEXION: Optional[str] = None
 
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
@@ -95,6 +97,14 @@ class Settings(BaseSettings):
             self.IMAGES_PATH = transformar_a_local(self.IMAGES_PATH)
             self.ORDENES_EXPORTADAS_PATH = transformar_a_local(self.ORDENES_EXPORTADAS_PATH)
             self.TEMPLATES_PATH = transformar_a_local(self.TEMPLATES_PATH)
+        
+        self.CONEXION = self.assemble_db_string_to_show()
+
+    def assemble_db_string_to_show(self):
+        conexion = f'Servidor: {self.POSTGRES_SERVER}:{self.POSTGRES_PORT}, '
+        conexion += f'db: {self.POSTGRES_DB}, '
+        conexion += f'usuario: {self.POSTGRES_USER}'
+        return conexion  
     
     model_config = SettingsConfigDict(case_sensitive=True)
 

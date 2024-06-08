@@ -23,7 +23,7 @@ Before running the backend, make sure you have the following installed:
 2. Create a copy of the `.env.example` file and rename it to `.env`:
 
     ```
-    cp .env.example .env
+    copy .env.example .env
     ```
 
 3. Update the `.env` file with your specific configuration values, such as database credentials and API keys.

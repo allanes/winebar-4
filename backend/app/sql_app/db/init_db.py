@@ -53,8 +53,8 @@ def init_db(db: Session) -> None:
         
         ## Configuracion inicial de montos
         montos_cfg = schemas.ConfiguracionCreate(
-            monto_maximo_orden_def=40000,
-            monto_maximo_pedido_def=100000
+            monto_maximo_orden_def=100000,
+            monto_maximo_pedido_def=40000
         )
         montos_in_db = crud.configuracion.create(db=db, obj_in=montos_cfg)
         print(f'Configuracion de montos creada.')
