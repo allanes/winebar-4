@@ -8,7 +8,6 @@ from sql_app.api.vitte_integration.vitte_schemas import TransaccionVino
 class OrdenCompraBase(BaseModel):
     precarga_usada: float
     monto_maximo_orden: float
-    monto_maximo_pedido: float
     turno_id: int
     cliente_id: int
     abierta_por: int
@@ -24,11 +23,13 @@ class OrdenCompraInfoPago(BaseModel):
     comentarios: Optional[str] = ''
 
 class OrdenCompraCreateInternal(OrdenCompraBase):
-    pass
+    monto_maximo_pedido: float
 
 class OrdenCompraUpdate(BaseModel):
     timestamp_cierre_orden: Optional[datetime] = None
     cerrada_por: Optional[int] = None
+    monto_maximo_orden: Optional[float] = None
+    monto_maximo_pedido: Optional[float] = None
 
 class OrdenCompraInDBBase(OrdenCompraBase):
     id: int
