@@ -93,7 +93,10 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         # Seteo montos maximos
         ultima_config_in_db = crud.configuracion.get_last(db=db)
-        configuracion_montos = ultima_config_in_db
+        configuracion_montos = ConfiguracionCreate(
+            monto_maximo_orden_def=ultima_config_in_db.monto_maximo_orden_def,
+            monto_maximo_pedido_def=ultima_config_in_db.monto_maximo_pedido_def            
+        )
         
         if montos_config is not None:
             if montos_config.monto_maximo_pedido_def:
