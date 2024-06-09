@@ -76,29 +76,29 @@ def handle_read_orden_by_turno_id(
     
     return ordenes_detalladas
 
-@router.post("/abrir", response_model=schemas.OrdenCompra)
-def handle_abrir_orden(
-    *,
-    db: Session = Depends(deps.get_db),
-    tarjeta_cliente: int,
-    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
-    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
-):
-    print(f'usuario logueado id: {current_user.id}')
-    orden_in = schemas.OrdenCompraAbrir(
-        abierta_por=current_user.id, 
-        tarjeta_cliente=tarjeta_cliente
-    )
+# @router.post("/abrir", response_model=schemas.OrdenCompra)
+# def handle_abrir_orden(
+#     *,
+#     db: Session = Depends(deps.get_db),
+#     tarjeta_cliente: int,
+#     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+#     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+# ):
+#     print(f'usuario logueado id: {current_user.id}')
+#     orden_in = schemas.OrdenCompraAbrir(
+#         abierta_por=current_user.id, 
+#         tarjeta_cliente=tarjeta_cliente
+#     )
     
-    orden = crud.orden.abrir_orden(
-        db = db, 
-        abrir_orden_in = orden_in
-    )
+#     orden = crud.orden.abrir_orden(
+#         db = db, 
+#         abrir_orden_in = orden_in
+#     )
 
-    if not orden:
-        raise HTTPException(status_code=404, detail='No se pudo abrir el orden')
+#     if not orden:
+#         raise HTTPException(status_code=404, detail='No se pudo abrir el orden')
     
-    return orden
+#     return orden
 
 @router.post("/cerrar", response_model=schemas.OrdenCompra)
 def handle_cerrar_orden(
