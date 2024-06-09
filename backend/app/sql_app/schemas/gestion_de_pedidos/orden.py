@@ -8,6 +8,7 @@ from sql_app.api.vitte_integration.vitte_schemas import TransaccionVino
 class OrdenCompraBase(BaseModel):
     precarga_usada: float
     monto_maximo_orden: float
+    monto_maximo_pedido: float
     turno_id: int
     cliente_id: int
     abierta_por: int

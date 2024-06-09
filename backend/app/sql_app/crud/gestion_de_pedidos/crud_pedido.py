@@ -81,14 +81,14 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         configuracion_montos = crud.configuracion.get_last(db=db)
 
         orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
-        orden_de_la_tarjeta = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
+        orden_de_la_tarjeta_id = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
 
         ## Aplico valores por defecto
         pedido_in_db = Pedido()
         pedido_in_db.timestamp_pedido = None
         pedido_in_db.cerrado = False
-        pedido_in_db.orden_id = orden_de_la_tarjeta
-        pedido_in_db.monto_maximo_pedido = configuracion_montos.monto_maximo_pedido_def
+        pedido_in_db.orden_id = orden_de_la_tarjeta_id
+        pedido_in_db.monto_maximo_pedido = orden_de_la_tarjeta.monto_maximo_pedido
         pedido_in_db.atendido_por = pedido_in.atendido_por
         
         pedido_in_db = super().create(db=db, obj_in=pedido_in_db)

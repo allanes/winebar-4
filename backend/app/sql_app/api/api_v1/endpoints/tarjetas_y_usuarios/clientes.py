@@ -98,6 +98,7 @@ def handle_create_cliente_with_tarjeta(
         cliente_in = cliente_in,
         usuario_apertura_orden = current_user.id,
         detalles_adicionales_in = detalle_adicional_in,
+        montos_config_in=montos_config_in
     )
 
     if not fue_creado:
