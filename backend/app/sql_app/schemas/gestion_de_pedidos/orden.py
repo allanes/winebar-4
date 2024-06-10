@@ -39,6 +39,7 @@ class OrdenCompraInDBBase(OrdenCompraBase):
     monto_cobrado_efectivo: float
     monto_cobrado_tarjeta: float
     monto_cobrado_transferencia: float
+    monto_maximo_pedido: float
     timestamp_apertura_orden: datetime
     timestamp_cierre_orden: Optional[datetime] = None
     cerrada_por: Optional[int] = None
