@@ -15,7 +15,7 @@ class RenglonCreateInternal(RenglonCreate):
     pedido_id: int
 
 class RenglonUpdate(BaseModel):
-    pass
+    monto: float
 
 class RenglonInDBBase(RenglonBase):
     id: int    

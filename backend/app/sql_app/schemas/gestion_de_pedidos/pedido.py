@@ -13,7 +13,7 @@ class PedidoCreate(PedidoBase):
     pass
 
 class PedidoUpdate(BaseModel):
-    pass
+    monto_cargado: float
 
 class PedidoInDBBase(PedidoBase):
     id: int
