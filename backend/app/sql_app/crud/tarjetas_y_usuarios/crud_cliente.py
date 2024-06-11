@@ -11,6 +11,7 @@ from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUp
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
+from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 from sql_app.schemas.validators import get_now_time
@@ -53,7 +54,8 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         cliente_in: ClienteCreate, 
         tarjeta_id: int, 
         usuario_apertura_orden: int,
-        detalles_adicionales_in: DetallesAdicionalesForUI = None
+        detalles_adicionales_in: DetallesAdicionalesForUI = None,
+        montos_config_in: ConfiguracionCreate | None
     ) -> tuple[Cliente | None, bool, str]:
         # Tarjeta prechecks
         puede_asociarse, msg = self.pre_entrega_checks(db=db, tarjeta_id=tarjeta_id)
@@ -84,7 +86,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             abierta_por=usuario_apertura_orden,
             tarjeta_cliente=tarjeta_id
         )
-        crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in)
+        crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in, montos_config=montos_config_in)
         
         # Setup Vitte init
         try:

@@ -63,11 +63,11 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: Optional[str] = 'localhost'
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
-    POSTGRES_PORT: str
+    POSTGRES_PORT: Optional[str] = '5432'
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     CONEXION: Optional[str] = None
 

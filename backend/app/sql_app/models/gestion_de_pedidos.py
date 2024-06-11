@@ -26,6 +26,7 @@ class OrdenCompra(Base):
     monto_cobrado_tarjeta = Column(Float, nullable = False)
     monto_cobrado_transferencia = Column(Float, nullable = False)
     monto_maximo_orden = Column(Float, nullable=False)
+    monto_maximo_pedido = Column(Float, nullable=False)
     timestamp_apertura_orden = Column(DateTime, nullable=False)
     timestamp_cierre_orden = Column(DateTime, nullable=True)
     turno_id = Column(Integer, ForeignKey('turnos.id'))

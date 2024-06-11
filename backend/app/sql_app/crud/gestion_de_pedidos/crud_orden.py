@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sql_app.crud.base import CRUDBase
 from sql_app.models.gestion_de_pedidos import OrdenCompra
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
-from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate
+from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
 # from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 from sql_app.schemas.validators import get_now_time
@@ -69,7 +69,13 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         
         return ordenes_in_db
     
-    def abrir_orden(self, db: Session, *, abrir_orden_in: OrdenCompraAbrir) -> OrdenCompra:
+    def abrir_orden(
+        self, 
+        db: Session, 
+        *, 
+        abrir_orden_in: OrdenCompraAbrir, 
+        montos_config: ConfiguracionCreate | None = None
+    ) -> OrdenCompra:
         # Recupero pre requisitos (turno actual)
         turno_abierto = crud.turno.get_open_turno(db=db)
         if turno_abierto is None: return None
@@ -85,11 +91,23 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             print("No existe la tarjeta")
             return None
         
-        configuracion_montos = crud.configuracion.get_last(db=db)
+        # Seteo montos maximos
+        ultima_config_in_db = crud.configuracion.get_last(db=db)
+        configuracion_montos = ConfiguracionCreate(
+            monto_maximo_orden_def=ultima_config_in_db.monto_maximo_orden_def,
+            monto_maximo_pedido_def=ultima_config_in_db.monto_maximo_pedido_def            
+        )
+        
+        if montos_config is not None:
+            if montos_config.monto_maximo_pedido_def:
+                configuracion_montos.monto_maximo_pedido_def = montos_config.monto_maximo_pedido_def
+            if montos_config.monto_maximo_orden_def:
+                configuracion_montos.monto_maximo_orden_def = montos_config.monto_maximo_orden_def
         
         orden_in = OrdenCompraCreateInternal(
             precarga_usada=0,
             monto_maximo_orden=configuracion_montos.monto_maximo_orden_def,
+            monto_maximo_pedido=configuracion_montos.monto_maximo_pedido_def,
             turno_id=turno_abierto.id,
             abierta_por=abrir_orden_in.abierta_por,
             cliente_id=cliente_in_db.id

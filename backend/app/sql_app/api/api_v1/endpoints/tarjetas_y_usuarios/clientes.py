@@ -86,6 +86,7 @@ def handle_create_cliente_with_tarjeta(
     tarjeta_id: int,
     cliente_in: schemas.ClienteCreate,
     detalle_adicional_in: schemas.DetallesAdicionalesForUI = None,
+    montos_config_in: schemas.ConfiguracionCreate = None,
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
@@ -97,6 +98,7 @@ def handle_create_cliente_with_tarjeta(
         cliente_in = cliente_in,
         usuario_apertura_orden = current_user.id,
         detalles_adicionales_in = detalle_adicional_in,
+        montos_config_in=montos_config_in
     )
 
     if not fue_creado:
