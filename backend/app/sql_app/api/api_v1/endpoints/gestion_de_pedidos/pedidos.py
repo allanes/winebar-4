@@ -123,7 +123,7 @@ def handle_agregar_producto_by_phys(
     return pedido
 
 @router.post("/quitar-producto", response_model=schemas.Pedido)
-def handle_quitar_renglon(
+def handle_quitar_producto(
     *,
     tarjeta_cliente: int, 
     producto_id: int,
@@ -171,21 +171,28 @@ def handle_cerrar_pedido(
     
     return pedido
 
-@router.put("/{id}", response_model=schemas.Pedido)
-def handle_update_pedido(
+@router.post("/cancelar-renglon/{renglon_id}", response_model=schemas.Pedido)
+def handle_cancelar_renglon(
     *,
     db: Session = Depends(deps.get_db),
-    id: int,
-    pedido_in: schemas.PedidoUpdate
+    renglon_id: int,
 ):
-    pedido = crud.pedido.get(db=db, id=id)
-    if not pedido:
-        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
+    renglon_in_db = crud.renglon.get(db=db, id=renglon_id)
+    if not renglon_in_db:
+        raise HTTPException(status_code=404, detail=f"No se encontró el renglón id {id}")
     
-    pedido = crud.pedido.update(
-        db=db, db_obj=pedido, obj_in=pedido_in
-    )
-    return pedido
+    pedido_in_db = crud.pedido.get(db=db, id=renglon_in_db.pedido_id)
+    orden_in_db = crud.orden.get(db=db, id=pedido_in_db.orden_id)
+    if orden_in_db.cerrada_por is not None:
+        raise HTTPException(status_code=404, detail=f"La orden ya esta cerrada. No se puede realizar la operacion.")
+    
+    monto_a_quitar = renglon_in_db.monto
+    monto_final = pedido_in_db.monto_cargado - monto_a_quitar
+    renglon_actualizado = crud.renglon.update(db=db, db_obj=renglon_in_db, obj_in=schemas.RenglonUpdate(monto=0))
+    print(f'Actualizando monto del pedido de ${pedido_in_db.monto_cargado} a ${monto_final}')
+    pedido_actualizado = crud.pedido.update(db=db, db_obj=pedido_in_db, obj_in=schemas.PedidoUpdate(monto_cargado=monto_final))
+    orden_actualizada = crud.orden.cargar_monto(db=db, orden_id=pedido_in_db.orden_id, monto_a_agregar=-monto_a_quitar)
+    return pedido_actualizado
 
 @router.get("/{id}", response_model=schemas.Pedido)
 def handle_read_pedidos_by_id(
