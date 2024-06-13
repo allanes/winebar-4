@@ -161,8 +161,8 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         cobrado_transferencia = info_pago.cobrado_transferencia if info_pago.cobrado_transferencia else 0
         suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia
 
-        if suma_pagos < orden_in_db.monto_cargado:
-            msg = f'La suma cobrada (${suma_pagos}) es menor que la suma cargada (${orden_in_db.monto_cargado})'
+        if suma_pagos != orden_in_db.monto_cargado:
+            msg = f'La suma cobrada (${suma_pagos}) debe ser igual que la suma cargada (${orden_in_db.monto_cargado})'
             return None, False, msg
 
         orden_in_db.monto_cobrado_efectivo = cobrado_efectivo
