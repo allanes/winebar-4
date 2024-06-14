@@ -9,7 +9,7 @@ import pdfkit
 from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
-from sql_app.schemas.serializers import datetime_formatter
+from sql_app.schemas.serializers import datetime_formatter, format_currency
 
 router = APIRouter()
 
@@ -146,6 +146,8 @@ async def export_order_to_html(
         order_details.pedidos = pedidos_reversed
         # Add the custom filter to Jinja2 environment
         templates.env.filters['format_datetime'] = datetime_formatter
+        templates.env.filters['format_currency'] = format_currency
+
         return templates.TemplateResponse(orden_detallada_template_filename, {"request": request, "order": order_details.model_dump()})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

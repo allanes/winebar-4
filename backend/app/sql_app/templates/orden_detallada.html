@@ -2,120 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Order Details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Orden #{{ order.id }}</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            font-size: 10px;
-            color: #333;
-        }
-        h1 {
-            font-size: 18px;
-            color: #2E86C1; /* Blue shade */
-            margin-bottom: 0;
-        }
-        h2 {
-            font-size: 16px;
-            color: #21618C; /* Darker blue shade */
-            margin-top: 10px;
-            margin-bottom: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #AED6F1; /* Light blue background */
-            color: #283747; /* Dark text for headers */
-            font-size: 11px;
-        }
-        td {
-            font-size: 10px;
-        }
-        .total-charged {
-            font-weight: bold;
-        }
-        .total-pedido {
-            font-weight: bold;
-        }
-        .pedido-separator {
-            border-top: 2px solid #3498DB; /* Blue border for separation */
-        }
-        .zebra-light {
-            background-color: #EBF5FB; /* Lighter zebra stripe */
-        }
-        .zebra-dark {
-            background-color: #D6EAF8; /* Darker zebra stripe */
+        @media print {
+            body {
+                width: 302px; /* Approx 80mm in pixels */
+                /* font-family: 'Courier New', monospace; */
+                font-family: 'Calibri', monospace;
+                margin: 0;
+                font-size: 8px; /* Small font for space efficiency */
+                color: #000;
+            }
+            h1, h2 {
+                font-size: 11px; /* Larger for visibility */
+                margin: 0 0 5px 0; /* Add bottom margin for spacing */
+            }
+            table {
+                width: 100%;
+                max-width: 302px; /* Limit table width */
+                border-collapse: collapse;
+                border: 0; /* No borders */
+            }
+            th, td {
+                border: 0; /* No borders */
+                padding: 0 11px; /* Minimal padding */
+                text-align: left;
+                font-size: 8px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .total-charged, .total-pedido {
+                font-weight: bold;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Detalles de Orden para {{ order.nombre_cliente }}</h1>
-    <table>
-        <tr>
-            <th>Orden ID</th>
-            <td>{{ order.id }}</td>
-        </tr>
-        <tr class="total-charged">
-            <th>Total Cargado</th>
-            <td>${{ order.monto_cargado }}</td>
-        </tr>
-        <tr>
-            <th>Horario apertura</th>
-            <td>{{ order.timestamp_apertura_orden.strftime('%d/%m/%Y %H:%M') }}</td>
-        </tr>
-        <tr>
-            <th>Horario cierre</th>
-            <td>{{ order.timestamp_cierre_orden.strftime('%d/%m/%Y %H:%M') if order.timestamp_cierre_orden else 'N/A' }}</td>
-        </tr>
-        <tr>
-            <th>Cerrada por</th>
-            <td>{{ order.cerrada_por_nombre }}</td>
-        </tr>
-    </table>
-    <h2>Items:</h2>
+    <h2>Consumos de {{ order.nombre_cliente }}</h2>
+    <h3>Orden: #{{ order.id }}</h3>
+    <h3>Entrada: {{ order.timestamp_apertura_orden.strftime('%d/%m/%y %H:%M') }}</h3>
+    <h3>Salida: {{ order.timestamp_cierre_orden.strftime('%d/%m/%y %H:%M') if order.timestamp_cierre_orden else 'N/A' }}</h3>
+    <h3>${{ order.monto_cargado | format_currency }}</h3>
+    <h4>Cerrada por: {{ order.cerrada_por_nombre }}</h2>
     <table>
         <thead>
             <tr>
-                <th>Pedido #</th>
-                <th>Cant.</th>
-                <th>Horario</th>
+                <th>#</th>
+                <th>Cant</th>
                 <th>Producto</th>
-                <th>Atendido por</th>
                 <th>Precio</th>
-                <th>Total</th>
+                <th>SubTotal</th>
             </tr>
         </thead>
         <tbody>
-            {% set current_pedido = None %}
             {% for pedido in order.pedidos %}
-                {% if current_pedido != pedido.id %}
-                    {% set zebra = true %}
-                    {% set current_pedido = pedido.id %}
-                {% endif %}
                 {% for renglon in pedido.renglones %}
-                    <tr class="{{ 'zebra-light' if zebra else 'zebra-dark' }}">
+                    <tr>
                         <td>{{ pedido.id }}</td>
                         <td>{{ renglon.cantidad }}</td>
-                        <td>{{ pedido.timestamp_pedido | format_datetime }}</td>
-                        <td>{{ renglon.producto.titulo }}</td>
-                        <td>{{ pedido.atendido_por_nombre }}</td>
-                        <td>${{ renglon.producto.precio }}</td>
-                        <td class="total-pedido">${{ renglon.monto }}</td>
+                        <td>{{ renglon.producto.titulo | truncate(10, True, '...') }}</td>
+                        <td>${{ renglon.producto.precio | format_currency }}</td>
+                        <td>${{ renglon.monto | format_currency }}</td>
                     </tr>
-                {% set zebra = not zebra %}
                 {% endfor %}
             {% endfor %}
-            <tr class="{{ 'total-pedido' if zebra else 'total-pedido zebra-light' }}">
-                <td class="align-text-end" colspan="6">Total Pedido:</td>
-                <td>${{ order.monto_cargado }}</td>
+            <tr class="total-pedido">
+                <td colspan="3">Tot. Pedido:</td>
+                <td>${{ order.monto_cargado | format_currency }}</td>
             </tr>
         </tbody>
     </table>
