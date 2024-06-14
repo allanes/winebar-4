@@ -84,5 +84,7 @@ def datetime_formatter(value, format: str = '%Y-%m-%d %H:%M'):
 def format_currency(value):
     # return locale.format_string("%d,%.2f", value, grouping=True, monetary=True)
     value = float(value)  # Ensure the value is a float
-    formatted = f"{value:,.2f}"  # Format with two decimals and commas
+    if not value:
+        return '* Bonif'
+    formatted = f"${value:,.2f}"  # Format with two decimals and commas
     return formatted.replace(',', 'X').replace('.', ',').replace('X', '.')  # Swap commas and periods

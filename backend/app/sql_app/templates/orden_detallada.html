@@ -6,35 +6,42 @@
     <title>Detalle Orden #{{ order.id }}</title>
     <style>
         @media print {
-            body {
-                width: 302px; /* Approx 80mm in pixels */
-                /* font-family: 'Courier New', monospace; */
-                font-family: 'Calibri', monospace;
+            *, *:before, *:after {
                 margin: 0;
-                font-size: 8px; /* Small font for space efficiency */
+                padding: 0;
+                box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            }
+            body {
+                width: 300px;
+                font-family: 'Calibri', monospace;
+                font-size: 11px;
                 color: #000;
             }
-            h1, h2 {
-                font-size: 11px; /* Larger for visibility */
-                margin: 0 0 5px 0; /* Add bottom margin for spacing */
+            h1, h2, h3, h4 {
+                font-size: 14px;
+                margin: 15px 0; /* Adding uniform margin to all headings */
+            }
+            h4 {
+                font-size: 12px;
+                margin: 15px 0; /* Adding uniform margin to all headings */
             }
             table {
                 width: 100%;
-                max-width: 302px; /* Limit table width */
+                max-width: 300px;
                 border-collapse: collapse;
-                border: 0; /* No borders */
             }
             th, td {
-                border: 0; /* No borders */
-                padding: 0 11px; /* Minimal padding */
-                text-align: left;
-                font-size: 8px;
-                margin-top: 10px;
-                margin-bottom: 10px;
                 text-align: center;
+                font-size: 12px;
+                padding: 3px 0; /* Adding padding to table cells for vertical spacing */
             }
-            .total-charged, .total-pedido {
+            .total-charged {
                 font-weight: bold;
+            }
+            .total-pedido {
+                font-weight: bold;
+                margin: 10px 0; /* Increased margin for total row for better visibility */
+                font-size: 15px;
             }
         }
     </style>
@@ -44,16 +51,16 @@
     <h3>Orden: #{{ order.id }}</h3>
     <h3>Entrada: {{ order.timestamp_apertura_orden.strftime('%d/%m/%y %H:%M') }}</h3>
     <h3>Salida: {{ order.timestamp_cierre_orden.strftime('%d/%m/%y %H:%M') if order.timestamp_cierre_orden else 'N/A' }}</h3>
-    <h3>${{ order.monto_cargado | format_currency }}</h3>
-    <h4>Cerrada por: {{ order.cerrada_por_nombre }}</h2>
+    <h3>Total: {{ order.monto_cargado | format_currency }}</h3>
+    <h4>Cerrada por: {{ order.cerrada_por_nombre }}</h4>
     <table>
         <thead>
             <tr>
                 <th>#</th>
                 <th>Cant</th>
                 <th>Producto</th>
-                <th>Precio</th>
-                <th>SubTotal</th>
+                <th>Precio u.</th>
+                <th>Subtotal</th>
             </tr>
         </thead>
         <tbody>
@@ -63,14 +70,17 @@
                         <td>{{ pedido.id }}</td>
                         <td>{{ renglon.cantidad }}</td>
                         <td>{{ renglon.producto.titulo | truncate(10, True, '...') }}</td>
-                        <td>${{ renglon.producto.precio | format_currency }}</td>
-                        <td>${{ renglon.monto | format_currency }}</td>
+                        <td>{{ renglon.producto.precio | format_currency }}</td>
+                        <td>{{ renglon.monto | format_currency }}</td>
                     </tr>
                 {% endfor %}
             {% endfor %}
+            <tr>
+                <td rowspan="1"></td>
+            </tr>
             <tr class="total-pedido">
-                <td colspan="3">Tot. Pedido:</td>
-                <td>${{ order.monto_cargado | format_currency }}</td>
+                <td rowspan="2" colspan="4">Tot. Pedido:</td>
+                <td rowspan="2">{{ order.monto_cargado | format_currency }}</td>
             </tr>
         </tbody>
     </table>
