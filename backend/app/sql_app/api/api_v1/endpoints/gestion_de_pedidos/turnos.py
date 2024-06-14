@@ -51,6 +51,34 @@ def handle_cerrar_turno(
     
     return turno
 
+@router.post("/cambiar-cajero", response_model=schemas.Turno)
+def handle_cambiar_cajero(
+    *,
+    db: Session = Depends(deps.get_db),
+    info_de_cierre: schemas.InfoDeCierre,
+    nuevo_cajero_rfid: int,
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
+):
+    if nuevo_cajero_rfid == current_user.tarjeta.id:
+        raise HTTPException(status_code=404, detail='El nuevo cajero debe ser distinto del anterior.')
+    
+    nuevo_cajero_in_db = crud.personal_interno.get_by_rfid(db=db, tarjeta_id=nuevo_cajero_rfid)
+    if nuevo_cajero_in_db is None or not nuevo_cajero_in_db.activa:
+        raise HTTPException(status_code=404, detail='No se encontró personal habilitado con esa tarjeta')
+
+    turno, pudo_cerrarse, msg = crud.turno.cambiar_cajero(
+        db = db,
+        cerrado_por = current_user.id,
+        info_de_cierre=info_de_cierre,
+        nuevo_cajero_id=nuevo_cajero_in_db.id
+    )
+
+    if not pudo_cerrarse:
+        raise HTTPException(status_code=404, detail=msg)
+    
+    return turno
+
 @router.get('/turno-en-curso', response_model=schemas.Turno)
 def handle_get_turno_abierto(*,
     db: Session = Depends(deps.get_db),
@@ -62,22 +90,6 @@ def handle_get_turno_abierto(*,
         raise HTTPException(status_code=404, detail='No se encontró un turno abierto')
     
     return turno_en_curso
-
-@router.put("/{id}", response_model=schemas.Turno)
-def handle_update_turno(
-    *,
-    db: Session = Depends(deps.get_db),
-    id: int,
-    turno_in: schemas.TurnoUpdate
-):
-    turno = crud.turno.get(db=db, id=id)
-    if not turno:
-        raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
-    
-    turno = crud.turno.update(
-        db=db, db_obj=turno, obj_in=turno_in
-    )
-    return turno
 
 @router.get("/{id}", response_model=schemas.Turno)
 def handle_read_turno_by_id(
