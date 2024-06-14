@@ -60,6 +60,9 @@ def handle_cambiar_cajero(
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
+    if nuevo_cajero_rfid == current_user.tarjeta.id:
+        raise HTTPException(status_code=404, detail='El nuevo cajero debe ser distinto del anterior.')
+    
     nuevo_cajero_in_db = crud.personal_interno.get_by_rfid(db=db, tarjeta_id=nuevo_cajero_rfid)
     if nuevo_cajero_in_db is None or not nuevo_cajero_in_db.activa:
         raise HTTPException(status_code=404, detail='No se encontró personal habilitado con esa tarjeta')
