@@ -4,6 +4,7 @@ from sql_app.api import deps
 # from sql_app.models.tarjetas_y_usuarios import PersonalInterno
 # from sql_app.models.gestion_de_pedidos import OrdenCompra
 from sql_app import crud
+# import locale
 
 def __get_internal_db_session():
     db: Session = deps.get_db()
@@ -80,3 +81,10 @@ def datetime_formatter(value, format: str = '%Y-%m-%d %H:%M'):
     except ValueError:
         return "Invalid date"  # Optional: Handle wrong format errors
     
+def format_currency(value):
+    # return locale.format_string("%d,%.2f", value, grouping=True, monetary=True)
+    value = float(value)  # Ensure the value is a float
+    if not value:
+        return '* Bonif'
+    formatted = f"${value:,.2f}"  # Format with two decimals and commas
+    return formatted.replace(',', 'X').replace('.', ',').replace('X', '.')  # Swap commas and periods
