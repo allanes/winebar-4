@@ -10,6 +10,7 @@ from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
 from sql_app.schemas.serializers import datetime_formatter, format_currency
+from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 
 router = APIRouter()
 
@@ -201,9 +202,43 @@ def handle_update_orden(
     if not orden:
         raise HTTPException(status_code=404, detail=f"Persona no encontrada con DNI {id}")
     
+    actualizar_monto_vitte = False
+    if orden_in.monto_maximo_orden and orden_in.monto_maximo_orden > 0 and orden_in.monto_maximo_orden != orden.monto_maximo_orden:
+        actualizar_monto_vitte = True
+
+    if orden_in.monto_maximo_pedido and orden_in.monto_maximo_pedido > 0 and orden_in.monto_maximo_pedido != orden.monto_maximo_pedido:
+        actualizar_monto_vitte = True
+
     orden = crud.orden.update(
         db=db, db_obj=orden, obj_in=orden_in
     )
+
+    if actualizar_monto_vitte:
+        # Setup Vitte init
+        print(f'Actualizando monto en Vitte por cambio de monto maximo...')
+        try:
+            # Calculo monto a agregar en vitte
+            cliente_operando_in_db = crud.cliente_opera_con_tarjeta.get_by_cliente_id(db=db, cliente_id=orden.cliente_id)
+            tarjeta_del_cliente = crud.tarjeta.get(db=db, id=cliente_operando_in_db.tarjeta_id)
+            cliente_in_vitte = vitte_api_client.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=tarjeta_del_cliente.raw_rfid)
+            saldo_antes = cliente_in_vitte.saldo
+            monto_a_agregar = max(orden.monto_maximo_orden, orden.monto_maximo_pedido) - saldo_antes # Para que el nuevo saldo sea el nuevo maximo monto configurado
+            # Agrego monto
+            if monto_a_agregar > 0:
+                actualizado = vitte_api_client.cargar_saldo_cliente(
+                    tarjeta_rfid = tarjeta_del_cliente.raw_rfid,
+                    monto_a_agregar = monto_a_agregar
+                )
+                if actualizado == True:
+                    cliente_in_vitte = vitte_api_client.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=tarjeta_del_cliente.raw_rfid)
+                    print(f'    Cargado {monto_a_agregar}. Nuevo saldo: {cliente_in_vitte.saldo} (orden id {orden.id})')
+                else:
+                    print(f'No se pudo cargar saldo en Vitte. Saldo actual: {cliente_in_vitte.saldo} (orden id {orden.id}). {err=}')    
+            else:
+                print(f'    Desistiendo carga ya que monto a agregar no es mayor que 0. ({monto_a_agregar})')
+        except Exception as err:
+            print(f'No se pudo cargar el cliente en VITTE. {err=}')
+            
     return orden
 
 @router.get("/{id}", response_model=schemas.OrdenCompraDetallada)
