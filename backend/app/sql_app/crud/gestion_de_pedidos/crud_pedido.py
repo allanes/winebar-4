@@ -77,9 +77,6 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
             return pedido_abierto, estaba_abierto, msg
         print(f'Creando nuevo pedido')
         
-        ## Reemplazar
-        configuracion_montos = crud.configuracion.get_last(db=db)
-
         orden_de_la_tarjeta = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=tarjeta_cliente)
         orden_de_la_tarjeta_id = orden_de_la_tarjeta.id if orden_de_la_tarjeta else None
 

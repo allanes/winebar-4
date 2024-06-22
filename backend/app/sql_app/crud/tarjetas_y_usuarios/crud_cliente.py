@@ -86,7 +86,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             abierta_por=usuario_apertura_orden,
             tarjeta_cliente=tarjeta_id
         )
-        crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in, montos_config=montos_config_in)
+        orden_abierta_in_db = crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in, montos_config=montos_config_in)
         
         # Setup Vitte init
         try:
@@ -97,7 +97,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             )
             vitte_api_client.cargar_saldo_cliente(
                 tarjeta_rfid = cliente_operando.tarjeta.raw_rfid,
-                monto_a_agregar = crud_configuracion.configuracion.get_last(db=db).monto_maximo_orden_def,
+                monto_a_agregar = orden_abierta_in_db.monto_maximo_orden,
             )
         except Exception as err:
             print(f'No se pudo cargar el cliente en VITTE. {err=}')
