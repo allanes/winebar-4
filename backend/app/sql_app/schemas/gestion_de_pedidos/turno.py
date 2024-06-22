@@ -32,6 +32,9 @@ class Turno(TurnoInDBBase):
     cerrado_por_nombre: Optional[str] = ''
     suma_ordenes_cobradas: Optional[float] = 0
     diferencia: Optional[float] = None
+    suma_ordenes_cobradas_tarjeta: Optional[float] = 0
+    suma_ordenes_cobradas_efectivo: Optional[float] = 0
+    suma_ordenes_cobradas_transferencia: Optional[float] = 0
 
     @field_serializer('abierto_por_nombre')
     def serialize_nombre_abierto(self, abierto_por_nombre: str, _info):
@@ -61,6 +64,18 @@ class Turno(TurnoInDBBase):
         suma_ordenes = serializers.serializer_for_suma_ordenes_para_turno(turno_id=self.id)        
         dif = self.monto_en_caja - suma_ordenes
         return  dif
+    
+    @field_serializer('suma_ordenes_cobradas_tarjeta')
+    def serialize_suma_ordenes_cobradas_tarjeta(self, suma_ordenes_cobradas_tarjeta: float, _info):
+        return serializers.serializer_for_suma_ordenes_para_turno_by_tipo(turno_id=self.id, tipo='tarjeta')
+
+    @field_serializer('suma_ordenes_cobradas_efectivo')
+    def serialize_suma_ordenes_cobradas_efectivo(self, suma_ordenes_cobradas_efectivo: float, _info):
+        return serializers.serializer_for_suma_ordenes_para_turno_by_tipo(turno_id=self.id, tipo='efectivo')
+
+    @field_serializer('suma_ordenes_cobradas_transferencia')
+    def serialize_suma_ordenes_cobradas_transferencia(self, suma_ordenes_cobradas_transferencia: float, _info):
+        return serializers.serializer_for_suma_ordenes_para_turno_by_tipo(turno_id=self.id, tipo='transferencia')
     
     @field_serializer('clientes_activos')
     def serialize_clientes_activos(self, clientes_activos: int, _info):

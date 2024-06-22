@@ -38,6 +38,27 @@ def serializer_for_suma_ordenes_para_turno(turno_id: int) -> float:
     db.close()
     return monto_cobrado_de_ordenes
 
+def serializer_for_suma_ordenes_para_turno_by_tipo(turno_id: int, tipo: str = None) -> float:
+    db: Session = deps.get_db()
+    db_session = next(db)
+    
+    ordenes_in_db = crud.orden.get_by_turno_id(
+        db=db_session,
+        turno_id=turno_id
+    )
+
+    db.close()
+
+    suma_efectivo = sum([orden.monto_cobrado_efectivo for orden in ordenes_in_db])
+    suma_tarjeta = sum([orden.monto_cobrado_tarjeta for orden in ordenes_in_db])
+    suma_transferencia = sum([orden.monto_cobrado_transferencia for orden in ordenes_in_db])
+    
+    if tipo and tipo == 'efectivo': return suma_efectivo
+    if tipo and tipo == 'tarjeta': return suma_tarjeta
+    if tipo and tipo == 'transferencia': return suma_transferencia
+
+    return sum([suma_efectivo, suma_tarjeta, suma_transferencia])
+
 def serializer_for_clientes_activos(turno_id: int) -> int:
     # db_session = __get_internal_db_session()
     db: Session = deps.get_db()
