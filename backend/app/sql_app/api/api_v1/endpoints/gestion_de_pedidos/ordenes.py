@@ -1,6 +1,6 @@
 import os
 from typing import List, Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
@@ -157,6 +157,7 @@ async def export_order_to_html(
 async def export_order_to_pdf(
     id: int, 
     request: Request, 
+    background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
 ):
     # Define the directory for exported orders
@@ -185,6 +186,11 @@ async def export_order_to_pdf(
         pdfkit.from_string(input=html_content, output_path=filepath, verbose=True)
 
         print(f'PDF file {filename} created successfully.')
+
+        # Check if cerrada_por is None and schedule deletion
+        orden = crud.orden.get(db, id=id)
+        if orden.cerrada_por is None:
+            background_tasks.add_task(os.remove, filepath)
 
         # Return PDF file response
         return FileResponse(path=filepath, filename=filename)
