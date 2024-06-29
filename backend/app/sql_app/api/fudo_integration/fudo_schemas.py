@@ -60,7 +60,7 @@ class Sale(BaseModel):
 
 class TablesResponse(BaseModel):
     data: List[Table]
-    included: Optional[List[Sale]]
+    included: Optional[List[Sale]] = None
 
 class SaleResponse(BaseModel):
     data: Sale
