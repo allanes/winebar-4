@@ -11,18 +11,12 @@ class FudoApiClientBase:
         self.token_expiry = datetime.now()
 
     def _authenticate(self):
-        print('Fudo: Refreshing token...')
-        headers = {
-            "Authorization": f"Bearer {settings.FUDO_API_KEY}"
-        }
-        # For now, we're just setting the token to the API key
-        # In a real-world scenario, you might want to exchange this for a session token
+        print('Fudo: Setting up API key...')
         self.token = settings.FUDO_API_KEY
-        self.token_expiry = datetime.now() + timedelta(hours=1)
-        print('Fudo: Authentication successful, token updated.')
+        print('Fudo: API key set successfully.')
 
     def _ensure_authentication(self):
-        if self.token is None or datetime.now() >= self.token_expiry:
+        if self.token is None:
             self._authenticate()
 
     def _get_headers(self):
