@@ -64,3 +64,6 @@ class TablesResponse(BaseModel):
 
 class SaleResponse(BaseModel):
     data: Sale
+
+class CustomTableResponse(BaseModel):
+    data: List[Table]

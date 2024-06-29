@@ -45,13 +45,13 @@ class FudoApiClientBase:
         params = {"include": "activeSales"}
         response = self.session.get(url, headers=self._get_headers(), params=params)
         response.raise_for_status()
-        return response.json()
+        return TablesResponse(**response.json())
 
     def get_sale_details(self, sale_id: str):
         """Retrieve details of a specific sale"""
         url = f"{self.base_url}/sales/{sale_id}"
         response = self.session.get(url, headers=self._get_headers())
         response.raise_for_status()
-        return response.json()
+        return SaleResponse(**response.json())
 
 fudo_api_client = FudoApiClientBase()

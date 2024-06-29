@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from sql_app.api.fudo_integration import fudo_crud
-from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse
+from sql_app.api.fudo_integration.fudo_schemas import CustomTableResponse, SaleResponse
 
 router = APIRouter()
 
-@router.get("/tables", response_model=TablesResponse)
-def read_tables():
+@router.get("/tables", response_model=CustomTableResponse)
+def read_tables(only_active: bool = Query(False, description="Return only tables with active sales")):
     try:
-        return fudo_crud.get_tables()
+        return fudo_crud.get_tables(only_active=only_active)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
