@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional
 from sql_app.core.config import settings
+from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse
 
 class FudoApiClientBase:
     def __init__(self):

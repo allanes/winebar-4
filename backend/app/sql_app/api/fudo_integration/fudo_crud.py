@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sql_app.api.fudo_integration.fudo_api_client import fudo_api_client
-from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse, CustomTableResponse
+from sql_app.api.fudo_integration.fudo_schemas import SaleResponse, CustomTableResponse
 
 def get_tables(only_active: bool = False) -> CustomTableResponse:
     """Retrieve the list of tables"""
