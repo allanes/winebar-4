@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional
 from sql_app.core.config import settings
-from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse
+from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse, RoomsResponse
 
 class FudoApiClientBase:
     def __init__(self):
@@ -54,5 +54,13 @@ class FudoApiClientBase:
         response = self.session.get(url, headers=self._get_headers())
         response.raise_for_status()
         return SaleResponse(**response.json())
+    
+    def get_rooms(self):
+        """Retrieve the list of rooms"""
+        url = f"{self.base_url}/rooms"
+        # params = {"include": ""}
+        response = self.session.get(url, headers=self._get_headers())
+        response.raise_for_status()
+        return RoomsResponse(**response.json())
 
 fudo_api_client = FudoApiClientBase()

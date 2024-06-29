@@ -88,3 +88,15 @@ class MesaFudoCustom(BaseModel):
 
 class CustomTableResponse(BaseModel):
     data: List[MesaFudoCustom]
+
+class RoomAttr(BaseModel):
+    name: str
+
+class SingleRoomDetails(BaseModel):
+    id: int
+    type: str
+    attributes: RoomAttr
+    
+class RoomsResponse(BaseModel):
+    data: List[SingleRoomDetails]
+    

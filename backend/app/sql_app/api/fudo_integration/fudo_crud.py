@@ -2,9 +2,11 @@ from typing import List, Optional
 from sql_app.api.fudo_integration.fudo_api_client import fudo_api_client
 from sql_app.api.fudo_integration.fudo_schemas import SaleResponse, CustomTableResponse, MesaFudoCustom, CustomSaleDetailResponse
 
+
 def get_tables(only_active: bool = False) -> CustomTableResponse:
     """Retrieve the list of tables"""
     tables_response = fudo_api_client.get_tables()
+    rooms_info = fudo_api_client.get_rooms().data
     
     if only_active:
         tables_response = [table for table in tables_response.data if table.relationships.activeSales.get('data')]
@@ -12,13 +14,15 @@ def get_tables(only_active: bool = False) -> CustomTableResponse:
     mesas_custom = []
     for mesa in tables_response:
         room_data = mesa.relationships.room.get('data', None)
+        room_metadata = [room_info for room_info in rooms_info if room_info.id == room_data.id]
+        room_metadata = room_metadata[0] if room_metadata else {}
         active_sales = mesa.relationships.activeSales
         # print(f'fudo room data: {room_data}')
         mesa_fudo = MesaFudoCustom(
             id=mesa.id,
             number=mesa.attributes.number,
             room_id=room_data.id,
-            # room_name=
+            room_name=room_metadata.attributes.name,
             cant_ventas=len(active_sales.get('data', None)),
             activeSales=active_sales
         )
