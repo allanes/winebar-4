@@ -65,5 +65,13 @@ class TablesResponse(BaseModel):
 class SaleResponse(BaseModel):
     data: Sale
 
+class MesaFudoCustom(BaseModel):
+    id: int
+    number: int
+    room_id: str
+    room_name: Optional[str] = 'Hab.'
+    cant_ventas: int
+    activeSales: dict[str, List[SaleData]]
+
 class CustomTableResponse(BaseModel):
-    data: List[Table]
+    data: List[MesaFudoCustom]
