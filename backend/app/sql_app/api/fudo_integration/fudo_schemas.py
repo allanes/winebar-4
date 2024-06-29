@@ -1,0 +1,66 @@
+from pydantic import BaseModel
+from typing import Optional, List, Any
+from datetime import datetime
+
+class TableAttributes(BaseModel):
+    column: int
+    number: int
+    row: int
+    shape: str
+    size: str
+
+class RoomData(BaseModel):
+    type: str
+    id: str
+
+class SaleData(BaseModel):
+    type: str
+    id: str
+
+class TableRelationships(BaseModel):
+    room: dict[str, RoomData]
+    activeSales: dict[str, List[SaleData]]
+
+class Table(BaseModel):
+    type: str
+    id: str
+    attributes: TableAttributes
+    relationships: TableRelationships
+
+class SaleAttributes(BaseModel):
+    closedAt: Optional[datetime]
+    comment: Optional[str]
+    createdAt: datetime
+    people: int
+    customerName: Optional[str]
+    total: float
+    saleType: str
+    saleState: str
+
+class RelationshipData(BaseModel):
+    type: Optional[str]
+    id: Optional[str]
+
+class SaleRelationships(BaseModel):
+    customer: dict[str, Optional[RelationshipData]]
+    discounts: dict[str, List[Any]]
+    items: dict[str, List[RelationshipData]]
+    payments: dict[str, List[Any]]
+    tips: dict[str, List[Any]]
+    shippingCosts: dict[str, List[Any]]
+    table: dict[str, RelationshipData]
+    waiter: dict[str, Optional[RelationshipData]]
+    saleIdentifier: dict[str, Optional[RelationshipData]]
+
+class Sale(BaseModel):
+    type: str
+    id: str
+    attributes: SaleAttributes
+    relationships: SaleRelationships
+
+class TablesResponse(BaseModel):
+    data: List[Table]
+    included: Optional[List[Sale]]
+
+class SaleResponse(BaseModel):
+    data: Sale
