@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sql_app.api.fudo_integration.fudo_api_client import fudo_api_client
-from sql_app.api.fudo_integration.fudo_schemas import SaleResponse, CustomTableResponse, MesaFudoCustom, RoomData
+from sql_app.api.fudo_integration.fudo_schemas import SaleResponse, CustomTableResponse, MesaFudoCustom, CustomSaleDetailResponse
 
 def get_tables(only_active: bool = False) -> CustomTableResponse:
     """Retrieve the list of tables"""
@@ -29,3 +29,21 @@ def get_tables(only_active: bool = False) -> CustomTableResponse:
 def get_sale_details(sale_id: str) -> SaleResponse:
     """Retrieve details of a specific sale"""
     return fudo_api_client.get_sale_details(sale_id)
+
+def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
+    """Retrieve details of a specific sale"""
+    venta = fudo_api_client.get_sale_details(sale_id).data
+    print(f'{venta.attributes.saleType=}, {venta.type=}')
+    customer_name = venta.attributes.customerName if venta.attributes.customerName else None
+    
+    venta_custom = CustomSaleDetailResponse(
+        id = venta.id,
+        type=venta.type,
+        createdAt=venta.attributes.createdAt,
+        people=venta.attributes.people,
+        customerName=customer_name,
+        total=venta.attributes.total,
+        saleState=venta.attributes.saleState
+    )
+    
+    return venta_custom

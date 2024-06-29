@@ -65,6 +65,19 @@ class TablesResponse(BaseModel):
 class SaleResponse(BaseModel):
     data: Sale
 
+class CustomSaleDetailResponse(BaseModel):
+    id: str
+    type: str
+
+    # closedAt: Optional[datetime]
+    # comment: Optional[str]
+    # saleType: str
+    createdAt: datetime
+    people: int
+    customerName: Optional[str]
+    total: float
+    saleState: str
+
 class MesaFudoCustom(BaseModel):
     id: int
     number: int
