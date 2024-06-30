@@ -75,7 +75,7 @@ class CustomSaleDetailResponse(BaseModel):
     createdAt: datetime
     people: int
     customerName: Optional[str]
-    total: float
+    total: str
     saleState: str
 
 class MesaFudoCustom(BaseModel):

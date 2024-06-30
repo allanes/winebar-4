@@ -7,7 +7,9 @@ router = APIRouter()
 @router.get("/mesas", response_model=CustomTableResponse)
 def read_tables(only_active: bool = Query(True, description="Return only tables with active sales")):
     try:
-        return fudo_crud.get_tables(only_active=only_active)
+        mesas = fudo_crud.get_tables(only_active=only_active)
+        # print(f'mesas recuperadas: {mesas}')
+        return mesas
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

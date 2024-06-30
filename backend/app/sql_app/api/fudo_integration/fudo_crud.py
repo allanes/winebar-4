@@ -14,7 +14,8 @@ def get_tables(only_active: bool = False) -> CustomTableResponse:
     mesas_custom = []
     for mesa in tables_response:
         room_data = mesa.relationships.room.get('data', None)
-        room_metadata = [room_info for room_info in rooms_info if room_info.id == room_data.id]
+        room_metadata = [room_info for room_info in rooms_info if room_info.id == int(room_data.id)]
+        # print(f'room metadata: {room_metadata}')
         room_metadata = room_metadata[0] if room_metadata else {}
         active_sales = mesa.relationships.activeSales
         # print(f'fudo room data: {room_data}')
@@ -46,7 +47,7 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
         createdAt=venta.attributes.createdAt,
         people=venta.attributes.people,
         customerName=customer_name,
-        total=venta.attributes.total,
+        total=f'$ {venta.attributes.total:.2f}',
         saleState=venta.attributes.saleState
     )
     
