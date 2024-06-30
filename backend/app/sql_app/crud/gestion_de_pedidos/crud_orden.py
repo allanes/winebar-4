@@ -7,6 +7,7 @@ from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenComp
 from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
 # from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.fudo_integration import fudo_crud
 from sql_app.schemas.validators import get_now_time
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
@@ -157,7 +158,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0
         cobrado_tarjeta = info_pago.cobrado_tarjeta if info_pago.cobrado_tarjeta else 0
         cobrado_transferencia = info_pago.cobrado_transferencia if info_pago.cobrado_transferencia else 0
-        cargado_en_fudo = orden_in_db.monto_cargado if info_pago.carga_fudo_mesa_id else 0
+        cargado_en_fudo = orden_in_db.monto_cargado if info_pago.carga_fudo_venta_id else 0
         
         ## Verifico que el monto cobrado sea igual al monto cargado
         suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia + cargado_en_fudo
@@ -167,12 +168,13 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             return None, False, msg
         
         # Reviso si debo exportar a fudo
-        if info_pago.carga_fudo_mesa_id:
-            # fue_exportada = exportar_orden_a_fudo()
-            # if not fue_exportada:
-            #   return None, False, 'No se pudo exportar la orden a Fudo'
-            ##
+        exportar_a_fudo = info_pago.carga_fudo_venta_id
+        if exportar_a_fudo:
             # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
+            export_payload = self._prepare_fudo_export_payload(orden_in_db, info_pago)
+            export_result = fudo_crud.export_item_to_fudo(export_payload)
+            if not export_result:
+                return orden_in_db, True, "Orden cerrada pero no se pudo exportar a Fudo"
             pass
 
         orden_in_db.cerrada_por = cerrada_por_id
@@ -276,5 +278,37 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             cerrada_por_nombre=nombre_vendedor,
             # consumos_vino=transacciones_vino
         )
+    
+    def _prepare_fudo_export_payload(self, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> dict:
+        return {
+            "data": {
+                "type": "Item",
+                "attributes": {
+                    "comment": f"Orden {orden.id} exportada desde App",
+                    "price": orden.monto_cargado,
+                    "quantity": 1
+                },
+                "relationships": {
+                    "priceList": {
+                        "data": {
+                            "id": "1",
+                            "type": "PriceList"
+                        }
+                    },
+                    "product": {
+                        "data": {
+                            "id": "342",
+                            "type": "Product"
+                        }
+                    },
+                    "sale": {
+                        "data": {
+                            "id": str(info_pago.carga_fudo_venta_id),
+                            "type": "Sale"
+                        }
+                    }
+                }
+            }
+        }
     
 orden = CRUDOrden(OrdenCompra)

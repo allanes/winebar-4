@@ -20,7 +20,7 @@ class OrdenCompraInfoPago(BaseModel):
     cobrado_efectivo: Optional[float] = 0
     cobrado_tarjeta: Optional[float] = 0
     cobrado_transferencia: Optional[float] = 0
-    carga_fudo_mesa_id: Optional[int] = None
+    carga_fudo_venta_id: Optional[int] = None
     comentarios: Optional[str] = ''
 
 class OrdenCompraCreateInternal(OrdenCompraBase):

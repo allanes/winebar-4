@@ -52,3 +52,11 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     )
     
     return venta_custom
+
+def export_item_to_fudo(payload: dict) -> bool:
+    try:
+        response = fudo_api_client.create_item(payload)
+        return response.status_code == 201
+    except Exception as e:
+        print(f"Error exporting item to Fudo: {str(e)}")
+        return False

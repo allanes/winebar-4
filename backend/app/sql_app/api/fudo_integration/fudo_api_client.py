@@ -62,5 +62,12 @@ class FudoApiClientBase:
         response = self.session.get(url, headers=self._get_headers())
         response.raise_for_status()
         return RoomsResponse(**response.json())
+    
+    def create_item(self, payload: dict):
+        """Create a new item in Fudo"""
+        url = f"{self.base_url}/items"
+        response = self.session.post(url, headers=self._get_headers(), json=payload)
+        response.raise_for_status()
+        return response
 
 fudo_api_client = FudoApiClientBase()
