@@ -122,6 +122,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in_db.monto_cobrado_efectivo = 0
         orden_in_db.monto_cobrado_tarjeta = 0
         orden_in_db.monto_cobrado_transferencia = 0
+        orden_in_db.monto_cargado_fudo = 0
         orden_in_db.turno_id = turno_abierto.id
         [setattr(orden_in_db, attr, value) for attr, value in orden_in.model_dump().items()]
 
@@ -152,22 +153,34 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # Calculo valores necesarios
         ts_cierre = get_now_time()
         print(f'Cerrando orden con timestamp {ts_cierre.isoformat()}')
-        orden_in_db.cerrada_por = cerrada_por_id
-        orden_in_db.timestamp_cierre_orden = ts_cierre
-
-        ## Verifico que el monto cobrado sea igual al monto cargado
+        
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0
         cobrado_tarjeta = info_pago.cobrado_tarjeta if info_pago.cobrado_tarjeta else 0
         cobrado_transferencia = info_pago.cobrado_transferencia if info_pago.cobrado_transferencia else 0
-        suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia
+        cargado_en_fudo = orden_in_db.monto_cargado if info_pago.carga_fudo_mesa_id else 0
+        
+        ## Verifico que el monto cobrado sea igual al monto cargado
+        suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia + cargado_en_fudo
 
         if suma_pagos != orden_in_db.monto_cargado:
             msg = f'La suma cobrada (${suma_pagos}) debe ser igual que la suma cargada (${orden_in_db.monto_cargado})'
             return None, False, msg
+        
+        # Reviso si debo exportar a fudo
+        if info_pago.carga_fudo_mesa_id:
+            # fue_exportada = exportar_orden_a_fudo()
+            # if not fue_exportada:
+            #   return None, False, 'No se pudo exportar la orden a Fudo'
+            ##
+            # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
+            pass
 
+        orden_in_db.cerrada_por = cerrada_por_id
+        orden_in_db.timestamp_cierre_orden = ts_cierre
         orden_in_db.monto_cobrado_efectivo = cobrado_efectivo
         orden_in_db.monto_cobrado_tarjeta = cobrado_tarjeta
         orden_in_db.monto_cobrado_transferencia = cobrado_transferencia
+        orden_in_db.monto_cargado_fudo = cargado_en_fudo
         orden_in_db.monto_cobrado = suma_pagos
         orden_in_db.comentarios = info_pago.comentarios
         
