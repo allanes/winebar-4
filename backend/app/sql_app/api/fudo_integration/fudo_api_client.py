@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional
 from sql_app.core.config import settings
-from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse, RoomsResponse
+from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse, RoomsResponse, FUDO_ITEM_CREATE__MOCK_RESPONSE
 
 class FudoApiClientBase:
     def __init__(self):
@@ -63,11 +63,17 @@ class FudoApiClientBase:
         response.raise_for_status()
         return RoomsResponse(**response.json())
     
-    def create_item(self, payload: dict):
+    def create_item(self, payload: dict, mock=False):
         """Create a new item in Fudo"""
-        url = f"{self.base_url}/items"
-        response = self.session.post(url, headers=self._get_headers(), json=payload)
-        response.raise_for_status()
-        return response
+        if mock:
+            print(f'Mock de creacion de item en FUDO para exportar orden:')
+            print(f'    {payload=}')
+            return FUDO_ITEM_CREATE__MOCK_RESPONSE
+        
+        # url = f"{self.base_url}/items"
+        # response = self.session.post(url, headers=self._get_headers(), json=payload)
+        # response.raise_for_status()
+        # return response
+        pass
 
 fudo_api_client = FudoApiClientBase()

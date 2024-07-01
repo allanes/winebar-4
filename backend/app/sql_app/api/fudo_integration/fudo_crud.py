@@ -1,7 +1,21 @@
+import os
+import json
 from typing import List, Optional
+from fastapi.templating import Jinja2Templates
+from sql_app.core.config import settings
 from sql_app.api.fudo_integration.fudo_api_client import fudo_api_client
-from sql_app.api.fudo_integration.fudo_schemas import SaleResponse, CustomTableResponse, MesaFudoCustom, CustomSaleDetailResponse
+from sql_app.api.fudo_integration.fudo_schemas import (
+    SaleResponse, 
+    CustomTableResponse, 
+    MesaFudoCustom, 
+    CustomSaleDetailResponse,
+    FudoExportRequest,
+    FudoExportItem,
+    FUDO_PRODUCT_IDS
+)
 
+templates = Jinja2Templates(directory=settings.TEMPLATES_PATH)
+fudo_item_post_template_filename = 'fudo_item_post_body.txt'
 
 def get_tables(only_active: bool = False) -> CustomTableResponse:
     """Retrieve the list of tables"""
@@ -53,10 +67,25 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     
     return venta_custom
 
-def export_item_to_fudo(payload: dict) -> bool:
+def export_items_to_fudo(export_request: FudoExportRequest) -> bool:
     try:
-        response = fudo_api_client.create_item(payload)
-        return response.status_code == 201
+        for item in export_request.items:
+            payload = _prepare_fudo_item_payload(item)
+            response = fudo_api_client.create_item(payload, mock=True)
+            if response.status_code != 201:
+                print(f"Error exporting item to Fudo: {response.text}")
+                return False
+        return True
     except Exception as e:
-        print(f"Error exporting item to Fudo: {str(e)}")
+        print(f"Error exporting items to Fudo: {str(e)}")
         return False
+
+def _prepare_fudo_item_payload(item: FudoExportItem) -> dict:
+    rendered_payload = templates.get_template(fudo_item_post_template_filename).render(
+        comment=f"Orden {item.order_id}: {item.comment}",
+        price=item.amount,
+        quantity=item.quantity,
+        product_id=FUDO_PRODUCT_IDS[item.type],
+        sale_id=item.sale_id
+    )
+    return json.loads(rendered_payload)

@@ -107,10 +107,9 @@ def handle_cerrar_orden(
     id: int,
     db: Session = Depends(deps.get_db),
     info_pago: schemas.OrdenCompraInfoPago,
-    # current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
+    current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
-    current_user = crud.personal_interno.get_multi(db=db)[0]
     print(f'usuario logueado id: {current_user.id}')
     
     orden, fue_cerrada, msg = crud.orden.cerrar_orden(

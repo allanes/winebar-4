@@ -52,10 +52,12 @@ def serializer_for_suma_ordenes_para_turno_by_tipo(turno_id: int, tipo: str = No
     suma_efectivo = sum([orden.monto_cobrado_efectivo for orden in ordenes_in_db])
     suma_tarjeta = sum([orden.monto_cobrado_tarjeta for orden in ordenes_in_db])
     suma_transferencia = sum([orden.monto_cobrado_transferencia for orden in ordenes_in_db])
+    suma_fudo = sum([orden.monto_cargado_fudo for orden in ordenes_in_db])
     
     if tipo and tipo == 'efectivo': return suma_efectivo
     if tipo and tipo == 'tarjeta': return suma_tarjeta
     if tipo and tipo == 'transferencia': return suma_transferencia
+    if tipo and tipo == 'fudo': return suma_fudo
 
     return sum([suma_efectivo, suma_tarjeta, suma_transferencia])
 

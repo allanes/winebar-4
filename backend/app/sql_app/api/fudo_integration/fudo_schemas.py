@@ -1,6 +1,7 @@
-from pydantic import BaseModel
 from typing import Optional, List, Any
+from enum import Enum
 from datetime import datetime
+from pydantic import BaseModel
 
 class TableAttributes(BaseModel):
     column: int
@@ -14,7 +15,7 @@ class RoomData(BaseModel):
     id: str
 
 class SaleData(BaseModel):
-    type: str
+    type: str   
     id: str
 
 class TableRelationships(BaseModel):
@@ -100,3 +101,64 @@ class SingleRoomDetails(BaseModel):
 class RoomsResponse(BaseModel):
     data: List[SingleRoomDetails]
     
+class FudoItemType(str, Enum):
+    TAPA = "TAPA"
+    VINO = "VINO"
+
+class FudoExportItem(BaseModel):
+    order_id: int
+    type: FudoItemType
+    amount: float
+    quantity: int
+    comment: str
+    sale_id: str
+
+class FudoExportRequest(BaseModel):
+    items: List[FudoExportItem]
+
+class FudoItemPayload(BaseModel):
+    data: dict
+
+FUDO_PRODUCT_IDS = {
+    FudoItemType.TAPA: "121",
+    FudoItemType.VINO: "342"
+}
+
+FUDO_ITEM_CREATE__MOCK_RESPONSE = {
+    "data": {
+        "type": "Item",
+        "id": "434",
+        "attributes": {
+            "canceled": None,
+            "cancellationComment": None,
+            "comment": "Exportado desde App",
+            "createdAt": "2024-06-30T20:08:31Z",
+            "price": 111,
+            "quantity": 22,
+            "status": "PENDING"
+        },
+        "relationships": {
+            "priceList": {
+                "data": {
+                "type": "PriceList",
+                "id": "1"
+                }
+            },
+            "product": {
+                "data": {
+                "type": "Product",
+                "id": "342"
+                }
+            },
+            "subitems": {
+                "data": []
+            },
+            "sale": {
+                "data": {
+                "type": "Sale",
+                "id": "248"
+                }
+            }
+        }
+    }
+}

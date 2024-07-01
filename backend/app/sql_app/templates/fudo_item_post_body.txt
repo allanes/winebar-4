@@ -1,0 +1,30 @@
+{
+    "data": {
+        "type": "Item",
+        "attributes": {
+            "comment": "{{ comment }}",
+            "price": {{ price }},
+            "quantity": {{ quantity }}
+        },
+        "relationships": {
+            "priceList": {
+                "data": {
+                    "id": "1",
+                    "type": "PriceList"
+                }
+            },
+            "product": {
+                "data": {
+                    "id": "{{ product_id }}",
+                    "type": "Product"
+                }
+            },
+            "sale": {
+                "data": {
+                    "id": "{{ sale_id }}",
+                    "type": "Sale"
+                }
+            }
+        }
+    }
+}

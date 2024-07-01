@@ -8,6 +8,7 @@ from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
 # from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 from sql_app.api.fudo_integration import fudo_crud
+from sql_app.api.fudo_integration.fudo_schemas import FudoExportItem, FudoItemType, FudoExportRequest
 from sql_app.schemas.validators import get_now_time
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
@@ -171,11 +172,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         exportar_a_fudo = info_pago.carga_fudo_venta_id
         if exportar_a_fudo:
             # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
-            export_payload = self._prepare_fudo_export_payload(orden_in_db, info_pago)
-            export_result = fudo_crud.export_item_to_fudo(export_payload)
+            export_items = self._prepare_fudo_export_items(orden_in_db, info_pago)
+            export_request = FudoExportRequest(items=export_items)
+            export_result = fudo_crud.export_items_to_fudo(export_request)
             if not export_result:
                 return orden_in_db, True, "Orden cerrada pero no se pudo exportar a Fudo"
-            pass
 
         orden_in_db.cerrada_por = cerrada_por_id
         orden_in_db.timestamp_cierre_orden = ts_cierre
@@ -279,36 +280,18 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             # consumos_vino=transacciones_vino
         )
     
-    def _prepare_fudo_export_payload(self, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> dict:
-        return {
-            "data": {
-                "type": "Item",
-                "attributes": {
-                    "comment": f"Orden {orden.id} exportada desde App",
-                    "price": orden.monto_cargado,
-                    "quantity": 1
-                },
-                "relationships": {
-                    "priceList": {
-                        "data": {
-                            "id": "1",
-                            "type": "PriceList"
-                        }
-                    },
-                    "product": {
-                        "data": {
-                            "id": "342",
-                            "type": "Product"
-                        }
-                    },
-                    "sale": {
-                        "data": {
-                            "id": str(info_pago.carga_fudo_venta_id),
-                            "type": "Sale"
-                        }
-                    }
-                }
-            }
-        }
+    def _prepare_fudo_export_items(self, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
+        # For now, we're just creating a single item for the entire order
+        # In the future, you might want to break this down into multiple items based on the order details
+        return [
+            FudoExportItem(
+                order_id=orden.id,
+                type=FudoItemType.TAPA,  # Assuming it's a TAPA for now
+                amount=orden.monto_cargado,
+                quantity=1,
+                comment="Exportado desde App",
+                sale_id=str(info_pago.carga_fudo_venta_id)
+            )
+        ]
     
 orden = CRUDOrden(OrdenCompra)
