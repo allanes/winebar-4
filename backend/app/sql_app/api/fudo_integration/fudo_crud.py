@@ -67,14 +67,18 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     
     return venta_custom
 
-def export_items_to_fudo(export_request: FudoExportRequest) -> bool:
+def export_items_to_fudo(export_request: FudoExportRequest, mock = False) -> bool:
+    mock = True
     try:
         for item in export_request.items:
             payload = _prepare_fudo_item_payload(item)
-            response = fudo_api_client.create_item(payload, mock=True)
-            if response.status_code != 201:
-                print(f"Error exporting item to Fudo: {response.text}")
-                return False
+            response = fudo_api_client.create_item(payload, mock=mock)
+
+            if not mock:
+                if not (response.status_code >= 200 and response.status_code < 300):
+                    print(f"Error exporting item to Fudo: {response.text}")
+                    print(f"    request payload: {payload}")
+                    return False
         return True
     except Exception as e:
         print(f"Error exporting items to Fudo: {str(e)}")

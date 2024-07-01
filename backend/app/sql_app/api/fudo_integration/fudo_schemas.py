@@ -125,6 +125,7 @@ FUDO_PRODUCT_IDS = {
 }
 
 FUDO_ITEM_CREATE__MOCK_RESPONSE = {
+    "status_code": 200,
     "data": {
         "type": "Item",
         "id": "434",
