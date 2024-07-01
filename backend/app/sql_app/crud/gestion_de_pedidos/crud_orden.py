@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
-from sql_app.models.gestion_de_pedidos import OrdenCompra
+from sql_app.models.gestion_de_pedidos import OrdenCompra, Renglon
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
@@ -172,11 +172,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         exportar_a_fudo = info_pago.carga_fudo_venta_id
         if exportar_a_fudo:
             # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
-            export_items = self._prepare_fudo_export_items(orden_in_db, info_pago)
+            export_items = self._prepare_fudo_export_items(db=db, orden=orden_in_db, info_pago=info_pago)
             export_request = FudoExportRequest(items=export_items)
             export_result = fudo_crud.export_items_to_fudo(export_request)
             if not export_result:
-                return orden_in_db, True, "Orden cerrada pero no se pudo exportar a Fudo"
+                return orden_in_db, False, "No se pudo exportar a Fudo. Reintentar."
 
         orden_in_db.cerrada_por = cerrada_por_id
         orden_in_db.timestamp_cierre_orden = ts_cierre
@@ -280,16 +280,44 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             # consumos_vino=transacciones_vino
         )
     
-    def _prepare_fudo_export_items(self, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
+    def _prepare_fudo_export_items(self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
         # For now, we're just creating a single item for the entire order
         # In the future, you might want to break this down into multiple items based on the order details
+        
+        pedidos_de_orden_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
+        renglones: list[Renglon] = []
+        for pedido in pedidos_de_orden_in_db:
+            renglones.extend(crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id))
+        
+        renglones_tapas: list[Renglon] = []
+        renglones_vinos: list[Renglon] = []
+        for renglon in renglones:
+            tapa = crud.tapa.get_by_product_id(db=db, producto_id=renglon.producto_id)
+            vino = crud.vino.get_by_product_id(db=db, producto_id=renglon.producto_id)
+
+            if tapa:
+                renglones_tapas.append(renglon)
+            if vino:
+                renglones_vinos.append(renglon)
+        
+        suma_tapas = sum([renglon.monto for renglon in renglones_tapas])
+        suma_vinos = sum([renglon.monto for renglon in renglones_vinos])
+
         return [
             FudoExportItem(
                 order_id=orden.id,
                 type=FudoItemType.TAPA,  # Assuming it's a TAPA for now
-                amount=orden.monto_cargado,
+                amount=suma_tapas,
                 quantity=1,
-                comment="Exportado desde App",
+                comment=f"Exportado desde App. {info_pago.comentarios}",
+                sale_id=str(info_pago.carga_fudo_venta_id)
+            ),
+            FudoExportItem(
+                order_id=orden.id,
+                type=FudoItemType.VINO,  # Assuming it's a TAPA for now
+                amount=suma_vinos,
+                quantity=1,
+                comment=f"Exportado desde App. {info_pago.comentarios}",
                 sale_id=str(info_pago.carga_fudo_venta_id)
             )
         ]

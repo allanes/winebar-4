@@ -70,10 +70,9 @@ class FudoApiClientBase:
             print(f'    {payload=}')
             return FUDO_ITEM_CREATE__MOCK_RESPONSE
         
-        # url = f"{self.base_url}/items"
-        # response = self.session.post(url, headers=self._get_headers(), json=payload)
-        # response.raise_for_status()
-        # return response
-        pass
+        url = f"{self.base_url}/items"
+        response = self.session.post(url, headers=self._get_headers(), json=payload)
+        response.raise_for_status()
+        return response
 
 fudo_api_client = FudoApiClientBase()

@@ -68,7 +68,7 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     return venta_custom
 
 def export_items_to_fudo(export_request: FudoExportRequest, mock = False) -> bool:
-    mock = True
+    # mock = True
     try:
         for item in export_request.items:
             payload = _prepare_fudo_item_payload(item)
