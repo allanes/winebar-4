@@ -17,6 +17,7 @@ def read_tables(only_active: bool = Query(True, description="Return only tables 
 def read_sales_by_mesa(mesa_id: int):
     try:
         mesas = fudo_crud.get_tables(only_active=True).data
+        # print(f'FUDO: mesas recuperadas: {len(mesas)}')
         mesa = [mesa for mesa in mesas if mesa.id == mesa_id]
         if not mesa:
             raise HTTPException(status_code=500, detail=f'No se encontró mesa con id {mesa_id}')
@@ -25,7 +26,7 @@ def read_sales_by_mesa(mesa_id: int):
         ventas = []
         for active_sale in mesa.activeSales.get('data', []):
             info_venta = fudo_crud.get_sale_details_custom(sale_id=active_sale.id)
-            print(f'  venta agregada {active_sale}')
+            # print(f'FUDO:   venta recuperada {active_sale}')
             ventas.append(info_venta)
         return ventas
     except Exception as e:

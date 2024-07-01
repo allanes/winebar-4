@@ -51,6 +51,7 @@ def get_sale_details(sale_id: str) -> SaleResponse:
 
 def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     """Retrieve details of a specific sale"""
+    print(f'FUDO: recuperando detalles de venta {sale_id}...')
     venta = fudo_api_client.get_sale_details(sale_id).data
     print(f'{venta.attributes.saleType=}, {venta.type=}')
     customer_name = venta.attributes.customerName if venta.attributes.customerName else None

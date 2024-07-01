@@ -5,19 +5,34 @@ from sql_app.core.config import settings
 from sql_app.api.fudo_integration.fudo_schemas import TablesResponse, SaleResponse, RoomsResponse, FUDO_ITEM_CREATE__MOCK_RESPONSE
 
 class FudoApiClientBase:
-    def __init__(self):
+    def __init__(self, is_production: bool = True):
         self.session = requests.Session()
         self.base_url = "https://api.fu.do/v1alpha1"
+        self.auth_url = "https://auth.fu.do/api" if is_production else "https://auth-staging.fu.do/api"
+        self.api_key = settings.FUDO_API_KEY
+        self.api_secret = settings.FUDO_API_SECRET
         self.token = None
         self.token_expiry = datetime.now()
 
     def _authenticate(self):
-        print('Fudo: Setting up API key...')
-        self.token = settings.FUDO_API_KEY
-        print('Fudo: API key set successfully.')
+        print('Fudo: Authenticating...')
+        payload = {
+            "apiKey": self.api_key,
+            "apiSecret": self.api_secret
+        }
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        response = self.session.post(self.auth_url, json=payload, headers=headers)
+        response.raise_for_status()
+        auth_data = response.json()
+        self.token = auth_data["token"]
+        self.token_expiry = datetime.fromtimestamp(auth_data["exp"])
+        print('Fudo: Authentication successful.')
 
     def _ensure_authentication(self):
-        if self.token is None:
+        if self.token is None or datetime.now() >= self.token_expiry:
             self._authenticate()
 
     def _get_headers(self):
@@ -58,7 +73,6 @@ class FudoApiClientBase:
     def get_rooms(self):
         """Retrieve the list of rooms"""
         url = f"{self.base_url}/rooms"
-        # params = {"include": ""}
         response = self.session.get(url, headers=self._get_headers())
         response.raise_for_status()
         return RoomsResponse(**response.json())
@@ -72,7 +86,8 @@ class FudoApiClientBase:
         
         url = f"{self.base_url}/items"
         response = self.session.post(url, headers=self._get_headers(), json=payload)
+        # print(f'FUDO: respuesta al crear consumo: {response=}')
         response.raise_for_status()
         return response
-
+    
 fudo_api_client = FudoApiClientBase()
