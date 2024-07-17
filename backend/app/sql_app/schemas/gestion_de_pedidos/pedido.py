@@ -13,7 +13,8 @@ class PedidoCreate(PedidoBase):
     pass
 
 class PedidoUpdate(BaseModel):
-    monto_cargado: float
+    monto_cargado: Optional[float]
+    exportado_fudo: Optional[bool]
 
 class PedidoInDBBase(PedidoBase):
     id: int
@@ -22,6 +23,7 @@ class PedidoInDBBase(PedidoBase):
     orden_id: int
     monto_maximo_pedido: float    
     monto_cargado: Optional[float]
+    exportado_fudo: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
 

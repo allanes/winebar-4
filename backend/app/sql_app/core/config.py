@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     VITTE_USUARIO: str
     VITTE_CLAVE: str
 
+    # Fudo
+    FUDO_API_KEY: str
+    FUDO_API_SECRET: str
+
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator('API_V1_STR', pre=True)

@@ -4,6 +4,7 @@ from sql_app.api.api_v1.endpoints.tarjetas_y_usuarios import roles, tarjetas, pe
 from sql_app.api.api_v1.endpoints.inventario_y_promociones import tapas, vinos
 from sql_app.api.api_v1.endpoints.gestion_de_pedidos import turnos, ordenes, pedidos, lectores_tapas, configuraciones
 from sql_app.api.api_v1.endpoints import login
+from sql_app.api.fudo_integration import fudo_router
 
 api_router = APIRouter()
 api_router.include_router(login.router, prefix='/login', tags=["login"])
@@ -16,6 +17,7 @@ api_router.include_router(turnos.router, prefix="/turnos", tags=["Turnos"])
 api_router.include_router(ordenes.router, prefix="/ordenes", tags=["Ordenes"])
 api_router.include_router(pedidos.router, prefix="/pedidos", tags=["Pedidos"])
 api_router.include_router(vinos.router, prefix="/vinos", tags=["Vinos"])
+api_router.include_router(fudo_router.router, prefix="/fudo", tags=["Fudo"])
 api_router.include_router(lectores_tapas.router, prefix="/lectores-tapas", tags=["Lectores de Tapas"])
 api_router.include_router(configuraciones.router, prefix="/configuraciones", tags=["Configuracion"])
 

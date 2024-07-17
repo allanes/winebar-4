@@ -2,11 +2,13 @@ from typing import List
 from sqlalchemy.orm import Session
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.base import CRUDBase
-from sql_app.models.gestion_de_pedidos import OrdenCompra
+from sql_app.models.gestion_de_pedidos import OrdenCompra, Renglon
 from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir, OrdenCompraUpdate, OrdenCompraInfoPago, OrdenCompraCreateInternal, OrdenCompraDetallada
 from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
 # from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.fudo_integration import fudo_crud
+from sql_app.api.fudo_integration.fudo_schemas import FudoExportItem, FudoItemType, FudoExportRequest
 from sql_app.schemas.validators import get_now_time
 
 class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
@@ -122,6 +124,7 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in_db.monto_cobrado_efectivo = 0
         orden_in_db.monto_cobrado_tarjeta = 0
         orden_in_db.monto_cobrado_transferencia = 0
+        orden_in_db.monto_cargado_fudo = 0
         orden_in_db.turno_id = turno_abierto.id
         [setattr(orden_in_db, attr, value) for attr, value in orden_in.model_dump().items()]
 
@@ -152,22 +155,35 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # Calculo valores necesarios
         ts_cierre = get_now_time()
         print(f'Cerrando orden con timestamp {ts_cierre.isoformat()}')
-        orden_in_db.cerrada_por = cerrada_por_id
-        orden_in_db.timestamp_cierre_orden = ts_cierre
-
-        ## Verifico que el monto cobrado sea igual al monto cargado
+        
         cobrado_efectivo = info_pago.cobrado_efectivo if info_pago.cobrado_efectivo else 0
         cobrado_tarjeta = info_pago.cobrado_tarjeta if info_pago.cobrado_tarjeta else 0
         cobrado_transferencia = info_pago.cobrado_transferencia if info_pago.cobrado_transferencia else 0
-        suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia
+        cargado_en_fudo = orden_in_db.monto_cargado if info_pago.carga_fudo_venta_id else 0
+        
+        ## Verifico que el monto cobrado sea igual al monto cargado
+        suma_pagos = cobrado_efectivo + cobrado_tarjeta + cobrado_transferencia + cargado_en_fudo
 
         if suma_pagos != orden_in_db.monto_cargado:
             msg = f'La suma cobrada (${suma_pagos}) debe ser igual que la suma cargada (${orden_in_db.monto_cargado})'
             return None, False, msg
+        
+        # Reviso si debo exportar a fudo
+        exportar_a_fudo = info_pago.carga_fudo_venta_id
+        if exportar_a_fudo:
+            # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
+            export_items = self._prepare_fudo_export_items(db=db, orden=orden_in_db, info_pago=info_pago)
+            export_request = FudoExportRequest(items=export_items)
+            export_result = fudo_crud.export_items_to_fudo(export_request)
+            if not export_result:
+                return orden_in_db, False, "No se pudo exportar a Fudo. Reintentar."
 
+        orden_in_db.cerrada_por = cerrada_por_id
+        orden_in_db.timestamp_cierre_orden = ts_cierre
         orden_in_db.monto_cobrado_efectivo = cobrado_efectivo
         orden_in_db.monto_cobrado_tarjeta = cobrado_tarjeta
         orden_in_db.monto_cobrado_transferencia = cobrado_transferencia
+        orden_in_db.monto_cargado_fudo = cargado_en_fudo
         orden_in_db.monto_cobrado = suma_pagos
         orden_in_db.comentarios = info_pago.comentarios
         
@@ -263,5 +279,47 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             cerrada_por_nombre=nombre_vendedor,
             # consumos_vino=transacciones_vino
         )
+    
+    def _prepare_fudo_export_items(self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
+        # For now, we're just creating a single item for the entire order
+        # In the future, you might want to break this down into multiple items based on the order details
+        
+        pedidos_de_orden_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
+        renglones: list[Renglon] = []
+        for pedido in pedidos_de_orden_in_db:
+            renglones.extend(crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id))
+        
+        renglones_tapas: list[Renglon] = []
+        renglones_vinos: list[Renglon] = []
+        for renglon in renglones:
+            tapa = crud.tapa.get_by_product_id(db=db, producto_id=renglon.producto_id)
+            vino = crud.vino.get_by_product_id(db=db, producto_id=renglon.producto_id)
+
+            if tapa:
+                renglones_tapas.append(renglon)
+            if vino:
+                renglones_vinos.append(renglon)
+        
+        suma_tapas = sum([renglon.monto for renglon in renglones_tapas])
+        suma_vinos = sum([renglon.monto for renglon in renglones_vinos])
+
+        return [
+            FudoExportItem(
+                order_id=orden.id,
+                type=FudoItemType.TAPA,  # Assuming it's a TAPA for now
+                amount=suma_tapas,
+                quantity=1,
+                comment=f"Exportado desde App. {info_pago.comentarios}",
+                sale_id=str(info_pago.carga_fudo_venta_id)
+            ),
+            FudoExportItem(
+                order_id=orden.id,
+                type=FudoItemType.VINO,  # Assuming it's a TAPA for now
+                amount=suma_vinos,
+                quantity=1,
+                comment=f"Exportado desde App. {info_pago.comentarios}",
+                sale_id=str(info_pago.carga_fudo_venta_id)
+            )
+        ]
     
 orden = CRUDOrden(OrdenCompra)

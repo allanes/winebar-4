@@ -20,6 +20,7 @@ class OrdenCompraInfoPago(BaseModel):
     cobrado_efectivo: Optional[float] = 0
     cobrado_tarjeta: Optional[float] = 0
     cobrado_transferencia: Optional[float] = 0
+    carga_fudo_venta_id: Optional[int] = None
     comentarios: Optional[str] = ''
 
 class OrdenCompraCreateInternal(OrdenCompraBase):
@@ -39,6 +40,7 @@ class OrdenCompraInDBBase(OrdenCompraBase):
     monto_cobrado_efectivo: float
     monto_cobrado_tarjeta: float
     monto_cobrado_transferencia: float
+    monto_cargado_fudo: float
     monto_maximo_pedido: float
     timestamp_apertura_orden: datetime
     timestamp_cierre_orden: Optional[datetime] = None
