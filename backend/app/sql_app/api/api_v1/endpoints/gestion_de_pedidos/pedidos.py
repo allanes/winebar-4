@@ -190,7 +190,11 @@ def handle_cancelar_renglon(
     monto_final = pedido_in_db.monto_cargado - monto_a_quitar
     renglon_actualizado = crud.renglon.update(db=db, db_obj=renglon_in_db, obj_in=schemas.RenglonUpdate(monto=0))
     print(f'Actualizando monto del pedido de ${pedido_in_db.monto_cargado} a ${monto_final}')
-    pedido_actualizado = crud.pedido.update(db=db, db_obj=pedido_in_db, obj_in=schemas.PedidoUpdate(monto_cargado=monto_final))
+    pedido_actualizado = crud.pedido.update(
+        db=db, 
+        db_obj=pedido_in_db, 
+        obj_in=schemas.PedidoUpdate(monto_cargado=monto_final, exportado_fudo=None)
+    )
     orden_actualizada = crud.orden.cargar_monto(db=db, orden_id=pedido_in_db.orden_id, monto_a_agregar=-monto_a_quitar)
     return pedido_actualizado
 
