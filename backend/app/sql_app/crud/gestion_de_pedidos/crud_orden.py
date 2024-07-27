@@ -175,8 +175,13 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             export_items = self._prepare_fudo_export_items(db=db, orden=orden_in_db, info_pago=info_pago)
             export_request = FudoExportRequest(items=export_items)
             export_result = fudo_crud.export_items_to_fudo(export_request)
+            
             if not export_result:
                 return orden_in_db, False, "No se pudo exportar a Fudo. Reintentar."
+
+            numero_venta = info_pago.carga_fudo_venta_id
+            numero_mesa = fudo_crud.get_table_number_by_sale_id(sale_id=numero_venta)
+            info_pago.comentarios = f'Orden imputada en venta {numero_venta} (mesa {numero_mesa}) de FUDO. {info_pago.comentarios}'
 
         orden_in_db.cerrada_por = cerrada_por_id
         orden_in_db.timestamp_cierre_orden = ts_cierre
