@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sql_app.core.config import settings
 from sql_app.api.fudo_integration.fudo_api_client import fudo_api_client
 from sql_app.api.fudo_integration.fudo_schemas import (
+    Sale,
     SaleResponse, 
     CustomTableResponse, 
     MesaFudoCustom, 
@@ -94,3 +95,20 @@ def _prepare_fudo_item_payload(item: FudoExportItem) -> dict:
         sale_id=item.sale_id
     )
     return json.loads(rendered_payload)
+
+def get_table_number_by_sale_id(sale_id: str) -> int:
+        detalle_venta = fudo_api_client.get_sale_details(sale_id=sale_id)
+        detalle_venta: Sale = detalle_venta.data
+        mesa_extraida = detalle_venta.relationships.table
+        print(f'mesa recuperada desde venta: {mesa_extraida}')
+        mesa_id = mesa_extraida['data'].id
+
+        # Cruzo con listado de mesas
+        mesas = fudo_api_client.get_tables().data
+        numero_mesa = -1
+        for mesa_recuperada in mesas:
+            if mesa_id == mesa_recuperada.id:
+                numero_mesa = mesa_recuperada.attributes.number
+                break
+
+        return numero_mesa
