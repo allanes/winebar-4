@@ -50,10 +50,10 @@ class FudoApiClientBase:
         try:
             self._ensure_authentication()
             self.get_tables()
-            return True, 'Health check passed: Successfully retrieved tables'
+            return True, 'Fudo Health check passed: Successfully retrieved tables'
         except Exception as e:
-            print(f'Health check failed: {str(e)}')
-            return False, 'API health check failed'
+            print(f'Fudo Health check failed: {str(e)}')
+            return False, 'Fudo API health check failed'
 
     def get_tables(self):
         """Retrieve the list of tables"""
