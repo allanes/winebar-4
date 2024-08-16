@@ -286,45 +286,67 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         )
     
     def _prepare_fudo_export_items(self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
-        # For now, we're just creating a single item for the entire order
-        # In the future, you might want to break this down into multiple items based on the order details
-        
         pedidos_de_orden_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
-        renglones: list[Renglon] = []
+        renglones: List[Renglon] = []
         for pedido in pedidos_de_orden_in_db:
             renglones.extend(crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id))
         
-        renglones_tapas: list[Renglon] = []
-        renglones_vinos: list[Renglon] = []
+        # Grouping by product ID
+        grouped_items = {}
         for renglon in renglones:
-            tapa = crud.tapa.get_by_product_id(db=db, producto_id=renglon.producto_id)
-            vino = crud.vino.get_by_product_id(db=db, producto_id=renglon.producto_id)
+            if renglon.producto_id not in grouped_items:
+                comentario = ""
+                tipo = None
+                titulo = ""
 
-            if tapa:
-                renglones_tapas.append(renglon)
-            if vino:
-                renglones_vinos.append(renglon)
-        
-        suma_tapas = sum([renglon.monto for renglon in renglones_tapas])
-        suma_vinos = sum([renglon.monto for renglon in renglones_vinos])
+                # Determine title
+                producto_in_db = crud.producto.get_active(db=db, id=renglon.producto_id)
+                if producto_in_db:
+                    titulo = producto_in_db.titulo
 
-        return [
-            FudoExportItem(
-                order_id=orden.id,
-                type=FudoItemType.TAPA,
-                amount=suma_tapas,
-                quantity=1,
-                comment=f"Desde tarjeta. {info_pago.comentarios}",
-                sale_id=str(info_pago.carga_fudo_venta_id)
-            ),
-            FudoExportItem(
-                order_id=orden.id,
-                type=FudoItemType.VINO, 
-                amount=suma_vinos,
-                quantity=1,
-                comment=f"Desde tarjeta. {info_pago.comentarios}",
-                sale_id=str(info_pago.carga_fudo_venta_id)
+                
+                # Determine type (TAPA or VINO)
+                tapa = crud.tapa.get_by_product_id(db=db, producto_id=renglon.producto_id)
+                if tapa:
+                    tipo = FudoItemType.TAPA
+                else:
+                    vino = crud.vino.get_by_product_id(db=db, producto_id=renglon.producto_id)
+                    if vino:
+                        tipo = FudoItemType.VINO
+
+                # Create notes/commentaries to add
+                comentarios_adicionales = ''
+                hay_comentarios_para_agregar = info_pago.comentarios and info_pago.comentarios != ""
+                if hay_comentarios_para_agregar:
+                    comentarios_adicionales = f'Notas: {info_pago.comentarios}. '
+
+                comentario = f"{titulo} - {comentarios_adicionales}(Orden {orden.id})"
+
+                # Assemble product to export
+                grouped_items[renglon.producto_id] = {
+                    "quantity": 0,
+                    "amount": 0.0,
+                    "type": tipo,
+                    "comment": comentario
+                }
+            
+            grouped_items[renglon.producto_id]["quantity"] += renglon.cantidad
+            grouped_items[renglon.producto_id]["amount"] += renglon.monto
+
+        # Create FudoExportItem for each grouped product ID
+        fudo_export_items = []
+        for producto_id, details in grouped_items.items():
+            fudo_export_items.append(
+                FudoExportItem(
+                    order_id=orden.id,
+                    type=details["type"],
+                    amount=details["amount"],
+                    quantity=details["quantity"],
+                    comment=details["comment"],
+                    sale_id=str(info_pago.carga_fudo_venta_id)
+                )
             )
-        ]
+        
+        return fudo_export_items
     
 orden = CRUDOrden(OrdenCompra)

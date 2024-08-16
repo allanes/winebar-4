@@ -88,7 +88,7 @@ def export_items_to_fudo(export_request: FudoExportRequest, mock = False) -> boo
 
 def _prepare_fudo_item_payload(item: FudoExportItem) -> dict:
     rendered_payload = templates.get_template(fudo_item_post_template_filename).render(
-        comment=f"Orden {item.order_id}: {item.comment}",
+        comment=item.comment,
         price=item.amount,
         quantity=item.quantity,
         product_id=FUDO_PRODUCT_IDS[item.type],
