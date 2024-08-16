@@ -120,7 +120,7 @@ class FudoItemPayload(BaseModel):
     data: dict
 
 FUDO_PRODUCT_IDS = {
-    FudoItemType.TAPA: "121",
+    FudoItemType.TAPA: "420",
     FudoItemType.VINO: "342"
 }
 
@@ -132,7 +132,7 @@ FUDO_ITEM_CREATE__MOCK_RESPONSE = {
         "attributes": {
             "canceled": None,
             "cancellationComment": None,
-            "comment": "Exportado desde App",
+            "comment": "Desde tarjeta",
             "createdAt": "2024-06-30T20:08:31Z",
             "price": 111,
             "quantity": 22,

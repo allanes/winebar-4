@@ -32,7 +32,7 @@ class VitteApiClientBase():
     def _authenticate(self):
         print('Vitte: Refreshing token...')
         response = self.session.post(f'{self.base_url}/seguridad/login', json=self.login_details).json()
-        if response.get('result', {}).get('token'):
+        if response and response.get('result', {}) and response.get('result', {}).get('token'):
             self.token = response['result']['token']['token']
             self.token_expiry = datetime.now() + timedelta(hours=1)
             self.client_id = response['result']['usuario']['id']  # Assuming client ID is part of the login result
@@ -72,8 +72,8 @@ class VitteApiClientBase():
         try:
             self._ensure_authentication()  # Ensure the API is authenticated before the check
             self._fetch_empresa_id()       # Attempt to fetch the empresa ID as a health check
-            return True, f'Health check passed: Connected to Empresa ID {self.empresa_id}'
+            return True, f'Vitte Health check passed: Connected to Empresa ID {self.empresa_id}'
         except Exception as e:
             # Handle any exceptions that may occur during the health check
-            print(f'Health check failed: {str(e)}')
-            return False, 'API health check failed'
+            print(f'Vitte Health check failed: {str(e)}')
+            return False, 'Vitte API health check failed'
