@@ -311,18 +311,18 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         return [
             FudoExportItem(
                 order_id=orden.id,
-                type=FudoItemType.TAPA,  # Assuming it's a TAPA for now
+                type=FudoItemType.TAPA,
                 amount=suma_tapas,
                 quantity=1,
-                comment=f"Exportado desde App. {info_pago.comentarios}",
+                comment=f"Desde tarjeta. {info_pago.comentarios}",
                 sale_id=str(info_pago.carga_fudo_venta_id)
             ),
             FudoExportItem(
                 order_id=orden.id,
-                type=FudoItemType.VINO,  # Assuming it's a TAPA for now
+                type=FudoItemType.VINO, 
                 amount=suma_vinos,
                 quantity=1,
-                comment=f"Exportado desde App. {info_pago.comentarios}",
+                comment=f"Desde tarjeta. {info_pago.comentarios}",
                 sale_id=str(info_pago.carga_fudo_venta_id)
             )
         ]
