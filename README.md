@@ -1,4 +1,4 @@
-# FastBar: Sales Management System
+# FastBar: Sales Management System for fast-food bars
 
 FastBar is a system designed for fast-service bars. It tracks and process consumptions and, optionally, integrates with RFID-based Wine dispensers (like Vitte). This provides a a solution for auto-bar sales management through a unique card given to each client.
 
