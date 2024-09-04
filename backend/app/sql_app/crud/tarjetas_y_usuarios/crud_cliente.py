@@ -89,6 +89,7 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         orden_abierta_in_db = crud_orden.orden.abrir_orden(db=db, abrir_orden_in=orden_in, montos_config=montos_config_in)
         
         # Setup Vitte init
+        msg = ''
         try:
             vitte_api_client.cargar_o_actualizar_cliente_vitte(
                 cliente_id = cliente_in_db.id,
@@ -100,9 +101,10 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
                 monto_a_agregar = orden_abierta_in_db.monto_maximo_orden,
             )
         except Exception as err:
-            print(f'No se pudo cargar el cliente en VITTE. {err=}')
+            msg = f'No se pudo cargar el cliente en VITTE. {err=}'
+            print(msg)
         
-        return cliente_in_db, True, ''
+        return cliente_in_db, True, msg
 
     def update_with_tarjeta(self, db: Session, *, db_obj: Cliente, obj_in: Union[ClienteUpdate, Dict[str, Any]], tarjeta_id: Optional[int] = None) -> Cliente:
         obj_data = jsonable_encoder(db_obj)

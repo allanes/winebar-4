@@ -63,7 +63,7 @@ class VitteApiClient(VitteApiClientBase):
         print(f"Vitte: Fetching client details for tarjeta ID: {tarjeta_id} from {url}")
         response = self.session.get(url, headers=self._get_headers()).json()
         
-        if response and response['id'] == 0:  # Assuming 'id' == 0 signifies a null response indicating no such client exists
+        if response and response.get('id', 0) == 0:  # Assuming 'id' == 0 signifies a null response indicating no such client exists
             print("Vitte:       No existing client found for the given tarjeta ID.")
             return None
         elif response and response['id'] != 0:

@@ -12,6 +12,11 @@ from sql_app import crud
 from sql_app import schemas
 
 def sync_products_with_vitte(db: Session):
+    hay_conexion, msg = vitte_api_client.check_health()
+    if not hay_conexion:
+        print(f'No se pudo sincronizar con Vitte. {msg}')
+        return
+    
     vinos_in_db = crud.vino.get_multi(db=db)        
     picos_con_vino = vitte_api_client.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
     
@@ -136,14 +141,19 @@ def sync_products_with_vitte(db: Session):
     return
 
 def sync_consumos_with_vitte_by_tarjeta(
-        db: Session, 
-        raw_tarjeta: str, 
-        abierto_por_id: int
-    ):
+    db: Session, 
+    raw_tarjeta: str, 
+    abierto_por_id: int
+):
     ## Recibiendo la tarjeta solo puedo valerme de una orden ABIERTA
     orden_del_cliente = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=raw_tarjeta)
     if not orden_del_cliente:
         print(f'No se encontro un cliente activo con tarjeta {raw_tarjeta} para sincronizar los consumos con Vitte.')
+        return
+    
+    hay_conexion, msg = vitte_api_client.check_health()
+    if not hay_conexion:
+        print(f'No se pudo sincronizar con Vitte. {msg}')
         return
     
     consumos_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
