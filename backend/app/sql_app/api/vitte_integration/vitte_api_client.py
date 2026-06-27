@@ -6,6 +6,8 @@ import requests
 from sql_app.core.config import settings
 
 class VitteApiClientBase():
+    request_timeout = (2, 5)
+
     def __init__(self):
         self.session = requests.Session()
         self.base_url = "https://app.vitte.com.ar/api"
@@ -31,7 +33,7 @@ class VitteApiClientBase():
 
     def _authenticate(self):
         print('Vitte: Refreshing token...')
-        response = self.session.post(f'{self.base_url}/seguridad/login', json=self.login_details).json()
+        response = self._post_json(f'{self.base_url}/seguridad/login', json=self.login_details)
         if response and response.get('result', {}) and response.get('result', {}).get('token'):
             self.token = response['result']['token']['token']
             self.token_expiry = datetime.now() + timedelta(hours=1)
@@ -44,7 +46,7 @@ class VitteApiClientBase():
         if not self.client_id:
             raise ValueError("Client ID must be available to fetch empresa ID.")
         empresa_url = f'{self.base_url}/local/localesUsuario/{self.client_id}'
-        response = self.session.get(url=empresa_url, headers=self._get_headers()).json()
+        response = self._get_json(url=empresa_url, headers=self._get_headers())
         if 'result' in response and len(response['result']) > 0:
             self.empresa_id = response['result'][0]['empresaId']
             self.local_id = response['result'][0]['id']
@@ -63,6 +65,24 @@ class VitteApiClientBase():
             'Accept': 'application/json, text/plain, */*',
             'Accept-Encoding': 'gzip, deflate, br'
         }
+
+    def _get_json(self, url: str, **kwargs):
+        kwargs.setdefault("timeout", self.request_timeout)
+        response = self.session.get(url, **kwargs)
+        response.raise_for_status()
+        return response.json()
+
+    def _post_json(self, url: str, **kwargs):
+        kwargs.setdefault("timeout", self.request_timeout)
+        response = self.session.post(url, **kwargs)
+        response.raise_for_status()
+        return response.json()
+
+    def _delete_json(self, url: str, **kwargs):
+        kwargs.setdefault("timeout", self.request_timeout)
+        response = self.session.delete(url, **kwargs)
+        response.raise_for_status()
+        return response.json()
 
     def check_health(self) -> tuple[bool, str]:
         """

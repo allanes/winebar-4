@@ -11,6 +11,7 @@ from sql_app import crud, schemas
 from sql_app.api import deps
 from sql_app.core.config import settings
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 import requests
 
 router = APIRouter()
@@ -59,10 +60,11 @@ def handle_check_health():
     Returns the status of the API.
     """
     try:
-        health_status, msg = vitte_api_client.check_health()  # Assuming vitte_api_client is an instance of VitteApiClientBase
-        if not health_status:
+        status = vitte_service.get_status(vitte_api_client.check_health)
+        if not status.online:
+            msg = status.last_error or "Vitte API health check failed"
             raise HTTPException(status_code=404, detail=msg)
-        return msg
+        return f'Vitte Health check passed. Status: {status.status}'
     except Exception as e:
         # Log or handle the exception as necessary
         raise HTTPException(status_code=500, detail=str(e))

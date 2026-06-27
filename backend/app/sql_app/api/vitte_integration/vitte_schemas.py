@@ -9,6 +9,17 @@ class CategoriasVitte(Enum):
     CLIENTE_PREMIUM = 3
 
 # Pydantic Models
+class VitteStatus(BaseModel):
+    status: str
+    online: bool
+    last_success_at: Optional[datetime] = None
+    last_error_at: Optional[datetime] = None
+    last_error: Optional[str] = None
+    cached_for_seconds: int
+    circuit_open_until: Optional[datetime] = None
+    catalog_last_sync_at: Optional[datetime] = None
+
+
 class VitteCredencialField(BaseModel):
     id: int = 0
     valor: Optional[str] = ''

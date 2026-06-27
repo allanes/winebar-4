@@ -47,7 +47,7 @@ class VitteWineDataRetriever(VitteApiClientBase):
 
     def _fetch_maquinas_for_empresa(self):
         url = f"{self.base_url}/maquina/searchByEmpresa/{self.local_id}"
-        response = self.session.get(url, headers=self._get_headers()).json()
+        response = self._get_json(url, headers=self._get_headers())
         if response['success']:
             return response['result']
         else:
@@ -57,7 +57,7 @@ class VitteWineDataRetriever(VitteApiClientBase):
     def _fetch_modulos_by_maquina(self, maquina_id):
         url = f"{self.base_url}/modulo/byMaquina"
         payload = {"maquinaId": maquina_id}
-        response = self.session.post(url, json=payload, headers=self._get_headers()).json()
+        response = self._post_json(url, json=payload, headers=self._get_headers())
         if response['success']:
             return response['result']
         else:
@@ -67,7 +67,7 @@ class VitteWineDataRetriever(VitteApiClientBase):
     def _fetch_posiciones_by_modulo(self, modulo_id):
         url = f"{self.base_url}/Posicion/byModulo"
         payload = {"ModuloId": modulo_id}
-        response = self.session.post(url, json=payload, headers=self._get_headers()).json()
+        response = self._post_json(url, json=payload, headers=self._get_headers())
         if response['success']:
             return response['result']
         else:
@@ -76,7 +76,7 @@ class VitteWineDataRetriever(VitteApiClientBase):
         
     def _fetch_posicion_by_id(self, posicion_id):
         url = f"{self.base_url}/Posicion/get/{posicion_id}"
-        response = self.session.get(url, headers=self._get_headers()).json()
+        response = self._get_json(url, headers=self._get_headers())
         if response['success']:
             return response['result']
         else:

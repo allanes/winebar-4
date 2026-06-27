@@ -12,6 +12,7 @@ from sql_app.api import deps
 from sql_app.core.config import settings
 from sql_app.schemas.serializers import datetime_formatter, format_currency
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 
 router = APIRouter()
 
@@ -112,13 +113,20 @@ def handle_cerrar_orden(
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
+    try:
+        vitte_service.require_online(vitte_api_client.check_health)
+    except RuntimeError as err:
+        raise HTTPException(status_code=503, detail=f'Vitte no esta disponible. {err}')
     
-    orden, fue_cerrada, msg = crud.orden.cerrar_orden(
-        db = db,
-        id = id,
-        cerrada_por_id = current_user.id,
-        info_pago=info_pago
-    )
+    try:
+        orden, fue_cerrada, msg = crud.orden.cerrar_orden(
+            db = db,
+            id = id,
+            cerrada_por_id = current_user.id,
+            info_pago=info_pago
+        )
+    except RuntimeError as err:
+        raise HTTPException(status_code=503, detail=str(err))
 
     if not fue_cerrada:
         raise HTTPException(status_code=404, detail=msg)
@@ -216,6 +224,12 @@ def handle_update_orden(
     if orden_in.monto_maximo_pedido and orden_in.monto_maximo_pedido > 0 and orden_in.monto_maximo_pedido != orden.monto_maximo_pedido:
         actualizar_monto_vitte = True
 
+    if actualizar_monto_vitte:
+        try:
+            vitte_service.require_online(vitte_api_client.check_health)
+        except RuntimeError as err:
+            raise HTTPException(status_code=503, detail=f'Vitte no esta disponible. {err}')
+
     orden = crud.orden.update(
         db=db, db_obj=orden, obj_in=orden_in
     )
@@ -240,11 +254,11 @@ def handle_update_orden(
                     cliente_in_vitte = vitte_api_client.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=tarjeta_del_cliente.raw_rfid)
                     print(f'    Cargado {monto_a_agregar}. Nuevo saldo: {cliente_in_vitte.saldo} (orden id {orden.id})')
                 else:
-                    print(f'No se pudo cargar saldo en Vitte. Saldo actual: {cliente_in_vitte.saldo} (orden id {orden.id}). {err=}')    
+                    raise HTTPException(status_code=503, detail=f'No se pudo cargar saldo en Vitte. Saldo actual: {cliente_in_vitte.saldo} (orden id {orden.id}).')
             else:
                 print(f'    Desistiendo carga ya que monto a agregar no es mayor que 0. ({monto_a_agregar})')
         except Exception as err:
-            print(f'No se pudo cargar el cliente en VITTE. {err=}')
+            raise HTTPException(status_code=503, detail=f'No se pudo cargar el cliente en VITTE. {err}')
             
     return orden
 

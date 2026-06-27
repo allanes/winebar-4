@@ -1,23 +1,14 @@
-from functools import lru_cache
-import json
 import datetime as dt
 from datetime import datetime
 from typing import Optional
-import dateutil
-from pydantic import BaseModel
-from sql_app import crud, models, schemas
-import requests
 from sql_app.api.vitte_integration.vitte_schemas import (
     ClienteVitte, 
-    RespuestaConsumo, 
     SaveClienteVitte, 
     CategoriasVitte, 
     VitteCredencialField,
-    VitteCategoriaField,
     ClienteVitteDesdeMaquina,
     TransaccionVino
 )
-from sql_app.core.config import settings
 from sql_app.api.vitte_integration.vitte_api_client import VitteApiClientBase
 from sql_app.api.vitte_integration.vitte_wine_data_retriever import VitteWineDataRetriever
 
@@ -47,7 +38,7 @@ class VitteApiClient(VitteApiClientBase):
             'VerActivos': solo_activos,
             'empresaId': self.empresa_id  # Accessing empresa_id directly which is already fetched
         }
-        response = self.session.post(url, json=payload, headers=headers).json()
+        response = self._post_json(url, json=payload, headers=headers)
         clientes = [ClienteVitte(**data) for data in response.get('result', [])]
 
 
@@ -61,7 +52,7 @@ class VitteApiClient(VitteApiClientBase):
         # El siguiente enlace fue capturado con Wireshark
         url = f"{self.base_url}/maquina/tarjeta/{tarjeta_id}/26/asdas"
         print(f"Vitte: Fetching client details for tarjeta ID: {tarjeta_id} from {url}")
-        response = self.session.get(url, headers=self._get_headers()).json()
+        response = self._get_json(url, headers=self._get_headers())
         
         if response and response.get('id', 0) == 0:  # Assuming 'id' == 0 signifies a null response indicating no such client exists
             print("Vitte:       No existing client found for the given tarjeta ID.")
@@ -98,7 +89,7 @@ class VitteApiClient(VitteApiClientBase):
         update_cliente_url = f'{self.base_url}/cliente/saveCliente'
         
         print('Vitte:       Updating client status to inactive...')
-        response = self.session.post(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
+        response = self._post_json(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers())
         fue_exitoso = response.get('success', False)
         
         if not fue_exitoso:
@@ -111,7 +102,7 @@ class VitteApiClient(VitteApiClientBase):
     def _borrar_cliente_vitte(self, cliente_id: int) -> bool:
         delete_url = f'{self.base_url}/cliente/{cliente_id}'
         print(f'Vitte: Deleting client ID: {cliente_id}...')
-        response = self.session.delete(url=delete_url, headers=self._get_headers()).json()
+        response = self._delete_json(url=delete_url, headers=self._get_headers())
         if response.get('success', False):
             print('Vitte:   Client deleted successfully.')
             return True
@@ -128,7 +119,7 @@ class VitteApiClient(VitteApiClientBase):
         print(f'Updating balance for client vitte ID {cliente_in_vitte.id} by adding ${monto_a_agregar}')
         saldo_url = f'{self.base_url}/cliente/agregarSaldo'
         payload = {"clienteId": cliente_in_vitte.id, "saldo": monto_a_agregar}
-        response = self.session.post(url=saldo_url, json=payload, headers=self._get_headers()).json()
+        response = self._post_json(url=saldo_url, json=payload, headers=self._get_headers())
         if response.get('success', False):
             print('Balance updated successfully.')
             return True
@@ -159,7 +150,7 @@ class VitteApiClient(VitteApiClientBase):
         )
         save_cliente_url = f'{self.base_url}/cliente/saveCliente'
         print(f'Vitte: Creating or updating client...')
-        response = self.session.post(url=save_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers()).json()
+        response = self._post_json(url=save_cliente_url, json=cliente_a_cargar.model_dump(), headers=self._get_headers())
         
         if response.get('success', False):
             print(f'Vitte:      Client operation successful. Details: {response.get("result")}')
@@ -234,7 +225,7 @@ class VitteApiClient(VitteApiClientBase):
 
         consumos_url = 'https://app.vitte.com.ar/api/reporte/consumo'
 
-        resp = self.session.post(url=consumos_url, json=query_params_fecha, headers=self._get_headers()).json()
+        resp = self._post_json(url=consumos_url, json=query_params_fecha, headers=self._get_headers())
         clave_buscada = str(cliente_id)
 
         # Parse the result
@@ -280,7 +271,7 @@ class VitteApiClient(VitteApiClientBase):
             update_cliente_url = f'{self.base_url}/cliente/saveCliente'
         
             print('Vitte:       Updating client status to inactive...')
-            response = self.session.post(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers()).json()
+            response = self._post_json(url=update_cliente_url, json=cliente_a_cargar.dict(), headers=self._get_headers())
             fue_exitoso = response.get('success', False)
             
             if not fue_exitoso:

@@ -8,15 +8,11 @@ from sql_app.models.gestion_de_pedidos import Renglon as RenglonModel
 from sql_app.schemas.inventario_y_promociones.vino import VinoCreate
 from sql_app.schemas.inventario_y_promociones.producto import ProductoCreate, ProductoUpdate
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 from sql_app import crud
 from sql_app import schemas
 
-def sync_products_with_vitte(db: Session):
-    hay_conexion, msg = vitte_api_client.check_health()
-    if not hay_conexion:
-        print(f'No se pudo sincronizar con Vitte. {msg}')
-        return
-    
+def _sync_products_with_vitte_uncached(db: Session):
     vinos_in_db = crud.vino.get_multi(db=db)        
     picos_con_vino = vitte_api_client.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
     
@@ -140,7 +136,14 @@ def sync_products_with_vitte(db: Session):
                 
     return
 
-def sync_consumos_with_vitte_by_tarjeta(
+def sync_products_with_vitte(db: Session, force: bool = False) -> bool:
+    return vitte_service.sync_catalog_if_due(
+        sync_fn=lambda: _sync_products_with_vitte_uncached(db),
+        health_check=vitte_api_client.check_health,
+        force=force,
+    )
+
+def _sync_consumos_with_vitte_by_tarjeta_uncached(
     db: Session, 
     raw_tarjeta: str, 
     abierto_por_id: int
@@ -149,11 +152,6 @@ def sync_consumos_with_vitte_by_tarjeta(
     orden_del_cliente = crud.orden.get_orden_abierta_by_rfid(db=db, tarjeta_id=raw_tarjeta)
     if not orden_del_cliente:
         print(f'No se encontro un cliente activo con tarjeta {raw_tarjeta} para sincronizar los consumos con Vitte.')
-        return
-    
-    hay_conexion, msg = vitte_api_client.check_health()
-    if not hay_conexion:
-        print(f'No se pudo sincronizar con Vitte. {msg}')
         return
     
     consumos_vino = vitte_api_client.consultar_transacciones_vino_por_cliente(
@@ -217,3 +215,17 @@ def sync_consumos_with_vitte_by_tarjeta(
             tarjeta_cliente=raw_tarjeta,   
             timestamp_cerrado=consumo.fecha
         )
+
+def sync_consumos_with_vitte_by_tarjeta(
+    db: Session,
+    raw_tarjeta: str,
+    abierto_por_id: int,
+    force: bool = False
+) -> bool:
+    sync_products_with_vitte(db=db)
+    return vitte_service.sync_consumptions_if_due(
+        tarjeta_id=raw_tarjeta,
+        sync_fn=lambda: _sync_consumos_with_vitte_by_tarjeta_uncached(db, raw_tarjeta, abierto_por_id),
+        health_check=vitte_api_client.check_health,
+        force=force,
+    )

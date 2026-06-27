@@ -7,6 +7,7 @@ from sql_app import crud, schemas
 from sql_app.api import deps
 
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 
 router = APIRouter()
 
@@ -154,6 +155,11 @@ def handle_cerrar_pedido(
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
+    try:
+        vitte_service.require_online(vitte_api_client.check_health)
+    except RuntimeError as err:
+        raise HTTPException(status_code=503, detail=f'Vitte no esta disponible. {err}')
+
     pedido, pudo_cerrarse, msg = crud.pedido.cerrar_pedido(
         db = db,
         cerrado_por = current_user.id,
@@ -164,10 +170,12 @@ def handle_cerrar_pedido(
         raise HTTPException(status_code=404, detail=msg)
     
     tarjeta_in_db = crud.tarjeta.get(db=db, id=tarjeta_cliente)
-    vitte_api_client.cargar_saldo_cliente(
+    saldo_actualizado = vitte_api_client.cargar_saldo_cliente(
         tarjeta_rfid = tarjeta_in_db.raw_rfid,
         monto_a_agregar = -(pedido.monto_cargado)
     )
+    if not saldo_actualizado:
+        raise HTTPException(status_code=503, detail='No se pudo actualizar el saldo en Vitte.')
     
     return pedido
 

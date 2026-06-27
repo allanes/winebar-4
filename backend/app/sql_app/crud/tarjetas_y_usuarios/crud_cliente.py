@@ -14,6 +14,7 @@ from sql_app.schemas.gestion_de_pedidos.orden import OrdenCompraAbrir
 from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_pass_de_deactivacion, generar_pass_por_defecto
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 from sql_app.schemas.validators import get_now_time
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
@@ -61,6 +62,11 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         puede_asociarse, msg = self.pre_entrega_checks(db=db, tarjeta_id=tarjeta_id)
         if not puede_asociarse:
             return None, False, msg
+
+        try:
+            vitte_service.require_online(vitte_api_client.check_health)
+        except RuntimeError as err:
+            return None, False, f'No se puede crear el cliente: Vitte no esta disponible. {err}'
         
         cliente_in_db = self.create(db=db, obj_in=cliente_in)
 
@@ -90,19 +96,17 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         
         # Setup Vitte init
         msg = ''
-        try:
-            vitte_api_client.cargar_o_actualizar_cliente_vitte(
-                cliente_id = cliente_in_db.id,
-                cliente_nombre = cliente_in_db.nombre,
-                raw_tarjeta_id = cliente_operando.tarjeta.raw_rfid
-            )
-            vitte_api_client.cargar_saldo_cliente(
-                tarjeta_rfid = cliente_operando.tarjeta.raw_rfid,
-                monto_a_agregar = orden_abierta_in_db.monto_maximo_orden,
-            )
-        except Exception as err:
-            msg = f'No se pudo cargar el cliente en VITTE. {err=}'
-            print(msg)
+        vitte_api_client.cargar_o_actualizar_cliente_vitte(
+            cliente_id = cliente_in_db.id,
+            cliente_nombre = cliente_in_db.nombre,
+            raw_tarjeta_id = cliente_operando.tarjeta.raw_rfid
+        )
+        saldo_cargado = vitte_api_client.cargar_saldo_cliente(
+            tarjeta_rfid = cliente_operando.tarjeta.raw_rfid,
+            monto_a_agregar = orden_abierta_in_db.monto_maximo_orden,
+        )
+        if not saldo_cargado:
+            return None, False, 'No se pudo cargar saldo en Vitte.'
         
         return cliente_in_db, True, msg
 
@@ -207,15 +211,15 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
         tarjeta = crud_tarjeta.tarjeta.get_active(db=db, id=cliente_opera.tarjeta_id)
         
         print(f'BORRANDO CLIENTE EN VITTE')
-        try: 
-            vitte_api_client.inhabilitar_cliente_vitte(
-                # data_cliente=cliente_opera,
-                cliente_id=id,
-                cliente_nombre=cliente.nombre,
-                raw_tarjeta_rfid=tarjeta.raw_rfid
-            )
-        except Exception as err:
-            print(f'el cliente no se pudo borrar de vitte. {err=}')
+        vitte_service.require_online(vitte_api_client.check_health)
+        pudo_inhabilitar = vitte_api_client.inhabilitar_cliente_vitte(
+            # data_cliente=cliente_opera,
+            cliente_id=id,
+            cliente_nombre=cliente.nombre,
+            raw_tarjeta_rfid=tarjeta.raw_rfid
+        )
+        if not pudo_inhabilitar:
+            raise RuntimeError('No se pudo inhabilitar el cliente en Vitte.')
         
         tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=cliente_opera.tarjeta_id)
         return tarjeta_devuelta        

@@ -80,8 +80,7 @@ async def check_turno_abierto(
     return True
 
 def sync_products_dependency(db: Session = Depends(get_db)):
-    sync_products_with_vitte(db=db)
-    # pass
+    return sync_products_with_vitte(db=db)
 
 def sync_consumos_dependency(
     db: Annotated[Session, Depends(get_db)],
@@ -92,7 +91,6 @@ def sync_consumos_dependency(
         raise ValueError("Tarjeta ID and Abierto Por ID are required for syncing consumptions.")
     
     print(f'DEBUG_MSG tarjeta {tarjeta_id}: sincronizando consumos desde sync_consumos {datetime.now()}')
-    sync_products_dependency(db=db)
-    print(f'DEBUG_MSG tarjeta {tarjeta_id}: fin de sinc de consumos dependency {datetime.now()}')
-    sync_consumos_with_vitte_by_tarjeta(db, tarjeta_id, abierto_por_id)
+    synced = sync_consumos_with_vitte_by_tarjeta(db, tarjeta_id, abierto_por_id)
     print(f'DEBUG_MSG tarjeta {tarjeta_id}: fin de sinc de consumos with vitte {datetime.now()}')
+    return synced

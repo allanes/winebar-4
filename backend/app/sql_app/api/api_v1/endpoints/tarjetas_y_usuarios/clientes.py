@@ -102,7 +102,8 @@ def handle_create_cliente_with_tarjeta(
     )
 
     if not fue_creado:
-        raise HTTPException(status_code=404, detail=error_msg)
+        status_code = 503 if "Vitte" in error_msg else 404
+        raise HTTPException(status_code=status_code, detail=error_msg)
     
     return cliente
 
