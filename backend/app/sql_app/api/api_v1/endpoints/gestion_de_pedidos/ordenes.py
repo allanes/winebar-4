@@ -1,5 +1,6 @@
 import os
 from typing import List, Annotated
+from datetime import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
@@ -253,6 +254,7 @@ def handle_read_orden_by_id(
     current_user: Annotated[schemas.PersonalInterno, Depends(deps.get_current_user)],
     db: Session = Depends(deps.get_db),
 ):
+    print(f'DEBUG_MSG order {id}: buscando orden id {id} {datetime.now()}')
     orden_in_db = crud.orden.get(db=db, id=id)
     if orden_in_db is None:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -260,17 +262,21 @@ def handle_read_orden_by_id(
     ## Reviso si esta abierta para sincronizar consumos de vino
     if not orden_in_db.cerrada_por:
         cliente_operando = crud.cliente_opera_con_tarjeta.get_by_cliente_id(db=db, cliente_id=orden_in_db.cliente_id)
+        print(f'DEBUG_MSG order {orden_in_db.id}: sincronizando consumos {datetime.now()}')
         deps.sync_consumos_dependency(
             db=db, 
             tarjeta_id=cliente_operando.tarjeta_id, 
             abierto_por_id=current_user.id
         )
+        print(f'DEBUG_MSG order {orden_in_db.id}: fin de sincroniz. de consumos {datetime.now()}')
         orden_in_db = crud.orden.get(db=db, id=id)
+        print(f'DEBUG_MSG order {orden_in_db.id}: fin de get orden {datetime.now()}')
     
     orden_detallada = crud.orden.convertir_a_orden_detallada(
         db=db,
         orden=orden_in_db
     )
+    print(f'DEBUG_MSG order {orden_in_db.id}: fin de orden detallada {datetime.now()}')
 
     return orden_detallada
 
