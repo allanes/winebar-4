@@ -28,11 +28,11 @@ Tutor externo: Esp. Ing. Tek, Luis
 Resumen
 :::
 
-Este documento describe el diseño y la implementación de una aplicación web para gestionar las ventas de un bar de vinos y tapas de modalidad autoservicio: Altacava Winebar. En el bar, cada cliente recibe al ingresar una tarjeta RFID con la que realiza todos sus consumos y que devuelve al retirarse, momento en el que se le cobra. Los vinos son servidos por máquinas dispensadoras automáticas marca Vitte, que el propio cliente acciona con su tarjeta, mientras que las tapas son despachadas por una persona en un puesto de atención.
+En este documento se describe el diseño y la implementación de una aplicación web para gestionar las ventas de un bar de vinos y tapas de modalidad autoservicio: Altacava Winebar. En el bar, cada cliente recibe al ingresar una tarjeta RFID con la que realiza todos sus consumos y que devuelve al retirarse, momento en el que se le cobra. Los vinos son servidos por máquinas dispensadoras automáticas marca Vitte, que el mismo cliente activa con su tarjeta, mientras que las tapas son despachadas por personal en un puesto de atención.
 
 El sistema desarrollado reutiliza las tarjetas que exigen las dispensadoras para identificar a los clientes y al personal en todas las operaciones del bar, consolida en una única orden de compra los consumos de vino y de tapas, limita el gasto de cada cliente mediante montos máximos, administra los turnos de caja y permite cobrar en caja o imputar el consumo al aplicativo gastronómico Fudo. La solución está compuesta por un *backend* con una API REST, una base de datos relacional, un *frontend* web con una vista para cada rol y un pequeño servidor local que se ejecuta en cada terminal, todo ello desplegado mediante contenedores en la red local del bar.
 
-Para llevar a cabo el trabajo se integraron conocimientos adquiridos a lo largo de la carrera, en particular técnicas de gestión de proyectos e ingeniería de software, diseño de bases de datos relacionales, programación orientada a objetos, redes e integración con sistemas de terceros.
+Para llevar a cabo el trabajo se integraron conocimientos adquiridos a lo largo de la especialización, en particular técnicas de gestión de proyectos e ingeniería de software, diseño de bases de datos relacionales, programación orientada a objetos, redes e integración con sistemas de terceros.
 
 ```{=openxml}
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
@@ -54,15 +54,15 @@ En este capítulo se presenta el problema que dio origen al trabajo, las solucio
 
 ## 1.1. Descripción del problema
 
-Altacava Winebar es un bar de vinos y tapas que funciona bajo una modalidad de autoservicio. Su propuesta se apoya en máquinas dispensadoras de vino de la firma Vitte, de industria nacional, que permiten que el propio cliente se sirva una medida de vino al acercar una tarjeta RFID a la máquina. Las dispensadoras forman parte de un sistema cerrado, provisto por el fabricante, que solo resuelve la venta de vino: registra clientes, tarjetas, saldos y consumos en una nube propia, pero no contempla la venta de otros productos ni la operatoria de caja de un comercio gastronómico.
+Altacava Winebar es un bar de vinos y tapas que funciona bajo una modalidad de autoservicio. Su propuesta fue pensada alrededor de máquinas dispensadoras de vino de la firma Vitte, de industria nacional, que permiten que el propio cliente se sirva una medida de vino al acercarles una tarjeta RFID. Estas dispensadoras forman parte de un sistema cerrado, provisto por el fabricante, que solo resuelve la venta de vino: registra clientes, tarjetas, saldos y consumos en una nube propia, pero no contempla la venta de otros productos ni la operatoria de caja de un comercio gastronómico.
 
-El cliente del proyecto deseaba poder usar la misma tarjeta para todo lo que ocurre dentro del bar. En particular, esto significaba:
+El cliente del proyecto deseaba poder usar la misma tarjeta para todo lo que ocurre dentro del bar. En particular, esto significaba que:
 
-- Que al ingresar, cada persona recibiera una tarjeta asociada a su nombre
-- Que un cliente, con su tarjeta, pudiera servirse vino en las dispensadoras y pedir tapas en un puesto de despacho; sin pagar en cada consumo
-- Que al retirarse, devolviera la tarjeta y abonara en la caja la suma de todos sus consumos
-- Que el personal del bar (cajeros, despachantes de tapas y administradores) también se pudieran identificar con tarjetas
-- Que quedara registro de los turnos de caja, de lo cobrado en cada uno y de quién atendió cada operación.
+- Al ingresar, cada persona recibiera una tarjeta asociada a su nombre
+- Un cliente, con su tarjeta, pudiera servirse vino en las dispensadoras y pedir tapas en un puesto de despacho; sin pagar en cada consumo
+- Un cliente, al retirarse, devolviera la tarjeta y abonara en la caja la suma de todos sus consumos
+- El personal del bar (cajeros, despachantes de tapas y administradores) también se pudiera identificar, cada uno con su tarjeta
+- Quedara registro de los turnos de caja, de lo cobrado en cada uno y de quién atendió cada operación.
 
 Con esto, el problema consistió en construir un sistema de gestión alrededor de dos elementos que ya estaban definidos de antemano: las tarjetas RFID y las máquinas dispensadoras Vitte. El principal desafío técnico fue la integración con la nube de Vitte, ya que el sistema del bar debía dar de alta a los clientes en ella, asignarles saldo, recuperar sus consumos de vino y darlos de baja al cierre, de manera transparente para el cajero.
 
@@ -72,17 +72,17 @@ Con esto, el problema consistió en construir un sistema de gestión alrededor d
 
 Los sistemas de gestión para locales gastronómicos disponibles en el mercado local se organizan, en general, alrededor del concepto de mesa: un mozo toma un pedido, lo carga en una mesa, la cocina recibe una comanda y la cuenta se cierra por mesa. A esta categoría pertenece Fudo, el sistema que utiliza el restaurante vinculado a Altacava y con el que este trabajo terminó integrándose. Estos productos resuelven adecuadamente la facturación, el control de stock y los reportes, pero no contemplan un esquema en el que cada persona acumula consumos individuales mediante una credencial propia.
 
-Por otro lado, los sistemas de autoservicio de bebidas, entre los que se encuentra Vitte, ofrecen su propia plataforma de administración. En ella se gestionan clientes, tarjetas, saldos, vinos, precios y reportes de consumo. Su modelo de uso típico es el de saldo prepago: el cliente carga dinero en su tarjeta y lo va consumiendo. Estas plataformas están pensadas para administrar las máquinas y no para gestionar el resto de las ventas del local.
+Por otro lado, los sistemas de autoservicio de bebidas, entre los que se encuentra Vitte, ofrecen su propia plataforma de administración. En ella se gestionan clientes, tarjetas, saldos, vinos, precios y reportes de consumo. En este caso, la modalidad es de saldo prepago: un cliente carga dinero en su tarjeta y lo va consumiendo. Estas plataformas están pensadas para manejar las máquinas, y no para gestionar el resto de las ventas de un local.
 
 Finalmente, existen soluciones de pago sin efectivo (*cashless*) orientadas a eventos masivos, basadas en pulseras o tarjetas RFID o NFC. Estas soluciones comparten el concepto de credencial única por persona, pero están dirigidas a otro tipo de operación y tampoco se integran con las dispensadoras utilizadas.
 
-Ninguna de las alternativas relevadas cubría el caso de uso completo: una cuenta individual pospaga, identificada por la misma tarjeta que acciona las dispensadoras, que combine consumos de vino registrados por un sistema de terceros con consumos de tapas registrados por el personal del bar.
+Ninguna de las alternativas relevadas cubría el caso de uso completo: una cuenta individual pospaga, identificada por la misma tarjeta que acciona las dispensadoras, que combine los consumos de vino registrados por un sistema de terceros, con consumos de tapas registrados por el personal del bar.
 
 ## 1.3. Motivación
 
-El cliente tiene como proyecto a mediano y largo plazo una cadena de bares de vino bajo este mismo formato. Para ello necesitaba un sistema a medida que le permitiera gestionar el primer local y que pudiera evolucionar para administrar múltiples sucursales.
+El cliente tiene como proyecto a mediano y largo plazo una cadena de bares de vino bajo este mismo formato. Para ello necesitaba un sistema a medida que le permitiera gestionar el primer local y que pudiera eventualmente evolucionar.
 
-Desde el punto de vista académico, el proyecto resultó de interés porque obliga a integrar tecnologías de distinta naturaleza: una aplicación web, una base de datos relacional, dispositivos de identificación por radiofrecuencia, una computadora de placa única con periféricos, y dos sistemas externos con los que es necesario interoperar a través de sus API.
+Desde el punto de vista académico, el proyecto resultó de interés porque obliga a integrar tecnologías de distinta naturaleza: una aplicación web, una base de datos relacional, dispositivos RFID, una computadora de placa única (SBC) con periféricos, y dos sistemas externos con los que se debe interactuar.
 
 ## 1.4. Objetivos y alcance
 
@@ -90,7 +90,7 @@ Desde el punto de vista académico, el proyecto resultó de interés porque obli
 
 ### 1.4.1. Objetivos
 
-El objetivo general del trabajo es desarrollar un sistema de gestión de ventas para un bar de tapas y vinos de tipo *fast-food*, Altacava Winebar, que utiliza máquinas dispensadoras de vino Vitte de industria nacional.
+El objetivo general del trabajo es desarrollar un sistema de gestión de ventas para un bar de tapas y vinos de tipo fast-food, *Altacava Winebar*, que utiliza máquinas dispensadoras de vino Vitte de industria nacional.
 
 Los objetivos específicos son:
 
@@ -104,17 +104,12 @@ A largo plazo, el proyecto del cliente apunta a gestionar varias sucursales. Est
 
 ### 1.4.2. Alcance
 
-Los usuarios del sistema son el personal interno del bar, clasificados en tres roles:
-
-- Administrador: configura el sistema. Da de alta tarjetas, personal y tapas, define los montos máximos de consumo y consulta los turnos y las órdenes.
-- Cajero: abre y cierra los turnos de caja, registra el ingreso de cada cliente, consulta las órdenes en curso y las cobra.
-- Tapero: atiende el puesto de tapas y carga los pedidos de los clientes.
+Los usuarios del sistema son el personal interno del bar, clasificados en tres roles: Administrador, Cajero y Tapero. El administrador configura el sistema, da de alta tarjetas, personal y tapas, define los montos máximos de consumo y consulta los turnos y las órdenes. El cajero abre y cierra los turnos de caja, registra el ingreso de cada cliente, consulta las órdenes en curso y las cobra. Por último, el tapero atiende el puesto de tapas y carga los pedidos de los clientes.
 
 Los clientes del bar no operan la aplicación de manera directa: interactúan con el sistema únicamente a través de su tarjeta, en las dispensadoras de vino y en los lectores del puesto de tapas.
 
-El sistema está pensado para un único local, con una terminal de caja, una terminal de tapeo y un puesto de administración, todos conectados a la red local del bar. La cantidad de clientes simultáneos está acotada por la capacidad del salón. Al iniciar, el cliente plantea la compra de un lote de 100 tarjetas.
+El sistema está pensado para un único local, con una terminal de caja, una terminal de tapeo y un puesto de administración, todos conectados a la red local del bar. La cantidad de clientes simultáneos (o sea, tarjetas) está acotada por la capacidad del salón. Al iniciar, el cliente plantea la compra de un lote de 100 tarjetas.
 
-El hecho de que un cliente pueda retirarse sin pasar por la caja y con la tarjeta en su poder, es un riesgo que fue transmitido al cliente y que decidió asumir. El sistema permite detectar el hecho hacia el final del turno, listando las tarjetas que todavía no fueron devueltas.
 
 Quedaron dentro del alcance:
 
@@ -126,7 +121,7 @@ Quedaron dentro del alcance:
 - La exportación de una orden como comanda imprimible.
 - La imputación de una orden a una mesa de Fudo, incorporada durante el desarrollo a pedido del cliente.
 
-Quedaron fuera del alcance de esta etapa la facturación fiscal, el control de stock, la gestión de múltiples sucursales, el tratamiento diferenciado de clientes VIP, las tarjetas de regalo con saldo precargado y la aplicación de promociones. Los tres últimos puntos fueron contemplados en el diseño de la base de datos, pero su lógica no fue implementada.
+Quedaron fuera del alcance de esta etapa la facturación fiscal, el control de stock, la gestión de múltiples sucursales, el manejo de clientes VIP, las tarjetas de regalo y el manejo de promociones. Los tres últimos puntos fueron contemplados en el diseño inicial de la base de datos, pero su lógica no fue implementada.
 
 # 2. Introducción específica
 
@@ -136,16 +131,15 @@ En este capítulo se introducen las tecnologías sobre las que se apoya la soluc
 
 Una aplicación web es un sistema al que los usuarios acceden mediante un navegador web. Su arquitectura habitual, mostrada en la Fig. 2.1, separa responsabilidades en:
 
-- *Frontend*: es la parte de la aplicación que se ejecuta en el navegador del usuario. Presenta la interfaz y se comunica con el servidor.
-- *Backend*: es la parte que se ejecuta en el servidor. Implementa las reglas de negocio, valida las operaciones y accede a los datos (bases de datos y APIs de terceros).
-- API: es la interfaz que el *backend* expone al *frontend* y a otros sistemas. En el estilo REST, los recursos se identifican mediante direcciones URL, se operan con los verbos del protocolo HTTP y se intercambian habitualmente en formato JSON.
-- API REST: es el mecanismo que expone el backend para ser consumido. Está formada por un conjunto de direcciones URL y operan bajo el protocolo HTTP. Es habitual el formato JSON en este tipo de intercambios. 
-- Base de datos: almacena la información de manera persistente. En un modelo relacional, los datos se organizan en tablas vinculadas mediante claves.
+- *Frontend*: es la parte de la aplicación que vé el usuario y con la que interactúa. Se ejecuta en un navegador. Se comunica con el servidor de backend.
+- *Backend*: es la parte que implementa las reglas de negocio, valida las operaciones y accede a los datos (bases de datos y APIs de terceros). Se ejecuta en el servidor.
+- API: es la interfaz que el *backend* expone al *frontend* u otros sistemas para ser consumido. En la variante REST, los recursos se identifican mediante direcciones URL, se operan con los verbos del protocolo HTTP (GET, POST, etc) y se intercambian habitualmente en formato JSON.
+- Base de datos: es el sistema usado para almacenar información de manera persistente. En un modelo relacional, los datos se organizan en tablas vinculadas mediante claves.
 - Proxy inverso: recibe todas las peticiones y las deriva al servicio que corresponda, de modo que el usuario accede a todo el sistema desde una única dirección.
 
 ![Fig. 2.1: Componentes genéricos de una aplicación web.](figuras/web_generica.png){width=14cm}
 
-Para el *backend* se eligió FastAPI, un *framework* basado Python orientado a la construcción de APIs. Se apoya en las anotaciones de tipos del lenguaje para validar los datos de entrada y de salida, y genera de manera automática la documentación interactiva de la API bajo el estándar OpenAPI. Esta última característica fue aprovechada en el proyecto para generar automáticamente el código cliente (SDK) del *frontend*.
+Para el *backend* se eligió FastAPI, un *framework* basado Python orientado a la construcción de APIs. Se apoya en las anotaciones de tipos (typehints) para validar los datos de entrada y de salida, y genera de manera automática la documentación interactiva de la API bajo el estándar OpenAPI. Esto último, a su vez, permite generar automáticamente el código cliente (SDK) del *frontend*. 
 
 Para el *frontend* se eligió React, una biblioteca de JavaScript para construir interfaces a partir de componentes reutilizables, junto con TypeScript, que agrega tipado estático al lenguaje. El entorno de desarrollo y de compilación del *frontend* se ejecuta sobre Node.js.
 
@@ -155,13 +149,13 @@ La virtualización permite ejecutar varios entornos aislados sobre un mismo equi
 
 El aislamiento entre componentes aporta varias ventajas: cada servicio incluye sus propias dependencias sin interferir con las de los demás, el entorno de desarrollo es equivalente al de producción y la instalación en un equipo nuevo se reduce a pocos comandos.
 
-Docker es la herramienta de contenedores más difundida. Una imagen de Docker se describe en un archivo de texto llamado *Dockerfile*, que indica la imagen base y los pasos necesarios para preconfigurar el entorno. El sistema de archivos de un contenedor es efímero: los cambios se pierden cuando el contenedor se elimina. Por ese motivo, los datos que deben persistir, como los archivos de la base de datos, se almacenan en volúmenes que residen en el equipo anfitrión. Docker Compose permite, además, describir en un único archivo todos los contenedores de una aplicación, sus redes y sus volúmenes, y levantarlos en conjunto.
+Docker es una de las herramientas de contenedores más difundidas que hay. Una imagen de Docker se describe en un archivo de texto llamado *Dockerfile*, que indica la imagen base y los pasos necesarios para configurar el entorno. El sistema de archivos de un contenedor es efímero: los cambios se pierden cuando el contenedor se elimina. Por ese motivo, los datos que deben persistir, como los archivos de la base de datos, se almacenan en volúmenes alojados en el equipo anfitrión de Docker. Además, Docker Compose permite además, describir en un único archivo todos los contenedores de una aplicación, sus redes y sus volúmenes, y levantarlos en conjunto.
 
 ## 2.3. Tecnología RFID
 
 La identificación por radiofrecuencia, o RFID por sus siglas en inglés, permite identificar objetos a distancia mediante ondas de radio. Un sistema RFID se compone de etiquetas, que almacenan un identificador, y de lectores, que las interrogan. En las etiquetas pasivas, como las tarjetas plásticas utilizadas en este proyecto, la energía necesaria para responder es provista por el campo electromagnético del propio lector, por lo que no requieren batería y su alcance es de pocos centímetros.
 
-Las tarjetas utilizadas son las que requieren las dispensadoras Vitte [COMPLETAR: modelo o tecnología de las tarjetas, por ejemplo frecuencia de operación]. Cada tarjeta posee un número único grabado de fábrica.
+Las tarjetas utilizadas son las de 13,56 MHz. Cada tarjeta posee un número único grabado de fábrica y no se reescribe.
 
 Los lectores empleados en las terminales de caja y de tapeo se conectan por USB y se comportan como un teclado: al acercar una tarjeta, el lector escribe su número seguido de la tecla Enter. Esta característica simplifica la integración con una aplicación web, ya que el navegador recibe la lectura como si el usuario la hubiera tipeado. Como contrapartida, cuando hay varios lectores conectados a un mismo equipo, el navegador no puede distinguir de cuál de ellos proviene una lectura. Este problema y su solución se tratan en la sección 3.5.
 
@@ -173,7 +167,7 @@ Vitte es un sistema de dispensado de vino por copa compuesto por tres elementos:
 
 ### 2.4.1. Máquinas dispensadoras
 
-Cada máquina es una cava refrigerada con varios picos dispensadores. Cada pico tiene asignada una botella y puede servir tres medidas: degustación, media copa y copa, cada una con su volumen y su precio. Sobre la cava va montada una tablet que ejecuta la aplicación de Vitte para Android y que se comunica con la electrónica que acciona los picos.
+Cada máquina es una cava refrigerada con varios picos dispensadores. Cada pico tiene asignada una botella y puede servir cualquiera de tres medidas: degustación, media copa y copa, cada configurable una con su volumen y su precio. Sobre la cava viene montada una tablet que ejecuta la aplicación de Vitte para Android y que se comunica con la electrónica que acciona los picos.
 
 Para servirse, el cliente acerca su tarjeta a la máquina. La aplicación consulta la nube para verificar que la tarjeta pertenezca a un cliente activo y que su saldo alcance. Luego el cliente elige el vino y la medida, la máquina dispensa y el consumo queda registrado en la nube, descontado del saldo de esa tarjeta.
 
@@ -196,10 +190,10 @@ Table: Tabla 2.1: Operaciones de la API de Vitte utilizadas por el sistema.
 | Borrado de cliente | Liberación de la tarjeta al cierre de la orden |
 | Carga de saldo | Asignación del crédito disponible para consumir |
 | Reporte de consumos | Recuperación de los consumos de vino de un período |
-| Imagen de vino | Obtención de la fotografía de cada vino |
+| Imagen de vino | Obtención de la imagen de cada vino |
 
 
-Dos características de la plataforma condicionaron el diseño. La primera es que las máquinas operan con un esquema de saldo prepago, mientras que el bar requería un esquema pospago. La segunda es que una tarjeta solo puede estar asociada a un cliente activo por vez, lo que obliga a dar de baja al cliente en Vitte cada vez que devuelve la tarjeta.
+Dos características de la plataforma condicionaron el diseño. La primera es que las máquinas operan con un esquema de saldo prepago, mientras que el bar requería un esquema pospago; por eso la necesidad de pre-cargarle saldo a la tarjeta. La segunda es que una tarjeta solo puede estar asociada a un cliente activo por vez; lo que obliga a dar de baja al cliente en Vitte cada vez que devuelve la tarjeta.
 
 ## 2.5. Sistema Fudo
 
@@ -259,7 +253,7 @@ Table: Tabla 2.3: Requerimientos no funcionales.
 - Las máquinas dispensadoras, su aplicación y su nube son un sistema cerrado que no puede modificarse.
 - Las tarjetas a utilizar son las que admiten las dispensadoras.
 - Los consumos de vino solo pueden conocerse consultando la nube de Vitte, lo que exige conexión a Internet.
-- El cliente definió que la app se alojara en una PC local [REVISAR: confirmar equipo utilizado como servidor].
+- El cliente definió que la app se alojara en una PC local.
 
 
 
