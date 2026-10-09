@@ -1,0 +1,6 @@
+flowchart LR
+    U[Navegador web<br/>frontend] -- "HTTP / JSON" --> P[Proxy inverso]
+    P --> F[Servidor de<br/>archivos estáticos]
+    P --> B[Backend<br/>API REST]
+    B -- SQL --> D[(Base de datos<br/>relacional)]
+    B -- "HTTP / JSON" --> E[APIs de terceros]

@@ -1,0 +1,8 @@
+flowchart TB
+    R[Capa de API - routers FastAPI<br/>endpoints, dependencias, autenticación] --> SC[Esquemas Pydantic<br/>validación y serialización]
+    R --> CR[Capa de lógica - clases CRUD<br/>reglas de negocio]
+    CR --> MO[Modelos SQLAlchemy<br/>mapeo objeto-relacional]
+    MO --> DB[(PostgreSQL)]
+    CR --> VI[Integración Vitte<br/>cliente HTTP + servicio de resiliencia]
+    CR --> FU[Integración Fudo<br/>cliente HTTP]
+    AL[Alembic<br/>migraciones] --> DB

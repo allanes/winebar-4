@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor C as Cliente
+    actor J as Cajero
+    participant B as Backend
+    participant V as Nube Vitte
+    participant U as Fudo
+    C->>J: Devuelve la tarjeta
+    J->>B: Consultar orden por tarjeta
+    B->>V: Consultar consumos de vino
+    B->>B: Registrar consumos nuevos como pedidos
+    B-->>J: Orden detallada y total
+    alt Cobro en caja
+        C->>J: Paga (efectivo, tarjeta y/o transferencia)
+        J->>B: Cerrar orden con desglose de pagos
+    else Imputación a una mesa de Fudo
+        J->>B: Cerrar orden indicando la venta de Fudo
+        B->>U: Crear un ítem por cada producto
+        U-->>B: Confirmación
+    end
+    B->>B: Verificar suma cobrada = monto cargado
+    B->>V: Inhabilitar y borrar cliente
+    B->>B: Cerrar orden y devolver tarjeta a banca
+    B-->>J: Orden cerrada

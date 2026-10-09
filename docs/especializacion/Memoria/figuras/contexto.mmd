@@ -1,0 +1,11 @@
+flowchart TB
+    AD[Administrador] --> S
+    CA[Cajero] --> S
+    TA[Tapero] --> S
+    CL[Cliente] -. tarjeta RFID .-> S
+    S[Sistema de Gestión<br/>Altacava Winebar]
+    S <--> V[Nube Vitte<br/>dispensadoras de vino]
+    S --> FU[Fudo<br/>sistema gastronómico]
+    S --> IM[Impresora de comandas]
+    S --> LC[Display LCD<br/>del cliente]
+    LR[Lectores RFID USB] --> S

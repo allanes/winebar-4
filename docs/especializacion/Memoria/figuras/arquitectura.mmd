@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph LAN[Red local del bar]
+        subgraph SRV[Servidor - Docker Compose]
+            NG[nginx<br/>proxy inverso :80]
+            FE[frontend<br/>React]
+            BE[backend<br/>FastAPI]
+            PG[(postgres)]
+            PA[pgadmin]
+            NG -- "/" --> FE
+            NG -- "/backend/" --> BE
+            BE --> PG
+            PA --> PG
+        end
+        subgraph TC[Terminal de caja - PC]
+            NC[Navegador<br/>vista cajero]
+            KC[Servidor de claves]
+            RC[Lector RFID]
+        end
+        subgraph TT[Terminal de tapeo - Raspberry Pi]
+            NT[Navegador<br/>vista tapero]
+            KT[Servidor de claves<br/>+ LCD + lectores]
+            RT[Lectores RFID USB]
+            LCD[Display LCD 20x4]
+            RT --> KT
+            KT --> LCD
+        end
+        DV[Dispensadoras Vitte]
+    end
+    NC --> NG
+    NT --> NG
+    NC -. localhost .-> KC
+    NT -. localhost .-> KT
+    BE -- Internet --> VI[Nube Vitte]
+    BE -- Internet --> FU[API Fudo]
+    DV -- Internet --> VI

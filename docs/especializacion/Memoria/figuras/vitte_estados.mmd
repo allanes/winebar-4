@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Degradado
+    Degradado --> EnLinea: verificación exitosa
+    EnLinea --> Degradado: 1 falla
+    Degradado --> FueraDeLinea: 3 fallas consecutivas
+    FueraDeLinea --> FueraDeLinea: circuito abierto (30 s) - no se consulta a Vitte
+    FueraDeLinea --> EnLinea: verificación exitosa tras la espera
+    FueraDeLinea --> FueraDeLinea: nueva falla

@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor C as Cliente
+    actor J as Cajero
+    participant B as Backend
+    participant V as Nube Vitte
+    C->>J: Ingresa al bar e indica su nombre
+    J->>B: Alta de cliente con tarjeta leida
+    B->>B: Verificar turno abierto y tarjeta libre
+    B->>V: Verificar disponibilidad
+    B->>B: Crear cliente, asociar tarjeta y abrir orden
+    B->>V: Crear cliente con la tarjeta
+    B->>V: Cargar saldo = monto máximo de la orden
+    B-->>J: Cliente y orden creados
+    J-->>C: Entrega la tarjeta

@@ -1,0 +1,43 @@
+flowchart LR
+    AD([Administrador])
+    CA([Cajero])
+    TA([Tapero])
+    CL([Cliente])
+    PI([Personal interno])
+    subgraph S[Sistema de Gestión Altacava Winebar]
+        direction LR
+        subgraph G1[Configuración]
+            direction TB
+            U1(Gestionar tarjetas y roles)
+            U2(Gestionar personal interno)
+            U3(Gestionar menú de tapas)
+            U4(Configurar montos máximos)
+            U5(Asociar lectores con tapas)
+        end
+        subgraph G0[Acceso]
+            U6(Iniciar sesión con tarjeta)
+        end
+        subgraph G2[Caja]
+            direction TB
+            U7(Abrir turno)
+            U8(Registrar ingreso de cliente)
+            U9(Consultar orden)
+            U10(Modificar montos de una orden)
+            U11(Cobrar y cerrar orden)
+            U12(Exportar orden a Fudo)
+            U13(Cambiar cajero)
+            U14(Cerrar turno y caja)
+        end
+        subgraph G3[Consumos]
+            direction TB
+            U15(Cargar pedido de tapas)
+            U16(Consumir vino en dispensadora)
+        end
+    end
+    PI --- U6
+    AD --- G1
+    CA --- G2
+    TA --- U15
+    CL --- U15
+    CL --- U16
+    U11 -. extiende .-> U12

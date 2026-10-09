@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant L as Lector RFID
+    participant F as Frontend (navegador)
+    participant K as Servidor de claves (localhost)
+    participant B as Backend
+    F->>F: Solicitar tarjeta
+    L-->>F: Número de tarjeta (usuario)
+    F->>K: GET /getPassword
+    K-->>F: Clave de API de la terminal
+    F->>B: POST /login/access-token (tarjeta, clave de API)
+    B->>B: Validar tarjeta de personal y clave de API
+    alt Credenciales válidas
+        B->>B: Identificar terminal (CAJA, TAPA o ADMIN)
+        B-->>F: Token JWT (usuario + terminal)
+    else Credenciales inválidas
+        B-->>F: Error 401
+    end
