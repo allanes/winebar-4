@@ -10,3 +10,6 @@ PREGUNTAS PARA CARLOS
 - Revisar parte que menciona CASER, nose si hacia todos los diags.
 - ver como abrir caser
 - hay q rehacer imagenes - ver prompt de claude
+- rever capitulo integracion y conclusiones
+- ver y completar seguimiento de riesgos. o sacarlo?
+- cumplimiento de requerimientos...?

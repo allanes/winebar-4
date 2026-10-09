@@ -112,7 +112,9 @@ Los usuarios del sistema son el personal interno del bar, clasificados en tres r
 
 Los clientes del bar no operan la aplicación de manera directa: interactúan con el sistema únicamente a través de su tarjeta, en las dispensadoras de vino y en los lectores del puesto de tapas.
 
-El sistema está pensado para un único local, con una terminal de caja, una terminal de tapeo y un puesto de administración, todos conectados a la red local del bar. La cantidad de clientes simultáneos está acotada por la capacidad del salón [COMPLETAR: cantidad aproximada de clientes y de tarjetas en circulación].
+El sistema está pensado para un único local, con una terminal de caja, una terminal de tapeo y un puesto de administración, todos conectados a la red local del bar. La cantidad de clientes simultáneos está acotada por la capacidad del salón. Al iniciar, el cliente plantea la compra de un lote de 100 tarjetas.
+
+El hecho de que un cliente pueda retirarse sin pasar por la caja y con la tarjeta en su poder, es un riesgo que fue transmitido al cliente y que decidió asumir. El sistema permite detectar el hecho hacia el final del turno, listando las tarjetas que todavía no fueron devueltas.
 
 Quedaron dentro del alcance:
 
@@ -179,22 +181,22 @@ Para servirse, el cliente acerca su tarjeta a la máquina. La aplicación consul
 
 La plataforma en la nube concentra la información de la empresa: locales, máquinas, módulos, posiciones de cada pico, vinos, precios, clientes, tarjetas, saldos y consumos. Ofrece un panel web de administración y una API HTTP que utilizan tanto ese panel como las tablets de las máquinas.
 
-Al momento de realizar el trabajo no se contaba con documentación pública de esa API. Su funcionamiento se relevó observando el intercambio entre el panel web, las máquinas y la nube, y reproduciendo luego esas operaciones desde el *backend* [REVISAR: confirmar con el tutor cómo conviene describir este relevamiento y si se contó con el aval del fabricante]. Las operaciones identificadas y utilizadas se resumen en la Tabla 2.1.
+El sistema del bar necesitaba conectarse con esa nube para dar de alta clientes, cargarles saldo y recuperar sus consumos. Sin embargo, al momento de realizar el trabajo no existía documentación pública de la API ni otro mecanismo de integración ofrecido por el fabricante. Para resolverlo, se utilizó Wireshark (un analizador de protocolos de red) y las herramientas de desarrollador del navegador instalado. Wireshark permitió capturar el tráfico que intercambian la tablet de la máquina con la nube. Desde las herramientas de desarrollador, se pudo observar el tráfico entre la aplicación web y su backend. De este análisis se obtuvieron las direcciones, los formatos de los mensajes y el mecanismo de autenticación de cada operación importante, que luego fueron emuladas en el sistema desarrollado. Las operaciones identificadas y utilizadas se resumen en la Tabla 2.1.
 
 Table: Tabla 2.1: Operaciones de la API de Vitte utilizadas por el sistema.
 
 
-| Operación                       | Uso en el sistema                                                    |
+| Operación | Uso en el sistema |
 | ------------------------------- | -------------------------------------------------------------------- |
-| Inicio de sesión                | Obtención de un *token* de acceso, que se renueva cada hora          |
-| Locales del usuario             | Obtención de los identificadores de empresa y de local               |
-| Máquinas, módulos y posiciones  | Recorrido de los picos para conocer los vinos cargados y sus precios |
-| Búsqueda de cliente por tarjeta | Verificación de existencia y consulta del saldo                      |
-| Guardado de cliente             | Alta, modificación e inhabilitación de un cliente                    |
-| Borrado de cliente              | Liberación de la tarjeta al cierre de la orden                       |
-| Carga de saldo                  | Asignación del crédito disponible para consumir                      |
-| Reporte de consumos             | Recuperación de los consumos de vino de un período                   |
-| Imagen de vino                  | Obtención de la fotografía de cada vino                              |
+| Inicio de sesión | Obtención de un *token* de acceso, que se renueva cada hora |
+| Locales del usuario | Obtención de los identificadores de empresa y de local |
+| Máquinas, módulos y posiciones | Recorrido de los picos para conocer los vinos cargados y sus precios |
+| Búsqueda de cliente por tarjeta | Verificación de existencia y consulta del saldo |
+| Guardado de cliente | Alta, modificación e inhabilitación de un cliente |
+| Borrado de cliente | Liberación de la tarjeta al cierre de la orden |
+| Carga de saldo | Asignación del crédito disponible para consumir |
+| Reporte de consumos | Recuperación de los consumos de vino de un período |
+| Imagen de vino | Obtención de la fotografía de cada vino |
 
 
 Dos características de la plataforma condicionaron el diseño. La primera es que las máquinas operan con un esquema de saldo prepago, mientras que el bar requería un esquema pospago. La segunda es que una tarjeta solo puede estar asociada a un cliente activo por vez, lo que obliga a dar de baja al cliente en Vitte cada vez que devuelve la tarjeta.
@@ -212,42 +214,42 @@ Los requerimientos se relevaron en reuniones con el cliente durante la primera e
 Table: Tabla 2.2: Requerimientos funcionales.
 
 
-| Id.  | Descripción                                                                                                                                                                        |
+| Id. | Descripción |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RF1  | Todas las personas deben operar en el bar mediante tarjetas RFID. Cada tarjeta tiene un rol: administrador, cajero, tapero, cliente estándar o cliente VIP.                        |
-| RF2  | Las tarjetas deben existir en el sistema con su rol, independientemente de que estén asignadas a una persona. Debe conocerse si están activas, entregadas y presentes en el salón. |
-| RF3  | El personal interno debe poder iniciar sesión acercando su tarjeta a la terminal.                                                                                                  |
-| RF4  | El administrador debe poder dar de alta y de baja tarjetas, personal y tapas, y configurar los montos máximos por defecto.                                                         |
-| RF5  | El bar debe atender por turnos, abiertos y cerrados por un cajero. De cada turno debe registrarse la apertura, el cierre, la cantidad de órdenes y los montos cobrados.            |
-| RF6  | Al ingresar un cliente, el cajero debe registrarlo, entregarle una tarjeta y abrirle una orden de compra.                                                                          |
-| RF7  | El cliente debe poder servirse vino en las dispensadoras con la tarjeta recibida, sin intervención del personal.                                                                   |
-| RF8  | El tapero debe poder cargar pedidos de tapas a la orden del cliente a partir de su tarjeta. Cada pedido está formado por uno o más renglones con producto, cantidad y monto.       |
-| RF9  | El menú de vinos, con sus nombres, medidas y precios, debe obtenerse del sistema de las dispensadoras.                                                                             |
-| RF10 | Cada orden y cada pedido deben tener un monto máximo, tomado de una configuración general y modificable para una orden en particular.                                              |
-| RF11 | Los consumos de vino deben incorporarse a la orden del cliente junto con los de tapas.                                                                                             |
-| RF12 | El cajero debe poder (i) consultar una orden usando la tarjeta o tipeando el nombre del cliente, (ii) cobrarla indicando los medios de pago y (iii) cerrarla.                      |
-| RF13 | Debe poder emitirse el detalle de una orden en un formato imprimible.                                                                                                              |
-| RF14 | Debe poder cambiarse de cajero sin cerrar las órdenes en curso.                                                                                                                    |
-| RF15 | Debe poder imputarse una orden a una venta abierta de una mesa de Fudo.                                                                                                            |
-| RF16 | El cliente debe poder ver su consumo acumulado en una pantalla en el puesto de tapas.                                                                                              |
+| RF1 | Todas las personas, tanto clientes como personal, deben operar en el bar mediante tarjetas RFID. |
+| RF2 | Cada tarjeta debe estar registrada con un rol (administrador, cajero, tapero o cliente) antes de asignarse a una persona. Debe conocerse si está activa, entregada y presente en el salón. |
+| RF3 | El personal interno debe poder iniciar sesión acercando su tarjeta a la terminal. |
+| RF4 | El administrador debe poder dar de alta y de baja tarjetas, personal y tapas, y configurar los montos máximos por defecto. |
+| RF5 | El bar debe atender por turnos, abiertos y cerrados por un cajero. De cada turno debe registrarse la apertura, el cierre, la cantidad de órdenes y los montos cobrados. |
+| RF6 | Al ingresar un cliente, el cajero debe registrarlo, entregarle una tarjeta y abrirle una orden de compra. |
+| RF7 | El cliente debe poder servirse vino en las dispensadoras con la tarjeta recibida, sin intervención del personal. |
+| RF8 | El tapero debe poder cargar pedidos de tapas a la orden del cliente a partir de su tarjeta. Cada pedido está formado por uno o más renglones con producto, cantidad y monto. |
+| RF9 | El menú de vinos, con sus nombres, medidas y precios, debe obtenerse del sistema de las dispensadoras. |
+| RF10 | Cada orden y cada pedido deben tener un monto máximo, tomado de una configuración general y modificable para una orden en particular. |
+| RF11 | Los consumos de vino deben incorporarse a la orden del cliente junto con los de tapas. |
+| RF12 | El cajero debe poder (i) consultar una orden usando la tarjeta o tipeando el nombre del cliente, (ii) cobrarla indicando los medios de pago y (iii) cerrarla. |
+| RF13 | Debe poder emitirse el detalle de una orden en un formato imprimible. |
+| RF14 | Debe poder cambiarse de cajero sin cerrar las órdenes en curso. |
+| RF15 | Debe poder imputarse una orden a una venta abierta de una mesa de Fudo. |
+| RF16 | El cliente debe poder ver su consumo acumulado en una pantalla en el puesto de tapas. |
 
 
-Los requerimientos RF13 a RF16 no formaban parte del relevamiento inicial y se incorporaron durante el desarrollo.
+Los requerimientos RF13 a RF16 no formaban parte del relevamiento inicial y se incorporaron durante el desarrollo. El relevamiento inicial preveía además un rol de cliente VIP, con condiciones de consumo diferenciadas. Ese requerimiento fue reemplazado por la posibilidad de ajustar los montos máximos de cada orden (RF10), que resuelve la misma necesidad de forma más simple. 
 
 ### 2.6.2. Requerimientos no funcionales
 
 Table: Tabla 2.3: Requerimientos no funcionales.
 
 
-| Id.  | Descripción                                                                                                                                  |
+| Id. | Descripción |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| RNF1 | El sistema debe funcionar dentro de la red local del bar y accederse desde un navegador web, sin instalar software adicional en los puestos. |
-| RNF2 | La información debe persistir ante reinicios y cortes de energía.                                                                            |
-| RNF3 | El sistema no debe eliminar físicamente tarjetas, personal ni clientes, para conservar la trazabilidad de las operaciones.                   |
-| RNF4 | La instalación y la actualización deben poder realizarse con un procedimiento simple y repetible.                                            |
-| RNF5 | La atención en el puesto de tapas debe ser ágil: cargar una tapa no debe requerir más que una acción.                                        |
-| RNF6 | El sistema debe informar con claridad el estado de la conexión con Vitte y no bloquearse cuando ese servicio no responde.                    |
-| RNF7 | Solo el personal autenticado, y desde una terminal autorizada, debe poder operar.                                                            |
+| RNF1 | El sistema debe funcionar dentro de la red local del bar y operarse desde un navegador web. |
+| RNF2 | La información debe persistir ante reinicios y cortes de energía. |
+| RNF3 | El sistema no debe eliminar tarjetas, personal ni clientes de la base de datos, para conservar la trazabilidad de las operaciones.  |
+| RNF4 | La instalación y la actualización deben poder realizarse con un procedimiento simple y repetible. |
+| RNF5 | La atención en el puesto de tapas debe ser ágil: cargar una tapa no debe requerir más que una acción. |
+| RNF6 | El sistema debe informar con claridad el estado de la conexión con Vitte y no bloquearse cuando ese servicio no responde. |
+| RNF7 | Solo el personal autenticado, y desde una terminal autorizada, debe poder operar. |
 
 
 
@@ -290,23 +292,20 @@ El trabajo se organizó en tareas identificadas con un código, cada una desarro
 
 ### 2.7.2. Análisis de riesgos
 
-Al inicio del proyecto se identificaron los riesgos de la Tabla 2.5 y se definió una acción de mitigación para cada uno.
+Al inicio del proyecto se identificaron los riesgos de la Tabla 2.5 y se definió una respuesta para cada uno, que puede ir desde reconocerlo hasta mitigarlo completamente.
 
-Table: Tabla 2.5: Riesgos identificados y acciones de mitigación.
+Table: Tabla 2.5: Riesgos identificados y respuesta definida.
 
-
-| Id. | Riesgo                                                                   | Probabilidad | Impacto | Mitigación                                                                                         |
-| --- | ------------------------------------------------------------------------ | ------------ | ------- | -------------------------------------------------------------------------------------------------- |
-| R1  | La API de Vitte no permite realizar alguna de las operaciones necesarias | Baja         | Alto    | Investigar la API antes de comprometer el diseño y aislar la integración en un módulo propio       |
-| R2  | Vitte modifica su API sin aviso                                          | Media        | Alto    | Concentrar todas las llamadas en un cliente único y validar las respuestas con esquemas            |
-| R3  | Pérdida de conexión a Internet durante la atención                       | Media        | Alto    | Informar el estado de la conexión y evitar que las consultas a Vitte bloqueen el resto del sistema |
-| R4  | Un cliente consume por encima de lo que puede o desea pagar              | Media        | Medio   | Montos máximos por pedido y por orden                                                              |
-| R5  | Un cliente se retira sin devolver la tarjeta                             | Baja         | Medio   | Impedir el cierre del turno con órdenes abiertas                                                   |
-| R6  | Cambios de requerimientos con el sistema en uso                          | Alta         | Medio   | Migraciones versionadas de la base de datos y despliegue repetible                                 |
-| R7  | Pérdida de datos por falla del servidor                                  | Baja         | Alto    | Volumen persistente para la base de datos [COMPLETAR: política de copias de seguridad, si existe]  |
-
-
-
+| Id. | Riesgo | Probabilidad | Impacto | Respuesta |
+|:--|:------|:--|:--|:------|
+| R1 | La API de Vitte no permite realizar alguna de las operaciones necesarias | Media | Alto | Reducir la probabilidad de descubrirlo tarde: probar cada operación con una prueba de concepto antes de desarrollar el resto del sistema. Como contingencia, realizar esa operación a mano desde el panel de Vitte |
+| R2 | Vitte modifica su API sin aviso | Media | Alto | No puede evitarse. La forma de las respuestas de Vitte se validan contra los esquemas encontrados, de modo que un cambio sea capturado como un error y no como datos incorrectos. |
+| R3 | Pérdida de conexión a Internet durante la atención | Media | Alto | App debe informar el estado de la conexión y evitar que las consultas que dependen de Internet, bloqueen el resto del sistema |
+| R4 | Un cliente consume por encima de lo que puede o desea pagar | Media | Medio | Montos máximos por pedido y por orden |
+| R5 | Un cliente se retira sin pagar, con la tarjeta en su poder | Baja | Medio | Riesgo aceptado por el cliente. El sistema permite detectarlo al final del turno, porque la orden queda abierta y el turno no puede cerrarse sin resolverla |
+| R6 | Cambios de requerimientos con el sistema en uso | Alta | Medio | Migraciones versionadas de la base de datos y despliegue repetible |
+| R7 | Pérdida de datos por falla del servidor | Baja | Alto | El sistema sube copias de seguridad periódicas a AWS S3. |
+| R8 | Corte de energía mientras se arma un pedido | Media | Bajo | El carrito se guarda en la base de datos, como un pedido abierto. Al volver a identificar al cliente, el pedido se retoma donde había quedado |
 
 # 3. Diseño e implementación
 
@@ -498,17 +497,17 @@ El esquema implementado mantiene la estructura del modelo original, con las dife
 Table: Tabla 3.1: Diferencias entre el modelo diseñado y el esquema implementado.
 
 
-| Elemento                              | Cambio                                                                                                                                      | Motivo                                                                    |
+| Elemento | Cambio | Motivo |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Personal interno y tarjeta            | La relación se implementó como una clave foránea en personal interno, en lugar de una tabla intermedia                                      | Cada persona del personal tiene a lo sumo una tarjeta                     |
-| Tarjeta, cliente, personal y producto | Se agregó un indicador de registro activo                                                                                                   | Baja lógica en lugar de borrado físico                                    |
-| Cliente                               | Se agregó el nombre del rol utilizado                                                                                                       | Conservar el dato histórico luego de devuelta/reutilizacion de la tarjeta |
-| Vino                                  | Se reemplazaron los listados de nombres, precios y metadatos por el identificador en Vitte y el volumen                                     | Cada medida de cada vino se trata como un producto independiente          |
-| Orden de compra                       | Se agregaron el monto cargado, los montos cobrados por medio de pago, el monto imputado a Fudo, el monto máximo de pedido y los comentarios | Cobro con desglose, cierre de caja y exportación                          |
-| Pedido                                | Se agregaron el estado de cerrado, el monto cargado y el indicador de exportación                                                           | Permitir pedidos en curso que se retoman                                  |
-| Renglón                               | Se agregó el identificador del consumo en Vitte                                                                                             | Evitar registrar dos veces un mismo consumo de vino                       |
-| Turno                                 | Se reemplazaron los ingresos totales por el monto en caja informado y se agregaron comentarios                                              | Arqueo de caja                                                            |
-| Lector de tapas                       | Tabla nueva                                                                                                                                 | Asociación entre lectores RFID y tapas                                    |
+| Personal interno y tarjeta | La relación se implementó como una clave foránea en personal interno, en lugar de una tabla intermedia | Cada persona del personal tiene a lo sumo una tarjeta |
+| Tarjeta, cliente, personal y producto | Se agregó un indicador de registro activo | Baja lógica en lugar de borrado físico |
+| Cliente | Se agregó el nombre del rol utilizado | Conservar el dato histórico luego de devuelta/reutilizacion de la tarjeta |
+| Vino | Se reemplazaron los listados de nombres, precios y metadatos por el identificador en Vitte y el volumen | Cada medida de cada vino se trata como un producto independiente |
+| Orden de compra | Se agregaron el monto cargado, los montos cobrados por medio de pago, el monto imputado a Fudo, el monto máximo de pedido y los comentarios | Cobro con desglose, cierre de caja y exportación |
+| Pedido | Se agregaron el estado de cerrado, el monto cargado y el indicador de exportación | Permitir pedidos en curso que se retoman |
+| Renglón | Se agregó el identificador del consumo en Vitte | Evitar registrar dos veces un mismo consumo de vino |
+| Turno | Se reemplazaron los ingresos totales por el monto en caja informado y se agregaron comentarios | Arqueo de caja |
+| Lector de tapas | Tabla nueva | Asociación entre lectores RFID y tapas |
 
 
 El modelo físico original y el listado de tablas se incluyen en el Anexo A.
@@ -524,26 +523,26 @@ El *backend* se organizó en las capas que muestra la Fig. 3.7, aplicando princi
 - Clases CRUD: concentran el acceso a los datos y las reglas de negocio. Una clase base genérica, parametrizada con el modelo y sus esquemas, implementa las operaciones comunes de alta, lectura, modificación y baja. Las clases de cada entidad heredan de ella y agregan su lógica propia.
 - Enrutadores: definen los puntos de acceso de la API, declaran las dependencias de autenticación y de turno abierto, e invocan a las clases CRUD.
 
-La baja lógica se resolvió con una segunda clase base, que hereda de la genérica y es utilizada por las entidades que poseen el indicador de registro activo. Esta clase implementa de forma general las operaciones de crear, desactivar y reactivar, y delega en métodos que cada subclase redefine las verificaciones previas y los valores a asignar en cada transición. Así, por ejemplo, la clase de tarjetas verifica que el rol exista y que la tarjeta no esté dada de alta antes de crearla, e impide desactivarla mientras esté entregada o presente en el salón. Si se da de alta una tarjeta que había sido dada de baja, el registro existente se reactiva en lugar de duplicarse.
+La baja lógica se resolvió con una segunda clase base, que hereda de la genérica y es utilizada por las entidades que poseen el indicador de registro activo. Esta clase implementa una sola vez los pasos comunes de tres operaciones: crear un registro, desactivarlo y reactivarlo. Lo que cambia de una entidad a otra, es decir, qué se verifica antes de cada operación y qué valores toma el registro después, queda en métodos que cada subclase redefine. Así, por ejemplo, la clase de tarjetas verifica que el rol exista y que la tarjeta no esté dada de alta antes de crearla, e impide desactivarla mientras esté entregada o presente en el salón. Si se da de alta una tarjeta que había sido dada de baja, el registro existente se reactiva en lugar de duplicarse o crease uno nuevo.
 
 La API quedó organizada en los grupos de la Tabla 3.2. El listado completo de puntos de acceso se consulta en la documentación interactiva que genera el propio *backend*.
 
 Table: Tabla 3.2: Grupos de puntos de acceso de la API.
 
 
-| Grupo                              | Funciones                                                                          |
+| Grupo | Funciones |
 | ---------------------------------- | ---------------------------------------------------------------------------------- |
-| Login                              | Emisión de *tokens* y consulta del usuario autenticado                             |
-| Roles, tarjetas y personal interno | Altas, bajas, consultas, entrega y devolución de tarjetas                          |
-| Clientes                           | Alta de cliente con tarjeta y apertura de orden, consultas                         |
-| Tapas y vinos                      | Gestión del menú de tapas y sus fotos, consulta de vinos                           |
-| Turnos                             | Apertura, cierre, cambio de cajero y consultas                                     |
-| Órdenes                            | Consulta por tarjeta, nombre o turno, modificación de montos, cierre y exportación |
-| Pedidos                            | Apertura, agregado y quita de productos, cierre y cancelación de renglones         |
-| Lectores de tapas                  | Registro de lectores por terminal y asociación con tapas                           |
-| Configuración                      | Montos máximos por defecto                                                         |
-| Vitte                              | Estado de la conexión                                                              |
-| Fudo                               | Mesas, ventas por mesa y detalle de venta                                          |
+| Login | Emisión de *tokens* y consulta del usuario autenticado |
+| Roles, tarjetas y personal interno | Altas, bajas, consultas, entrega y devolución de tarjetas |
+| Clientes | Alta de cliente con tarjeta y apertura de orden, consultas |
+| Tapas y vinos | Gestión del menú de tapas y sus fotos, consulta de vinos |
+| Turnos | Apertura, cierre, cambio de cajero y consultas |
+| Órdenes | Consulta por tarjeta, nombre o turno, modificación de montos, cierre y exportación |
+| Pedidos | Apertura, agregado y quita de productos, cierre y cancelación de renglones |
+| Lectores de tapas | Registro de lectores por terminal y asociación con tapas |
+| Configuración | Montos máximos por defecto |
+| Vitte | Estado de la conexión |
+| Fudo | Mesas, ventas por mesa y detalle de venta |
 
 
 
@@ -597,6 +596,8 @@ La integración con Fudo sigue la misma organización: un cliente HTTP que obtie
 Para imputar una orden a una mesa, el cajero ve el listado de mesas que tienen ventas activas, con el nombre del salón al que pertenecen, y al elegir una mesa ve sus ventas con la fecha de creación, la cantidad de personas, el nombre del cliente y el total. Seleccionada la venta, el *backend* agrupa los renglones de la orden por producto y crea en esa venta un ítem por cada producto distinto, con la cantidad y el monto acumulados.
 
 Como los productos del bar no existen en el catálogo de Fudo, se definieron en Fudo dos artículos genéricos, uno para tapas y otro para vinos. Cada ítem exportado utiliza el artículo genérico que corresponde, con el precio informado por el sistema y un comentario que incluye el nombre real del producto, las notas del cajero y el número de orden. El cuerpo de la petición se genera a partir de una plantilla. Si la exportación falla, la orden no se cierra y el cajero puede reintentar. Si tiene éxito, la orden se cierra con el monto imputado a Fudo y un comentario generado automáticamente con el número de venta y de mesa. En el cierre de caja, estos montos se informan separados de los cobrados en efectivo, con tarjeta o por transferencia.
+
+[COMPLETAR: capturas de la selección de mesa y de venta en la aplicación, de la venta de Fudo con los ítems exportados, del formulario de cobro con efectivo, tarjeta y transferencia, y del detalle de un turno cerrado con el desglose.]
 
 ### 3.6.6. Exportación de órdenes
 
@@ -750,18 +751,14 @@ El aprendizaje más significativo del trabajo se relaciona con la dependencia de
 
 ## 6.2. Trabajo futuro
 
-Se identifican las siguientes líneas de continuidad:
+A partir de los puntos de dolor presentados, las siguientes características son deseables a futuro:
 
-- Implementar la lógica de las funciones ya contempladas en el modelo de datos: promociones, clientes VIP que conservan su tarjeta entre visitas y tarjetas de regalo con saldo precargado.
-- Completar las estadísticas de cada turno y agregar reportes de ventas por período, por producto y por cliente.
-- Incorporar el control de stock de tapas.
-- Reforzar la seguridad: exigir autenticación y verificación de rol en todos los puntos de acceso de la API, restringir los orígenes admitidos, proteger con cifrado las comunicaciones dentro de la red local y revisar el tratamiento de las credenciales de los clientes.
-- Ampliar las pruebas automatizadas, en especial sobre la lógica de pedidos y sobre las integraciones, simulando los servicios externos.
-- Registrar los consumos de vino de manera independiente de las consultas, mediante una tarea periódica, y permitir operar en modo degradado cuando Vitte no está disponible.
+- Mejorar la cobertura de la red inalámbrica del local, de la que dependen las terminales y las dispensadoras. Con el tiempo, fueron compartiendo el acceso a WiFi con más dispositivos; y hoy en día funciona de forma muy inestable.
+- Lograr que el sistema quede operativo sin intervención manual después de un reinicio del servidor, por ejemplo luego de un corte de energía. El local es grande y funciona en una planta baja, mientras que el servidor está en un primer piso. Cualquier interacción física con el servidor, ofrece mucha fricción. Más aun cuando el bar está operando.
+- Reducir la dependencia de la conexión a Internet: registrar los consumos de vino mediante una tarea periódica, independiente de las consultas del cajero, y permitir que la caja siga operando en un modo degradado mientras Vitte no está disponible.
+- Fijar las versiones de las dependencias y de las imágenes de los contenedores, para que una reinstalación no incorpore cambios incompatibles.
+- Simplificar la aplicación en función del uso real. El local evolucionó hacia un esquema mixto, con mozos además del autoservicio, y el puesto de tapas perdió la relevancia que el cliente preveía al principio.
 - Extender el modelo para administrar múltiples sucursales, en línea con el proyecto de largo plazo del cliente.
-- Separar el historial de clientes y órdenes de los datos de la operación diaria, medida prevista en el relevamiento inicial para cuando el volumen de datos lo justifique.
-
-
 
 # Referencias bibliográficas
 
