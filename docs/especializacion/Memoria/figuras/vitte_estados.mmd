@@ -1,9 +1,9 @@
-stateDiagram-v2
-    direction LR
-    [*] --> Degradado
-    Degradado --> EnLinea: verificación exitosa
-    EnLinea --> Degradado: 1 falla
-    Degradado --> FueraDeLinea: 3 fallas consecutivas
-    FueraDeLinea --> FueraDeLinea: circuito abierto (30 s) - no se consulta a Vitte
-    FueraDeLinea --> EnLinea: verificación exitosa tras la espera
-    FueraDeLinea --> FueraDeLinea: nueva falla
+flowchart LR
+    I(( )) --> D
+    L[<b>En línea</b><br/>se consulta a Vitte]
+    D[<b>Degradado</b><br/>se consulta a Vitte]
+    F[<b>Fuera de línea</b><br/>no se consulta a Vitte<br/>durante 30 s]
+    D -- "consulta exitosa" --> L
+    L -- "falla" --> D
+    D -- "tercera falla consecutiva" --> F
+    F -- "pasados los 30 s,<br/>consulta exitosa" --> L

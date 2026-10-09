@@ -78,7 +78,7 @@ try {
     try {
         $s = $doc.Styles.Item('Portada')
         $s.Font.Size = 16; $s.ParagraphFormat.Alignment = 1
-        $s.ParagraphFormat.SpaceBefore = 30; $s.ParagraphFormat.SpaceAfter = 30
+        $s.ParagraphFormat.SpaceBefore = 12; $s.ParagraphFormat.SpaceAfter = 12
     } catch {}
     try {
         $s = $doc.Styles.Item('TituloSinNumero')
@@ -97,6 +97,24 @@ try {
     }
 
     Paso 'tablas'
+    # Portada: se inserta al principio el documento "Portada Llanes.docx"
+    $portada = Join-Path (Split-Path $dir -Parent) 'Portada Llanes.docx'
+    if (Test-Path $portada) {
+        $antes = $doc.Paragraphs.Count
+        $doc.Range(0, 0).InsertFile($portada)
+        $n = $doc.Paragraphs.Count - $antes
+        # se quitan los parrafos vacios del final de la portada para que ocupe una sola pagina
+        for ($i = $n; $i -ge 1; $i--) {
+            $p = $doc.Paragraphs.Item($i)
+            $vacio = ($p.Range.Text.Trim() -eq '') -and ($p.Range.InlineShapes.Count -eq 0) -and ($p.Range.ShapeRange.Count -eq 0)
+            if (-not $vacio) { break }
+            [void]$p.Range.Delete()
+        }
+        Paso 'portada insertada'
+    } else {
+        Write-Output "AVISO: no se encontro $portada; el documento queda sin portada."
+    }
+
     # Encabezado (titulo) y pie (capitulo y numero de pagina)
     $h1 = $doc.Styles.Item(-2).NameLocal
     $sec = $doc.Sections.Item(1)

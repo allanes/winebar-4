@@ -5,5 +5,5 @@ flowchart LR
         C --> PI[Picos<br/>dispensadores]
     end
     TB <-- Internet --> N[Nube Vitte<br/>app.vitte.com.ar]
-    N <-- "API HTTP" --> S[Sistema de gestión<br/>del bar]
+    S[Sistema de gestión<br/>del bar] -- "API HTTP" --> N
     A[Panel web de<br/>administración] --> N
