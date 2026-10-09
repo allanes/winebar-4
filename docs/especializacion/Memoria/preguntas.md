@@ -7,9 +7,6 @@ PREGUNTAS PARA CARLOS
 - puedo decir que usé wireshark para espiar la tablet?
 
 ----
-- Revisar parte que menciona CASER, nose si hacia todos los diags.
-- ver como abrir caser
-- hay q rehacer imagenes - ver prompt de claude
-- rever capitulo integracion y conclusiones
 - ver y completar seguimiento de riesgos. o sacarlo?
-- cumplimiento de requerimientos...?
+- 3.1.2: diagrama de contexto (fig 3.1) y fig 3.2
+- seccion 3.2: fig 3.3 arquitectura
