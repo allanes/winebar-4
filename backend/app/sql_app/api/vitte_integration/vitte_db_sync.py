@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, List, Annotated
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 # from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.models.inventario_y_promociones import Vino
 from sql_app.models.gestion_de_pedidos import Renglon as RenglonModel
@@ -13,9 +13,18 @@ from sql_app import crud
 from sql_app import schemas
 
 def _sync_products_with_vitte_uncached(db: Session):
-    vinos_in_db = crud.vino.get_multi(db=db)        
     picos_con_vino = vitte_api_client.vitte_vinos_data_retriever.fetch_vino_ids_for_empresa()
-    
+    # Traigo solo los vinos que estan en algun pico. get_multi corta en 100 filas (~33 vinos)
+    # y el resto nunca se actualizaba (y se volvia a crear en cada sync)
+    ids_vitte_en_picos = {str(pico.vino.id) for pico in picos_con_vino}
+    vinos_in_db = (
+        db.query(Vino)
+        .options(joinedload(Vino.producto))
+        .filter(Vino.id_vitte.in_(ids_vitte_en_picos))
+        .order_by(Vino.id)
+        .all()
+    )
+
     lista_interna_vinos_id_vitte = [int(vino.id_vitte) for vino in vinos_in_db]
     lista_tamaños = ['degustacion', 'media', 'copa']
     

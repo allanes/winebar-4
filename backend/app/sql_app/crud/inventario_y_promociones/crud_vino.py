@@ -49,7 +49,8 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
             return None
         
         vinos_in_db = db.query(Vino).filter(Vino.id_producto.in_([producto.id for producto in productos_in_db]))
-        vino_in_db = vinos_in_db.filter(Vino.volumen == tamaño_copa).first()
+        # Si hay mas de un vino con el mismo nombre, uso el mas reciente
+        vino_in_db = vinos_in_db.filter(Vino.volumen == tamaño_copa).order_by(Vino.id.desc()).first()
 
         return vino_in_db
 
