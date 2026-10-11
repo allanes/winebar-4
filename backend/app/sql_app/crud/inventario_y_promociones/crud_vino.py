@@ -41,17 +41,23 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
         vino_in_db = vino_in_db.first()
         return vino_in_db
     
-    def get_by_vitte_name(self, db: Session, vitte_name: str, tamaño_copa: float) -> Vino | None:
-        print(f'buscando vino por nombre y tam: {vitte_name}, {tamaño_copa}')
-        productos_in_db = db.query(ProductoModel).filter(ProductoModel.titulo == vitte_name).all()
+    def get_by_vitte_name(
+        self, db: Session, vitte_name: str, tamaño_copa: float, precio: float | None = None
+    ) -> Vino | None:
+        print(f'buscando vino por nombre, tam y precio: {vitte_name}, {tamaño_copa}, {precio}')
+        vinos_in_db = (
+            db.query(Vino)
+            .join(ProductoModel, Vino.id_producto == ProductoModel.id)
+            .filter(ProductoModel.titulo == vitte_name, Vino.volumen == tamaño_copa)
+        )
 
-        if not productos_in_db:
-            return None
-        
-        vinos_in_db = db.query(Vino).filter(Vino.id_producto.in_([producto.id for producto in productos_in_db]))
-        # Si hay mas de un vino con el mismo nombre, uso el mas reciente
-        vino_in_db = vinos_in_db.filter(Vino.volumen == tamaño_copa).order_by(Vino.id.desc()).first()
+        # En Vitte puede haber mas de un vino con el mismo nombre: primero busco el que
+        # tiene el precio cobrado por Vitte, y si no hay ninguno uso el mas reciente
+        if precio is not None:
+            vino_in_db = vinos_in_db.filter(ProductoModel.precio == precio).order_by(Vino.id.desc()).first()
+            if vino_in_db:
+                return vino_in_db
 
-        return vino_in_db
+        return vinos_in_db.order_by(Vino.id.desc()).first()
 
 vino = CRUDVino(Vino)

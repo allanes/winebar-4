@@ -194,7 +194,9 @@ def _sync_consumos_with_vitte_by_tarjeta_uncached(
         
         ## Agrego 1 renglon 
         print(f'Llamando a agregar producto...')
-        vino_in_db = crud.vino.get_by_vitte_name(db=db, vitte_name=consumo.vino, tamaño_copa=consumo.volumen)
+        vino_in_db = crud.vino.get_by_vitte_name(
+            db=db, vitte_name=consumo.vino, tamaño_copa=consumo.volumen, precio=consumo.precio
+        )
         if not vino_in_db:
             msg = f'No se encontro un producto en la db con el nombre {consumo.vino}'
             print(msg)
@@ -215,6 +217,12 @@ def _sync_consumos_with_vitte_by_tarjeta_uncached(
         if not pudo_agregarse:
             print(f'el consumo {consumo.vino} ({consumo.medida}), producto id {vino_in_db.id} no se pudo cargar en la orden. error: {msg}')
             continue
+
+        ## El monto del renglon es lo que cobro Vitte, no el precio que tenga el producto en la db
+        if renglon_creado.monto != consumo.precio:
+            print(f'Monto del renglon ({renglon_creado.monto}) distinto al cobrado por Vitte ({consumo.precio}). Uso el de Vitte.')
+            renglon_creado.monto = consumo.precio
+            db.commit()
 
         ## Cierro pedido
         print(f'Llamando a cerrar pedido...')
