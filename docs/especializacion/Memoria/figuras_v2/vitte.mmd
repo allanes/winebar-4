@@ -1,0 +1,9 @@
+flowchart LR
+    T([Tarjeta RFID<br/>del cliente]) -. lectura .-> TB
+    subgraph M[Máquina dispensadora]
+        TB[Tablet con<br/>aplicación Vitte] --> C[Controlador<br/>electrónico]
+        C --> PI[Picos<br/>dispensadores]
+    end
+    TB <-- Internet --> N[Nube Vitte<br/>app.vitte.com.ar]
+    S[Sistema de gestión<br/>del bar] -- "API HTTP" --> N
+    A[Panel web de<br/>administración] --> N

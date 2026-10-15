@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor C as Cliente
+    participant R as Lectores RFID
+    participant K as Servidor local (Raspberry Pi)
+    participant F as Frontend (vista tapero)
+    participant B as Backend
+    C->>R: Acerca la tarjeta (primera lectura)
+    R-->>K: Tarjeta + puerto físico
+    R-->>F: Número de tarjeta
+    F->>B: Abrir o reanudar pedido
+    B->>B: Sincronizar consumos de vino con Vitte
+    B-->>F: Cliente, orden y pedido abierto
+    loop Por cada tapa
+        alt Carga manual
+            C->>F: Indica la tapa al tapero
+            F->>B: Agregar producto
+        else Carga por lector
+            C->>R: Acerca la tarjeta al lector de la tapa
+            R-->>K: Tarjeta + puerto físico
+            K-->>F: Evento con el puerto usado
+            F->>B: Agregar producto por puerto físico
+        end
+        B->>B: Verificar montos máximos de pedido y orden
+        B-->>F: Pedido actualizado
+    end
+    C->>F: Confirma el pedido
+    F->>B: Cerrar pedido
+    B-->>F: Resumen del pedido
+    F->>K: Mostrar consumos en el display LCD

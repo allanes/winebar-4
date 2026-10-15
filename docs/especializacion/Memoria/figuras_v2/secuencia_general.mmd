@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor C as Cliente
+    actor J as Cajero
+    actor T as Tapero
+    participant S as Sistema del bar
+    participant V as Dispensadora y nube Vitte
+    J->>S: 1. Abre el turno de caja
+    C->>J: 2. Ingresa al bar
+    J->>S: Registra al cliente con una tarjeta
+    S->>V: Habilita la tarjeta con saldo
+    J-->>C: Entrega la tarjeta
+    loop 3. Durante la visita
+        C->>V: Se sirve vino con la tarjeta
+        C->>T: Pide tapas con la tarjeta
+        T->>S: Carga el pedido en la orden
+    end
+    C->>J: 4. Devuelve la tarjeta
+    J->>S: Consulta la orden
+    S->>V: Recupera los consumos de vino
+    S-->>J: Total de vinos y tapas
+    C->>J: Paga
+    J->>S: Cierra la orden
+    S->>V: Libera la tarjeta
+    J->>S: 5. Cierra el turno y la caja

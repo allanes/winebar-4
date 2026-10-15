@@ -1,0 +1,10 @@
+{
+  "theme": "neutral",
+  "themeVariables": { "fontSize": "22px" },
+  "flowchart": { "nodeSpacing": 30, "rankSpacing": 40, "padding": 10, "useMaxWidth": false },
+  "sequence": {
+    "actorFontSize": 22, "messageFontSize": 21, "noteFontSize": 20,
+    "actorMargin": 24, "width": 170, "height": 50, "boxMargin": 6, "messageMargin": 30,
+    "wrap": true, "wrapPadding": 8, "useMaxWidth": false, "mirrorActors": false
+  }
+}
