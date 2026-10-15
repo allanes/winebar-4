@@ -128,6 +128,7 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
         tarjeta_cliente:int, 
         renglon_in: RenglonCreate,
         atendido_por: int,
+        verificar_montos: bool = True,
     ) -> tuple[Renglon | None, bool, str]:
         ## Si todavia no existe un pedido abierto, debo abrirlo
         pedido_in_db, fue_abierto, msg = self.abrir_pedido(
@@ -166,9 +167,11 @@ class CRUDPedido(CRUDBase[Pedido, PedidoCreate, PedidoUpdate]):
                 renglon_in=renglon_in
             )
 
-        puede_continuar, msg = self.chequear_montos_pedido(
-            db=db, pedido=pedido_in_db
-        )
+        puede_continuar, msg = True, ''
+        if verificar_montos:
+            puede_continuar, msg = self.chequear_montos_pedido(
+                db=db, pedido=pedido_in_db
+            )
         print(f'resultados de chequeo: {puede_continuar=}, {msg=}')
         
         if not puede_continuar:

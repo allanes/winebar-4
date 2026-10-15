@@ -8,6 +8,7 @@ from sql_app.schemas.gestion_de_pedidos.configuracion import ConfiguracionCreate
 from sql_app import crud
 # from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 from sql_app.api.fudo_integration import fudo_crud
+from sql_app.api.vitte_integration.vitte_service import vitte_service
 from sql_app.api.fudo_integration.fudo_schemas import FudoExportItem, FudoItemType, FudoExportRequest
 from sql_app.schemas.validators import get_now_time
 
@@ -171,13 +172,10 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         # Reviso si debo exportar a fudo
         exportar_a_fudo = info_pago.carga_fudo_venta_id
         if exportar_a_fudo:
-            # para exportar_orden_a_fudo, hay que exportar y setear la bandera para cada pedido
-            export_items = self._prepare_fudo_export_items(db=db, orden=orden_in_db, info_pago=info_pago)
-            export_request = FudoExportRequest(items=export_items)
-            export_result = fudo_crud.export_items_to_fudo(export_request)
-            
+            export_result, msg = self._exportar_orden_a_fudo(db=db, orden=orden_in_db, info_pago=info_pago)
+
             if not export_result:
-                return orden_in_db, False, "No se pudo exportar a Fudo. Reintentar."
+                return orden_in_db, False, msg
 
             numero_venta = info_pago.carga_fudo_venta_id
             numero_mesa = fudo_crud.get_table_number_by_sale_id(sale_id=numero_venta)
@@ -191,17 +189,33 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         orden_in_db.monto_cargado_fudo = cargado_en_fudo
         orden_in_db.monto_cobrado = suma_pagos
         orden_in_db.comentarios = info_pago.comentarios
-        
+        if info_pago.cerrar_sin_vitte:
+            orden_in_db.cerrada_sin_vitte = True
+            orden_in_db.comentarios = f'Cerrada sin conexion con Vitte. {info_pago.comentarios or ""}'.strip()
+
         db.commit()
         db.refresh(orden_in_db)
 
-        # Devuelvo tarjeta a banca
-        tarjeta_devuelta = crud.cliente.devolver_tarjeta_de_cliente(
-            db=db, id=orden_in_db.cliente_id
-        )
-        
+        # Devuelvo tarjeta a banca. Si Vitte falla, o si la orden se cerro sin conexion, la orden
+        # ya quedo cerrada y la tarjeta se libera mas tarde desde crud.cliente.liberar_tarjetas_pendientes
+        if not info_pago.cerrar_sin_vitte:
+            try:
+                tarjeta_devuelta = crud.cliente.devolver_tarjeta_de_cliente(
+                    db=db, id=orden_in_db.cliente_id
+                )
+            except Exception as err:
+                print(f'Orden {orden_in_db.id} cerrada, pero la tarjeta quedo pendiente de liberar: {err}')
+
         return orden_in_db, True, ''
     
+    def sumar_descuento_vitte_pendiente(self, db: Session, *, orden_id: int, monto: float) -> None:
+        """Anota un monto de tapas que todavia no pudo descontarse del saldo del cliente en Vitte."""
+        orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.id == orden_id).first()
+        if orden_in_db is None:
+            return
+        orden_in_db.descuento_vitte_pendiente = (orden_in_db.descuento_vitte_pendiente or 0) + (monto or 0)
+        db.commit()
+
     def cargar_monto(self, db: Session, *, orden_id: int, monto_a_agregar: float) -> OrdenCompra | None:
         orden_in_db = db.query(OrdenCompra).filter(OrdenCompra.id == orden_id).first()
         if orden_in_db is None:
@@ -275,6 +289,11 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
         #     fecha_alta_cliente=orden.timestamp_apertura_orden
         # )
 
+        ## Ultima vez que se pudieron traer los consumos de vino de esta tarjeta
+        vitte_ultima_sincronizacion = None
+        if cliente_opera is not None:
+            vitte_ultima_sincronizacion = vitte_service.get_last_consumption_sync(cliente_opera.tarjeta_id)
+
         ## Armo el schema de respuesta
         return OrdenCompraDetallada(
             **orden.__dict__,
@@ -282,15 +301,45 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             nombre_cliente=nombre_cliente,
             rol = rol,
             cerrada_por_nombre=nombre_vendedor,
+            vitte_ultima_sincronizacion=vitte_ultima_sincronizacion,
             # consumos_vino=transacciones_vino
         )
     
-    def _prepare_fudo_export_items(self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> List[FudoExportItem]:
+    def _exportar_orden_a_fudo(self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago) -> tuple[bool, str]:
+        """Exporta a Fudo un item por cada producto de la orden.
+
+        Cada renglon exportado guarda la venta de Fudo a la que fue, de modo que
+        un reintento despues de una falla parcial solo envia lo que falta.
+        """
+        venta_id = str(info_pago.carga_fudo_venta_id)
         pedidos_de_orden_in_db = crud.pedido.get_pedidos_por_orden(db=db, orden_id=orden.id)
         renglones: List[Renglon] = []
         for pedido in pedidos_de_orden_in_db:
             renglones.extend(crud.renglon.get_by_pedido(db=db, pedido_id=pedido.id))
-        
+
+        ventas_previas = {renglon.fudo_venta_id for renglon in renglones if renglon.fudo_venta_id}
+        if ventas_previas and ventas_previas != {venta_id}:
+            venta_previa = sorted(ventas_previas)[0]
+            return False, f'Parte de esta orden ya fue exportada a la venta {venta_previa} de Fudo. Reintentar sobre esa misma venta.'
+
+        renglones_pendientes = [renglon for renglon in renglones if not renglon.fudo_venta_id]
+        items_por_producto = self._prepare_fudo_export_items(
+            db=db, orden=orden, info_pago=info_pago, renglones=renglones_pendientes
+        )
+        for producto_id, item in items_por_producto.items():
+            if not fudo_crud.export_item_to_fudo(item):
+                return False, "No se pudo exportar a Fudo. Reintentar."
+
+            for renglon in renglones_pendientes:
+                if renglon.producto_id == producto_id:
+                    renglon.fudo_venta_id = venta_id
+            db.commit()
+
+        return True, ''
+
+    def _prepare_fudo_export_items(
+        self, db: Session, orden: OrdenCompra, info_pago: OrdenCompraInfoPago, renglones: List[Renglon]
+    ) -> dict[int, FudoExportItem]:
         # Grouping by product ID
         grouped_items = {}
         for renglon in renglones:
@@ -334,19 +383,17 @@ class CRUDOrden(CRUDBase[OrdenCompra, OrdenCompraAbrir, OrdenCompraUpdate]):
             grouped_items[renglon.producto_id]["amount"] += renglon.monto
 
         # Create FudoExportItem for each grouped product ID
-        fudo_export_items = []
+        fudo_export_items = {}
         for producto_id, details in grouped_items.items():
-            fudo_export_items.append(
-                FudoExportItem(
-                    order_id=orden.id,
-                    type=details["type"],
-                    amount=details["amount"],
-                    quantity=details["quantity"],
-                    comment=details["comment"],
-                    sale_id=str(info_pago.carga_fudo_venta_id)
-                )
+            fudo_export_items[producto_id] = FudoExportItem(
+                order_id=orden.id,
+                type=details["type"],
+                amount=details["amount"],
+                quantity=details["quantity"],
+                comment=details["comment"],
+                sale_id=str(info_pago.carga_fudo_venta_id)
             )
-        
+
         return fudo_export_items
     
 orden = CRUDOrden(OrdenCompra)

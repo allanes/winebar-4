@@ -22,6 +22,7 @@ class OrdenCompraInfoPago(BaseModel):
     cobrado_transferencia: Optional[float] = 0
     carga_fudo_venta_id: Optional[int] = None
     comentarios: Optional[str] = ''
+    cerrar_sin_vitte: Optional[bool] = False
 
 class OrdenCompraCreateInternal(OrdenCompraBase):
     monto_maximo_pedido: float
@@ -46,6 +47,7 @@ class OrdenCompraInDBBase(OrdenCompraBase):
     timestamp_cierre_orden: Optional[datetime] = None
     cerrada_por: Optional[int] = None
     comentarios: Optional[str] = ''
+    cerrada_sin_vitte: Optional[bool] = None
     model_config = ConfigDict(from_attributes=True)
 
 class OrdenCompra(OrdenCompraInDBBase):
@@ -62,6 +64,7 @@ class OrdenCompraDetallada(OrdenCompra):
     pedidos: list[Pedido]
     nombre_cliente: str
     rol: str
+    vitte_ultima_sincronizacion: Optional[datetime] = None
     # consumos_vino: list[TransaccionVino]
 
 class OrdenCompraInDB(OrdenCompraInDBBase):

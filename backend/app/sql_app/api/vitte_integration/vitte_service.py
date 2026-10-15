@@ -170,6 +170,10 @@ class VitteService:
             if self._consecutive_failures >= self.circuit_breaker_failures:
                 self._circuit_open_until = now + self.circuit_breaker_cooldown
 
+    def get_last_consumption_sync(self, tarjeta_id: Hashable) -> Optional[datetime]:
+        with self._lock:
+            return self._sync_state.last_consumption_sync_by_card.get(tarjeta_id)
+
     def _snapshot(self, now: datetime) -> VitteStatus:
         with self._lock:
             circuit_open = self._is_circuit_open(now)

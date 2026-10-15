@@ -1,3 +1,4 @@
+from threading import Lock
 from typing import Any, Dict, Optional, List, Union
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -7,6 +8,7 @@ from sql_app.crud.base_with_active import CRUDBaseWithActiveField
 from sql_app.crud.tarjetas_y_usuarios import crud_detalles_adicionales, crud_cliente_opera_con_tarjeta, crud_tarjeta, crud_rol
 from sql_app.crud.gestion_de_pedidos import crud_orden, crud_configuracion
 from sql_app.models.tarjetas_y_usuarios import Cliente, ClienteOperaConTarjeta, Tarjeta
+from sql_app.models.gestion_de_pedidos import OrdenCompra, Pedido, Renglon
 from sql_app.schemas.tarjetas_y_usuarios.cliente import ClienteCreate, ClienteUpdate
 from sql_app.schemas.tarjetas_y_usuarios.detalles_adicionales import DetallesAdicionales, DetallesAdicionalesForUI, DetallesAdicionalesCreate, DetallesAdicionalesUpdate
 from sql_app.schemas.tarjetas_y_usuarios.cliente_opera_con_tarjeta import ClienteOperaConTarjetaCreate
@@ -16,6 +18,8 @@ from sql_app.core.security import hashear_contra, crear_nombre_usuario, obtener_
 from sql_app.api.vitte_integration.vitte_utils import vitte_api_client
 from sql_app.api.vitte_integration.vitte_service import vitte_service
 from sql_app.schemas.validators import get_now_time
+
+_lock_liberar_pendientes = Lock()
 
 class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]):
     ### Functions override section
@@ -222,6 +226,110 @@ class CRUDCliente(CRUDBaseWithActiveField[Cliente, ClienteCreate, ClienteUpdate]
             raise RuntimeError('No se pudo inhabilitar el cliente en Vitte.')
         
         tarjeta_devuelta = crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=cliente_opera.tarjeta_id)
-        return tarjeta_devuelta        
+        return tarjeta_devuelta
+
+    def liberar_tarjetas_pendientes(self, db: Session) -> int:
+        """Libera las tarjetas de ordenes ya cerradas cuya baja en Vitte no pudo completarse.
+
+        Pasa cuando se pierde la conexion con Vitte despues de cerrar la orden. Se llama
+        al recuperar la conexion y devuelve la cantidad de tarjetas liberadas.
+        """
+        if not _lock_liberar_pendientes.acquire(blocking=False):
+            return 0
+
+        liberadas = 0
+        try:
+            asociaciones = db.query(ClienteOperaConTarjeta)
+            asociaciones = asociaciones.join(Tarjeta, Tarjeta.id == ClienteOperaConTarjeta.tarjeta_id)
+            asociaciones = asociaciones.filter(Tarjeta.presente_en_salon == True)
+            asociaciones = asociaciones.order_by(ClienteOperaConTarjeta.id.desc())
+            asociaciones = asociaciones.all()
+
+            tarjetas_vistas = set()
+            for asociacion in asociaciones:
+                # Solo cuenta el ultimo cliente que recibio cada tarjeta
+                if asociacion.tarjeta_id in tarjetas_vistas:
+                    continue
+                tarjetas_vistas.add(asociacion.tarjeta_id)
+
+                ultima_orden = crud_orden.orden.get_by_cliente_id(db=db, cliente_id=asociacion.id_cliente)
+                if ultima_orden is None:
+                    continue
+                orden_abierta = crud_orden.orden.get_orden_abierta_by_client(db=db, cliente_id=asociacion.id_cliente)
+                if orden_abierta is not None:
+                    continue
+
+                tarjeta = asociacion.tarjeta
+                cliente = self.get(db=db, id=asociacion.id_cliente)
+                cliente_en_vitte = vitte_api_client.buscar_cliente_vitte_por_tarjeta_raw(tarjeta_id=tarjeta.raw_rfid)
+                if ultima_orden.cerrada_sin_vitte:
+                    # Antes de dar de baja al cliente, dejo asentado lo que no se llego a cobrar
+                    self._anotar_consumos_sin_cobrar(db=db, orden=ultima_orden)
+                if cliente_en_vitte is not None:
+                    pudo_inhabilitar = vitte_api_client.inhabilitar_cliente_vitte(
+                        cliente_id=asociacion.id_cliente,
+                        cliente_nombre=cliente.nombre if cliente else '',
+                        raw_tarjeta_rfid=tarjeta.raw_rfid
+                    )
+                    if not pudo_inhabilitar:
+                        continue
+
+                crud_tarjeta.tarjeta.devolver_a_banca(db=db, id=tarjeta.id)
+                liberadas += 1
+                print(f'Tarjeta {tarjeta.id} liberada (estaba pendiente desde el cierre de la orden {ultima_orden.id})')
+
+                turno = ultima_orden.turno
+                if turno is not None and turno.cerrado_por is not None:
+                    crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.remove(db=db, id=asociacion.id)
+        except Exception as err:
+            print(f'No se pudieron liberar las tarjetas pendientes: {err}')
+        finally:
+            _lock_liberar_pendientes.release()
+
+        return liberadas
+
+    def _anotar_consumos_sin_cobrar(self, db: Session, orden) -> None:
+        """Para una orden cerrada sin conexion, anota en sus comentarios los consumos de vino
+        que Vitte tiene registrados y que no entraron en el cobro."""
+        marca = 'Consumos de vino sin cobrar'
+        if orden.comentarios and marca in orden.comentarios:
+            return
+        consumos = vitte_api_client.consultar_transacciones_vino_por_cliente(
+            cliente_id=orden.cliente_id,
+            fecha_alta_cliente=orden.timestamp_apertura_orden
+        )
+        registrados = db.query(Renglon.vitte_consumo_id).join(Pedido, Pedido.id == Renglon.pedido_id)
+        registrados = registrados.filter(Pedido.orden_id == orden.id)
+        registrados = {fila[0] for fila in registrados.all() if fila[0] is not None}
+        faltantes = [consumo for consumo in consumos if consumo.consumoId not in registrados]
+        total = sum(consumo.precio for consumo in faltantes)
+        nota = f'{marca}: {len(faltantes)} por ${total:.2f}.'
+        orden.comentarios = f'{orden.comentarios or ""} {nota}'.strip()
+        db.commit()
+
+    def aplicar_descuentos_pendientes(self, db: Session) -> int:
+        """Descuenta del saldo en Vitte las tapas confirmadas mientras no habia conexion."""
+        aplicados = 0
+        try:
+            ordenes = db.query(OrdenCompra)
+            ordenes = ordenes.filter(OrdenCompra.cerrada_por.is_(None))
+            ordenes = ordenes.filter(OrdenCompra.descuento_vitte_pendiente > 0)
+            for orden in ordenes.all():
+                asociacion = crud_cliente_opera_con_tarjeta.cliente_opera_con_tarjeta.get_by_cliente_id(
+                    db=db, cliente_id=orden.cliente_id
+                )
+                if asociacion is None or asociacion.tarjeta is None:
+                    continue
+                descontado = vitte_api_client.cargar_saldo_cliente(
+                    tarjeta_rfid=asociacion.tarjeta.raw_rfid,
+                    monto_a_agregar=-(orden.descuento_vitte_pendiente)
+                )
+                if descontado:
+                    orden.descuento_vitte_pendiente = 0
+                    db.commit()
+                    aplicados += 1
+        except Exception as err:
+            print(f'No se pudieron aplicar los descuentos pendientes en Vitte: {err}')
+        return aplicados
 
 cliente = CRUDCliente(Cliente)

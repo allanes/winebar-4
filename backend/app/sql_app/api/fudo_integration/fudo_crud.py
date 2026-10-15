@@ -69,22 +69,27 @@ def get_sale_details_custom(sale_id: str) -> CustomSaleDetailResponse:
     
     return venta_custom
 
-def export_items_to_fudo(export_request: FudoExportRequest, mock = False) -> bool:
-    # mock = True
+def export_item_to_fudo(item: FudoExportItem, mock = False) -> bool:
     try:
-        for item in export_request.items:
-            payload = _prepare_fudo_item_payload(item)
-            response = fudo_api_client.create_item(payload, mock=mock)
+        payload = _prepare_fudo_item_payload(item)
+        response = fudo_api_client.create_item(payload, mock=mock)
 
-            if not mock:
-                if not (response.status_code >= 200 and response.status_code < 300):
-                    print(f"Error exporting item to Fudo: {response.text}")
-                    print(f"    request payload: {payload}")
-                    return False
+        if not mock:
+            if not (response.status_code >= 200 and response.status_code < 300):
+                print(f"Error exporting item to Fudo: {response.text}")
+                print(f"    request payload: {payload}")
+                return False
         return True
     except Exception as e:
-        print(f"Error exporting items to Fudo: {str(e)}")
+        print(f"Error exporting item to Fudo: {str(e)}")
         return False
+
+def export_items_to_fudo(export_request: FudoExportRequest, mock = False) -> bool:
+    # mock = True
+    for item in export_request.items:
+        if not export_item_to_fudo(item, mock=mock):
+            return False
+    return True
 
 def _prepare_fudo_item_payload(item: FudoExportItem) -> dict:
     rendered_payload = templates.get_template(fudo_item_post_template_filename).render(

@@ -208,6 +208,8 @@ def _sync_consumos_with_vitte_by_tarjeta_uncached(
             db=db,
             atendido_por=abierto_por_id,
             tarjeta_cliente=raw_tarjeta,
+            # Un consumo de vino ya ocurrio: se registra aunque supere los montos maximos
+            verificar_montos=False,
             renglon_in=schemas.RenglonCreate(
                 cantidad=1,
                 producto_id=vino_in_db.id_producto,

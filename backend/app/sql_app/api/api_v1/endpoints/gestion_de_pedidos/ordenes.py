@@ -113,11 +113,18 @@ def handle_cerrar_orden(
     check_turno_abierto: Annotated[bool, Depends(deps.check_turno_abierto)],
 ):
     print(f'usuario logueado id: {current_user.id}')
-    try:
-        vitte_service.require_online(vitte_api_client.check_health)
-    except RuntimeError as err:
-        raise HTTPException(status_code=503, detail=f'Vitte no esta disponible. {err}')
-    
+    vitte_disponible = vitte_service.can_attempt_vitte(vitte_api_client.check_health)
+    if vitte_disponible:
+        # Con conexion, el cierre es siempre el normal
+        info_pago.cerrar_sin_vitte = False
+    elif not info_pago.cerrar_sin_vitte:
+        raise HTTPException(
+            status_code=503,
+            detail='Vitte no esta disponible. Los consumos de vino pueden estar incompletos. Puede cerrar la orden sin conexion desde el panel de cobro.'
+        )
+    elif info_pago.carga_fudo_venta_id:
+        raise HTTPException(status_code=503, detail='No se puede exportar a Fudo una orden cerrada sin conexion con Vitte.')
+
     try:
         orden, fue_cerrada, msg = crud.orden.cerrar_orden(
             db = db,

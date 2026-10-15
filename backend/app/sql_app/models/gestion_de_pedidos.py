@@ -35,6 +35,8 @@ class OrdenCompra(Base):
     abierta_por = Column(Integer, ForeignKey('personal_interno.id'))
     cerrada_por = Column(Integer, ForeignKey('personal_interno.id'), nullable=True)
     comentarios = Column(Text, nullable=True)
+    cerrada_sin_vitte = Column(Boolean, nullable=True)
+    descuento_vitte_pendiente = Column(Float, nullable=True)
     turno = relationship("Turno")
     cliente = relationship("Cliente")
 
@@ -59,6 +61,7 @@ class Renglon(Base):
     pedido_id = Column(Integer, ForeignKey('pedidos.id'))
     producto_id = Column(Integer, ForeignKey('productos.id'))
     vitte_consumo_id = Column(Integer, nullable=True)
+    fudo_venta_id = Column(String, nullable=True)
     pedido = relationship("Pedido", back_populates="renglones", uselist=False)
     producto = relationship("Producto")
 

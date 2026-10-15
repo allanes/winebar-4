@@ -74,8 +74,15 @@ class CRUDTurno(CRUDBase[Turno, TurnoCreate, TurnoUpdate]):
             if tarjeta is not None:
                 if tarjeta.presente_en_salon:
                     print(f'ADVERTENCIA. TURNO CERRADO CON TARJETA {tarjeta.id} PARA CLIENTE {cliente_ingresado.id_cliente}')
-                    crud.cliente.devolver_tarjeta_de_cliente(db=db, id=cliente_ingresado.id)
-                
+                    try:
+                        crud.cliente.devolver_tarjeta_de_cliente(db=db, id=cliente_ingresado.id_cliente)
+                    except Exception as err:
+                        print(f'No se pudo liberar la tarjeta {tarjeta.id}: {err}')
+                    db.refresh(tarjeta)
+                    if tarjeta.presente_en_salon:
+                        # Queda asociada para que liberar_tarjetas_pendientes la libere al volver la conexion
+                        continue
+
             ## Limpio clientes operan
             cliente_opera_removido = crud.cliente_opera_con_tarjeta.remove(db=db, id=cliente_ingresado.id)
             if not cliente_opera_removido:
