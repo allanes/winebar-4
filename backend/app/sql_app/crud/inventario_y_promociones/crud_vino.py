@@ -60,4 +60,40 @@ class CRUDVino(CRUDBase[Vino, VinoCreate, VinoUpdate]):
 
         return vinos_in_db.order_by(Vino.id.desc()).first()
 
+    def get_or_create_by_vitte_name(
+        self, db: Session, vitte_name: str, tamaño_copa: float, precio: float
+    ) -> Vino | None:
+        vino_in_db = self.get_by_vitte_name(db=db, vitte_name=vitte_name, tamaño_copa=tamaño_copa, precio=precio)
+        if vino_in_db:
+            return vino_in_db
+
+        # El vino ya no esta en un pico, o cambio el volumen de la medida en Vitte:
+        # se crea con los datos del consumo para no perderlo
+        print(f'Creando vino desde el consumo: {vitte_name}, {tamaño_copa}, {precio}')
+        mismo_nombre = (
+            db.query(Vino)
+            .join(ProductoModel, Vino.id_producto == ProductoModel.id)
+            .filter(ProductoModel.titulo == vitte_name, Vino.id_vitte.isnot(None))
+            .order_by(Vino.id.desc())
+            .first()
+        )
+        producto_in_db, fue_creado, msg = crud.producto.create_or_reactivate(
+            db=db,
+            obj_in=ProductoCreate(
+                titulo=vitte_name,
+                descripcion=f'Volumen: {int(tamaño_copa)} cc.',
+                precio=precio,
+                stock=0
+            )
+        )
+        if not fue_creado:
+            print(f'No se pudo crear el producto para {vitte_name}: {msg}')
+            return None
+
+        return self.create(db=db, obj_in=VinoCreate(
+            volumen=int(tamaño_copa),
+            id_vitte=mismo_nombre.id_vitte if mismo_nombre else None,
+            id_producto=producto_in_db.id,
+        ))
+
 vino = CRUDVino(Vino)

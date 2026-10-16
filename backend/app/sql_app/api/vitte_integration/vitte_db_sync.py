@@ -34,40 +34,8 @@ def _sync_products_with_vitte_uncached(db: Session):
             print(f'Creando vino con vitte_id {pico.id} ({pico.vino.nombre})')
 
             for tamaño_copa in lista_tamaños:
-                # Creo el producto: Recupero variables de interes 
-                nombre_campo_volumen = f'{tamaño_copa}Ml'
-                nombre_campo_precio = f'{tamaño_copa}Precio'
-                volumen = pico.model_dump().get(nombre_campo_volumen, '')
-                precio = pico.model_dump().get(nombre_campo_precio, 0)
-                
-                producto_in = ProductoCreate(
-                    titulo=pico.vino.nombre,
-                    descripcion=f'Volumen: {volumen} cc.',
-                    precio=precio,
-                    stock=0
-                )
-                # Creo el producto: creacion en db
-                producto_in_db, fue_creado, msg = crud.producto.create_or_reactivate(
-                    db=db, obj_in=producto_in
-                )
-                if not fue_creado:
-                    print(f'El vino id {pico.vinoId} ({pico.vino.nombre}) no se pudo crear en la tabla de productos')
-                    # return None, fue_creado, msg
-                print(f'creado producto de vino en tabla productos. {producto_in_db.id}')
-                # Creo el vino
-                vino_in = VinoCreate(
-                    volumen=volumen,
-                    id_vitte=pico.vinoId,
-                    id_producto=producto_in_db.id,
-                )
+                _crear_tamaño_de_vino(db, pico, tamaño_copa)
 
-                vino_in_db = crud.vino.create(db=db, obj_in=vino_in)
-
-                if vino_in_db is None:
-                    msg = f'El vino id {pico.vinoId} ({pico.vino.nombre}) no se pudo crear'
-                    print(msg)
-                    # return None, False, msg
-                
                 lista_interna_vinos_id_vitte.append(pico.vino.id)
         else:
             # Comparo nombres
@@ -141,9 +109,56 @@ def _sync_products_with_vitte_uncached(db: Session):
                     vino_aux:Vino = db.query(Vino).get(vino_in_db_by_vitte.id)
                     vino_aux.id_producto = producto_actualizado.id
                     db.commit()
-                    db.refresh(vino_aux)                        
-                
+                    db.refresh(vino_aux)
+
+            # Si en Vitte cambio el volumen de una medida, ningun vino de la db coincide
+            # con ella: se crea esa medida con su precio actual
+            volumenes_en_db = {vino.volumen for vino in vinos_in_db_por_vitte_id}
+            for tamaño_copa in lista_tamaños:
+                volumen = pico.model_dump().get(f'{tamaño_copa}Ml')
+                if volumen and volumen not in volumenes_en_db:
+                    print(f'La medida {tamaño_copa} ({volumen} cc) del vino {pico.vino.nombre} no esta en la db')
+                    vino_creado = _crear_tamaño_de_vino(db, pico, tamaño_copa)
+                    if vino_creado:
+                        # el mismo vino puede estar en mas de un pico
+                        vinos_in_db.append(vino_creado)
+
     return
+
+def _crear_tamaño_de_vino(db: Session, pico, tamaño_copa: str):
+    # Creo el producto: Recupero variables de interes
+    nombre_campo_volumen = f'{tamaño_copa}Ml'
+    nombre_campo_precio = f'{tamaño_copa}Precio'
+    volumen = pico.model_dump().get(nombre_campo_volumen, '')
+    precio = pico.model_dump().get(nombre_campo_precio, 0)
+
+    producto_in = ProductoCreate(
+        titulo=pico.vino.nombre,
+        descripcion=f'Volumen: {volumen} cc.',
+        precio=precio,
+        stock=0
+    )
+    # Creo el producto: creacion en db
+    producto_in_db, fue_creado, msg = crud.producto.create_or_reactivate(
+        db=db, obj_in=producto_in
+    )
+    if not fue_creado:
+        print(f'El vino id {pico.vinoId} ({pico.vino.nombre}) no se pudo crear en la tabla de productos')
+        return None
+    print(f'creado producto de vino en tabla productos. {producto_in_db.id}')
+    # Creo el vino
+    vino_in = VinoCreate(
+        volumen=volumen,
+        id_vitte=pico.vinoId,
+        id_producto=producto_in_db.id,
+    )
+
+    vino_in_db = crud.vino.create(db=db, obj_in=vino_in)
+
+    if vino_in_db is None:
+        msg = f'El vino id {pico.vinoId} ({pico.vino.nombre}) no se pudo crear'
+        print(msg)
+    return vino_in_db
 
 def sync_products_with_vitte(db: Session, force: bool = False) -> bool:
     return vitte_service.sync_catalog_if_due(
@@ -181,6 +196,16 @@ def _sync_consumos_with_vitte_by_tarjeta_uncached(
             print(f'Consumo encontrado. Pasando al siguiente..')
             continue
 
+        ## Busco el vino antes de abrir el pedido, para no dejar un pedido vacio abierto
+        vino_in_db = crud.vino.get_or_create_by_vitte_name(
+            db=db, vitte_name=consumo.vino, tamaño_copa=consumo.volumen, precio=consumo.precio
+        )
+        if not vino_in_db:
+            # Un consumo que falla no debe impedir que se carguen los siguientes
+            print(f'No se encontro ni se pudo crear un producto para {consumo.vino} ({consumo.medida}). Consumo {consumo.consumoId} sin cargar')
+            continue
+        print(f'producto encontrado en db: {vino_in_db.__dict__}')
+
         ## Abro pedido
         print(f'Llamando a abrir pedido...')
         pedido, pudo_abirse, msg = crud.pedido.abrir_pedido(
@@ -191,19 +216,9 @@ def _sync_consumos_with_vitte_by_tarjeta_uncached(
         if not pudo_abirse:
             print(f'el consumo {consumo.vino} ({consumo.medida}) no se pudo cargar en la base de datos. error: {msg}')
             continue
-        
-        ## Agrego 1 renglon 
-        print(f'Llamando a agregar producto...')
-        vino_in_db = crud.vino.get_by_vitte_name(
-            db=db, vitte_name=consumo.vino, tamaño_copa=consumo.volumen, precio=consumo.precio
-        )
-        if not vino_in_db:
-            msg = f'No se encontro un producto en la db con el nombre {consumo.vino}'
-            print(msg)
-            return None, False, msg
-        else:
-            print(f'producto encontrado en db: {vino_in_db.__dict__}')
 
+        ## Agrego 1 renglon
+        print(f'Llamando a agregar producto...')
         renglon_creado, pudo_agregarse, msg = crud.pedido.agregar_producto_a_pedido(
             db=db,
             atendido_por=abierto_por_id,
